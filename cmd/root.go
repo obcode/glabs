@@ -20,18 +20,18 @@ var (
 		Short: "Manage GitLab for student assignments",
 		Long:  `Manage GitLab for student assignments`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			if Verbose {
-				zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+			zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
-				output := zerolog.ConsoleWriter{Out: os.Stdout}
+			output := zerolog.ConsoleWriter{Out: os.Stdout}
+			if Verbose {
 				output.FormatLevel = func(i interface{}) string {
 					return strings.ToUpper(fmt.Sprintf("| %-6s|", i))
 				}
 				zerolog.SetGlobalLevel(zerolog.DebugLevel)
-				log.Logger = zerolog.New(output).With().Timestamp().Logger()
 			} else {
 				zerolog.SetGlobalLevel(zerolog.InfoLevel)
 			}
+			log.Logger = zerolog.New(output).With().Timestamp().Logger()
 		},
 	}
 )

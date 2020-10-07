@@ -1,12 +1,15 @@
 package gitlab
 
 import (
+	"errors"
+	"strings"
+
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"github.com/xanzy/go-gitlab"
 )
 
-func (c *Client) Generate(group string, assignment string, template string) {
+func (c *Client) Generate(group, assignment, template string) {
 	if groupInfo := viper.GetStringMap(group); len(groupInfo) == 0 {
 		log.Info().Str("group", group).Msg("goup not found")
 		return
@@ -19,8 +22,9 @@ func (c *Client) Generate(group string, assignment string, template string) {
 		return
 	}
 
-	if inID := viper.GetInt(assignmentKey + ".inID"); inID == 0 {
-		log.Info().Str("assignment", assignment).Msg("please specify inID for assignment")
+	assignmentGroupID, assignmentPath, err := c.getGroupID(group, assignmentKey)
+	if err != nil {
+		log.Error().Err(err).Str("assignment", assignment).Msg("group for assignment does not exist")
 		return
 	}
 
@@ -29,14 +33,62 @@ func (c *Client) Generate(group string, assignment string, template string) {
 		log.Info().Msg("generating per group")
 	case "student", "":
 		log.Info().Msg("generating per student")
-		c.generatePerStudent(group, assignment)
+		c.generatePerStudent(group, assignment, assignmentPath, assignmentGroupID)
 	default:
 		log.Info().Msg("generating per unknown")
 		return
 	}
 }
 
-func (c *Client) generatePerStudent(group string, assignment string) {
+func (c *Client) getGroupID(group, assignmentKey string) (int, string, error) {
+	semesterGroup := group
+	if semestergroup := viper.GetString(group + ".semestergroup"); len(semestergroup) > 0 {
+		semesterGroup += "/" + semestergroup
+	}
+
+	assignmentGroup := semesterGroup
+	if group := viper.GetString(assignmentKey + ".group"); len(group) > 0 {
+		assignmentGroup += "/" + group
+	}
+
+	groupnames := strings.Split(assignmentGroup, "/")
+	groups, _, err := c.Groups.SearchGroup(groupnames[len(groupnames)-1])
+
+	if err != nil {
+		log.Error().Err(err).Str("group", group).Msg("error while searching id of group")
+		return 0, "", err
+	}
+
+	if len(groups) == 0 {
+		log.Debug().Str("group", group).Msg("no group found")
+		return 0, "", errors.New("no group found")
+	}
+
+	log.Debug().Str("assignmentGroup", assignmentGroup).Msg("searching id of group")
+
+	// semesterGroupID := 0
+	assignmentGroupID := 0
+
+	for _, group := range groups {
+		// if group.Path == semesterGroup {
+		// 	log.Debug().Str("group.Path", group.Path).Msg("found semester group")
+		// 	semesterGroupID = group.ID
+		// }
+		if group.FullPath == assignmentGroup {
+			log.Debug().Str("group.FullPath", group.FullPath).Msg("found assignment group")
+			assignmentGroupID = group.ID
+		}
+	}
+
+	if assignmentGroupID == 0 {
+		log.Info().Msg("creating assignment group")
+		panic("implement me")
+	}
+
+	return assignmentGroupID, assignmentGroup, nil
+}
+
+func (c *Client) generatePerStudent(group, assignment, assignmentPath string, assignmentGroupID int) {
 	students := viper.GetStringSlice(group + ".students")
 	if len(students) == 0 {
 		log.Info().Str("group", group).Msg("no students found")
@@ -44,13 +96,12 @@ func (c *Client) generatePerStudent(group string, assignment string) {
 	}
 
 	for _, student := range students {
-		inID := viper.GetInt(group + "." + assignment + ".inId")
-		c.generateForStudent(student, group, assignment, inID)
+		c.generateForStudent(student, group, assignment, assignmentPath, assignmentGroupID)
 	}
 }
 
 //nolint:funlen
-func (c *Client) generateForStudent(student string, group string, assignment string, inID int) {
+func (c *Client) generateForStudent(student, group, assignment, assignmentPath string, inID int) {
 	u := &gitlab.ListUsersOptions{
 		Username: gitlab.String(student),
 	}
@@ -86,6 +137,7 @@ func (c *Client) generateForStudent(student string, group string, assignment str
 		MergeRequestsAccessLevel: gitlab.AccessControl("enabled"),
 		IssuesAccessLevel:        gitlab.AccessControl("enabled"),
 		BuildsAccessLevel:        gitlab.AccessControl("enabled"),
+		JobsEnabled:              gitlab.Bool(true),
 		Visibility:               gitlab.Visibility(gitlab.PrivateVisibility),
 	}
 
@@ -93,10 +145,10 @@ func (c *Client) generateForStudent(student string, group string, assignment str
 
 	if err != nil {
 		if project == nil {
-			projectname := group + "/semester/ob-20ws/test/" + name
+			projectname := assignmentPath + "/" + name
 			log.Debug().Str("name", projectname).Msg("searching for project")
 			opt := &gitlab.ListProjectsOptions{
-				Search:           gitlab.String(group + "/semester/ob-20ws/test/" + name),
+				Search:           gitlab.String(projectname),
 				SearchNamespaces: gitlab.Bool(true),
 			}
 			projects, _, err := c.Projects.ListProjects(opt)
@@ -106,6 +158,7 @@ func (c *Client) generateForStudent(student string, group string, assignment str
 				if len(projects) == 1 {
 					project = projects[0]
 				} else {
+					log.Debug().Interface("projects", projects).Msg("more than one project found")
 					return
 				}
 			}

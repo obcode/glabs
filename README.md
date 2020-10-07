@@ -37,14 +37,29 @@ Contents:
 
 ```
 <baseNameOfGroup>:
-    id: <group id>
+    group: <base group name>
+    # if you want to generate directly in group, do not define semestergroup
+    semestergroup: <subgroup of group used for this semester>
+    students:
+      <array of students account names>
+    <name of assignemnt>:
+      group: <subgroup of semestergroup used for assignment> # also optional
+      description: <project description> # optional
 ```
 
 Example:
 
 ```
 algdati:
-  id: 12345
+  group: algdati
+  semestergroup: semester/ob-20ws
+  students:
+    - olli
+    - ob
+    - obcode
+  blatt0:
+    group: blatt0
+    description: Blatt 0, Algorithmen und Datenstrukturen I, WS 20/21
 ```
 
 ## Structure of GitLab-Groups

@@ -169,15 +169,30 @@ func (c *Client) generateForStudent(student, group, assignment, assignmentPath s
 		log.Debug().Str("name", name).Msg("generated repo")
 	}
 
-	developer := 30
+	accesslevel := 30 // Developer
+
+	if accesslevelIdentifier := viper.GetString(group + "." + assignment + ".accesslevel"); accesslevelIdentifier != "" {
+		switch accesslevelIdentifier {
+		case "guest":
+			accesslevel = 10
+		case "reporter":
+			accesslevel = 20
+		case "maintainer":
+			accesslevel = 40
+		}
+	}
+	c.addMember(project.ID, userID, accesslevel, name)
+}
+
+func (c *Client) addMember(projectID, userID, accesslevel int, reponame string) {
 	m := &gitlab.AddProjectMemberOptions{
 		UserID:      gitlab.Int(userID),
-		AccessLevel: gitlab.AccessLevel(gitlab.AccessLevelValue(developer)),
+		AccessLevel: gitlab.AccessLevel(gitlab.AccessLevelValue(accesslevel)),
 	}
-	_, _, err = c.ProjectMembers.AddProjectMember(project.ID, m)
+	_, _, err := c.ProjectMembers.AddProjectMember(projectID, m)
 	if err != nil {
 		log.Fatal().Err(err)
 	} else {
-		log.Debug().Str("name", name).Msg("granted developer access to repo")
+		log.Debug().Str("name", reponame).Msg("granted developer access to repo")
 	}
 }

@@ -45,6 +45,9 @@ Contents:
     <name of assignemnt>:
       group: <subgroup of semestergroup used for assignment> # also optional
       description: <project description> # optional
+      # accesslevel should be guest, developer, reporter, maintainer
+      # if not defined accesslevel is developer
+      accesslevel: <accesslevel for students>
 ```
 
 Example:
@@ -60,6 +63,7 @@ algdati:
   blatt0:
     group: blatt0
     description: Blatt 0, Algorithmen und Datenstrukturen I, WS 20/21
+    # accesslevel: developer # default
 ```
 
 ## Structure of GitLab-Groups

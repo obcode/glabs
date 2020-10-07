@@ -95,13 +95,16 @@ func (c *Client) generatePerStudent(group, assignment, assignmentPath string, as
 		return
 	}
 
+	r := prepareStartercodeRepo(group, assignment)
+
 	for _, student := range students {
-		c.generateForStudent(student, group, assignment, assignmentPath, assignmentGroupID)
+		c.generateForStudent(student, group, assignment, assignmentPath, assignmentGroupID, r)
 	}
 }
 
 //nolint:funlen
-func (c *Client) generateForStudent(student, group, assignment, assignmentPath string, inID int) {
+func (c *Client) generateForStudent(student, group, assignment, assignmentPath string,
+	inID int, starterrepo *starterrepo) {
 	u := &gitlab.ListUsersOptions{
 		Username: gitlab.String(student),
 	}
@@ -143,7 +146,13 @@ func (c *Client) generateForStudent(student, group, assignment, assignmentPath s
 
 	project, _, err := c.Projects.CreateProject(p)
 
-	if err != nil {
+	if err == nil {
+		log.Debug().Str("name", name).Msg("generated repo")
+
+		if starterrepo != nil {
+			pushStartercode(starterrepo, project.Name, project.SSHURLToRepo)
+		}
+	} else { // err != nil
 		if project == nil {
 			projectname := assignmentPath + "/" + name
 			log.Debug().Str("name", projectname).Msg("searching for project")
@@ -165,13 +174,15 @@ func (c *Client) generateForStudent(student, group, assignment, assignmentPath s
 		} else {
 			log.Fatal().Err(err)
 		}
-	} else {
-		log.Debug().Str("name", name).Msg("generated repo")
 	}
 
+	c.addMember(project.ID, userID, name, group+"."+assignment)
+}
+
+func (c *Client) addMember(projectID, userID int, reponame, assignmentKey string) {
 	accesslevel := 30 // Developer
 
-	if accesslevelIdentifier := viper.GetString(group + "." + assignment + ".accesslevel"); accesslevelIdentifier != "" {
+	if accesslevelIdentifier := viper.GetString(assignmentKey + ".accesslevel"); accesslevelIdentifier != "" {
 		switch accesslevelIdentifier {
 		case "guest":
 			accesslevel = 10
@@ -181,10 +192,7 @@ func (c *Client) generateForStudent(student, group, assignment, assignmentPath s
 			accesslevel = 40
 		}
 	}
-	c.addMember(project.ID, userID, accesslevel, name)
-}
 
-func (c *Client) addMember(projectID, userID, accesslevel int, reponame string) {
 	m := &gitlab.AddProjectMemberOptions{
 		UserID:      gitlab.Int(userID),
 		AccessLevel: gitlab.AccessLevel(gitlab.AccessLevelValue(accesslevel)),

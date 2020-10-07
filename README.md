@@ -45,6 +45,8 @@ Contents:
     <name of assignemnt>:
       group: <subgroup of semestergroup used for assignment> # also optional
       description: <project description> # optional
+      startercode:
+        url: <url to repo> # only via SSH atm
       # accesslevel should be guest, developer, reporter, maintainer
       # if not defined accesslevel is developer
       accesslevel: <accesslevel for students>
@@ -63,6 +65,8 @@ algdati:
   blatt0:
     group: blatt0
     description: Blatt 0, Algorithmen und Datenstrukturen I, WS 20/21
+    startercode:
+      url: git@gitlab.lrz.de:algdati/startercode/startercodeBlatt1.git
     # accesslevel: developer # default
 ```
 

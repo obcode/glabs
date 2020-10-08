@@ -35,7 +35,7 @@ groups:
 
 Contents:
 
-```
+```.yaml
 <baseNameOfGroup>:
     group: <base group name>
     # if you want to generate directly in group, do not define semestergroup
@@ -54,7 +54,7 @@ Contents:
 
 Example:
 
-```
+```.yaml
 algdati:
   group: algdati
   semestergroup: semester/ob-20ws
@@ -87,6 +87,7 @@ Usage:
   glabs [command]
 
 Available Commands:
+  generate    Generate repositories for each student.
   help        Help about any command
   show-config Show config of a group
   show-info   Show info for a group

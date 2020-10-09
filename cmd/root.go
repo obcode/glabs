@@ -69,7 +69,7 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {
-		// log.Debug().Str("config file", viper.ConfigFileUsed()).Msg("using config file")
+		log.Debug().Str("config file", viper.ConfigFileUsed()).Msg("using config file")
 
 		viper.AddConfigPath(viper.GetString("groupsfilepath"))
 		for _, group := range viper.GetStringSlice("groups") {
@@ -78,7 +78,7 @@ func initConfig() {
 			if err != nil {
 				panic(fmt.Errorf("fatal error config file: %s", err))
 			}
-			// log.Debug().Str("config file", viper.ConfigFileUsed()).Msg("merging config for group")
+			log.Debug().Str("config file", viper.ConfigFileUsed()).Msg("merging config for group")
 		}
 	} else {
 		panic(fmt.Errorf("fatal error config file: %s", err))

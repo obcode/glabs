@@ -16,6 +16,6 @@ var generateCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(2), //nolint:gomnd
 	Run: func(cmd *cobra.Command, args []string) {
 		c := gitlab.NewClient()
-		c.Generate(args[0], args[1], "")
+		c.Generate(args[0], args[1])
 	},
 }

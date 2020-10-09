@@ -9,7 +9,7 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-func (c *Client) Generate(group, assignment, template string) {
+func (c *Client) Generate(group, assignment string) {
 	if groupInfo := viper.GetStringMap(group); len(groupInfo) == 0 {
 		log.Info().Str("group", group).Msg("goup not found")
 		return

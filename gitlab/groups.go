@@ -50,7 +50,7 @@ func (c *Client) getGroupID(group, assignmentKey string) (int, string, error) {
 
 	if assignmentGroupID == 0 {
 		log.Info().Msg("creating assignment group")
-		panic("implement me")
+		panic("implement me") // TODO: implement me
 	}
 
 	return assignmentGroupID, assignmentGroup, nil

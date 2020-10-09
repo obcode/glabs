@@ -87,10 +87,10 @@ Usage:
   glabs [command]
 
 Available Commands:
+  check       check group config
   generate    Generate repositories for each student.
   help        Help about any command
   show-config Show config of a group
-  show-info   Show info for a group
   version     Print the version number of Glabs
 
 Flags:
@@ -99,4 +99,10 @@ Flags:
   -v, --verbose         verbose output
 
 Use "glabs [command] --help" for more information about a command.
+```
+
+Before generating check wheter all students exist or not using the command
+
+```
+glabs check [group]
 ```

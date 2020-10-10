@@ -42,9 +42,17 @@ Contents:
     semestergroup: <subgroup of group used for this semester>
     students:
       <array of students account names>
+    groups:
+      <name of fst group>:
+        <array of student in group>
+      <name of snd group>:
+        <array of student in group>
+      ...
     <name of assignemnt>:
-      group: <subgroup of semestergroup used for assignment> # also optional
+      group: <subgroup of semestergroup used for assignment>
+      # also optional
       description: <project description> # optional
+      per: <student|group> # generate per student (default) or per group
       startercode:
         url: <url to repo> # only via SSH atm
       # accesslevel should be guest, developer, reporter, maintainer
@@ -62,21 +70,21 @@ algdati:
     - olli
     - ob
     - obcode
+  groups:
+    grp01:
+      - hugo
+      - sandra
+    grp02:
+      - su
+      - allen
   blatt0:
     group: blatt0
+    per: group
     description: Blatt 0, Algorithmen und Datenstrukturen I, WS 20/21
     startercode:
       url: git@gitlab.lrz.de:algdati/startercode/startercodeBlatt1.git
     # accesslevel: developer # default
 ```
-
-## Structure of GitLab-Groups
-
--   Lecture
-    -   Startercode
-    -   Semester
-        -   Semestername
-            -   Assignment
 
 ## Usage
 

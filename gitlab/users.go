@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"errors"
+	"net/http"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -32,7 +33,7 @@ func (c *Client) getUserID(username string) (int, error) {
 }
 
 func (c *Client) addMember(projectID, userID int, assignmentKey string) error {
-	accesslevel := 30 // Developer
+	accesslevel := 30 // Developer is default
 
 	if accesslevelIdentifier := viper.GetString(assignmentKey + ".accesslevel"); accesslevelIdentifier != "" {
 		switch accesslevelIdentifier {
@@ -49,12 +50,16 @@ func (c *Client) addMember(projectID, userID int, assignmentKey string) error {
 		UserID:      gitlab.Int(userID),
 		AccessLevel: gitlab.AccessLevel(gitlab.AccessLevelValue(accesslevel)),
 	}
-	_, _, err := c.ProjectMembers.AddProjectMember(projectID, m)
+	_, resp, err := c.ProjectMembers.AddProjectMember(projectID, m)
 	if err != nil {
-		log.Error().Err(err)
+		if resp.StatusCode == http.StatusConflict {
+			log.Debug().Int("projectID", projectID).Msg("user should have already access to repo")
+			return nil
+		}
+		log.Error().Err(err).Msg("error while adding member")
 		return err
 	}
 
-	log.Debug().Int("projectID", projectID).Msg("granted developer access to repo")
+	log.Debug().Int("projectID", projectID).Msg("granted access to repo")
 	return nil
 }

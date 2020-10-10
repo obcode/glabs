@@ -50,10 +50,9 @@ func (c *Client) checkStudent(name string) bool {
 	if _, err := c.getUserID(name); err != nil {
 		failure(fmt.Sprintf("   > %s, error: %v\n", name, err))
 		return false
-	} else {
-		success(fmt.Sprintf("   > %s exists\n", name))
-		return true
 	}
+	success(fmt.Sprintf("   > %s exists\n", name))
+	return true
 }
 
 func checkDupsInGroups(groups map[string][]string) map[string][]string {

@@ -1,9 +1,6 @@
 package gitlab
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"github.com/xanzy/go-gitlab"
@@ -24,14 +21,4 @@ func NewClient() *Client {
 	}
 
 	return &Client{client}
-}
-
-func (c *Client) GetGroupInfo(groupname string) {
-	group, _, err := c.Groups.GetGroup(viper.GetInt(groupname + ".id"))
-	if err != nil {
-		log.Error().Err(err).Str("group", groupname).Msg("error while fetching group info")
-	}
-
-	groupInfo, _ := json.MarshalIndent(group, "", "  ")
-	fmt.Printf("%s\n", groupInfo)
 }

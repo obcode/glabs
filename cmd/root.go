@@ -20,18 +20,18 @@ var (
 		Short: "Manage GitLab for student assignments",
 		Long:  `Manage GitLab for student assignments`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			if Verbose {
-				zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+			zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
-				output := zerolog.ConsoleWriter{Out: os.Stdout}
+			output := zerolog.ConsoleWriter{Out: os.Stdout}
+			if Verbose {
 				output.FormatLevel = func(i interface{}) string {
 					return strings.ToUpper(fmt.Sprintf("| %-6s|", i))
 				}
 				zerolog.SetGlobalLevel(zerolog.DebugLevel)
-				log.Logger = zerolog.New(output).With().Timestamp().Logger()
 			} else {
 				zerolog.SetGlobalLevel(zerolog.InfoLevel)
 			}
+			log.Logger = zerolog.New(output).With().Timestamp().Logger()
 		},
 	}
 )
@@ -69,8 +69,6 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {
-		// log.Debug().Str("config file", viper.ConfigFileUsed()).Msg("using config file")
-
 		viper.AddConfigPath(viper.GetString("groupsfilepath"))
 		for _, group := range viper.GetStringSlice("groups") {
 			viper.SetConfigName(group)
@@ -78,7 +76,6 @@ func initConfig() {
 			if err != nil {
 				panic(fmt.Errorf("fatal error config file: %s", err))
 			}
-			// log.Debug().Str("config file", viper.ConfigFileUsed()).Msg("merging config for group")
 		}
 	} else {
 		panic(fmt.Errorf("fatal error config file: %s", err))

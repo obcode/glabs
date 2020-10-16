@@ -14,8 +14,8 @@ Contents:
 gitlab:
   host: <URL of GitLab host>
   token: <personal access token>
-groupsfilepath: <path where config files for groups are>
-groups:
+coursesfilepath: <path where config files for groups are>
+courses:
   - <basenames of groupfiles>
 ```
 

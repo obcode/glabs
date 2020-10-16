@@ -69,12 +69,12 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {
-		viper.AddConfigPath(viper.GetString("groupsfilepath"))
-		for _, group := range viper.GetStringSlice("groups") {
+		viper.AddConfigPath(viper.GetString("coursesfilepath"))
+		for _, group := range viper.GetStringSlice("courses") {
 			viper.SetConfigName(group)
 			err = viper.MergeInConfig()
 			if err != nil {
-				panic(fmt.Errorf("fatal error config file: %s", err))
+				panic(fmt.Errorf("fatal error config file %s: %s", group, err))
 			}
 		}
 	} else {

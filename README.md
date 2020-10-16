@@ -25,8 +25,8 @@ Example:
 gitlab:
   host: https://gitlab.mydomain.nz
   token: abced871263876132jkd
-groupsfilepath: $HOME/HM/labs/20WS
-groups:
+coursesfilepath: $HOME/HM/labs/20WS
+courses:
   - algdati
   - vss
 ```

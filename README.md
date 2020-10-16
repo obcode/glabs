@@ -36,7 +36,7 @@ courses:
 Contents:
 
 ```.yaml
-<baseNameOfGroup>:
+<baseNameOfCourse>:
     group: <base group name>
     # if you want to generate directly in group, do not define semestergroup
     semestergroup: <subgroup of group used for this semester>

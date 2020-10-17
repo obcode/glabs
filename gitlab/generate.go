@@ -68,7 +68,7 @@ func (c *Client) generatePerStudent(course, assignment, assignmentPath string, a
 		}
 
 		if generated && starterrepo != nil {
-			pushStartercode(starterrepo, project.Name, project.SSHURLToRepo)
+			c.pushStartercode(course, assignment, starterrepo, project)
 		}
 
 		userID, err := c.getUserID(student)
@@ -113,7 +113,7 @@ func (c *Client) generatePerGroup(course, assignment, assignmentPath string, ass
 		}
 
 		if generated && starterrepo != nil {
-			pushStartercode(starterrepo, project.Name, project.SSHURLToRepo)
+			c.pushStartercode(course, assignment, starterrepo, project)
 		}
 
 		for _, student := range students {

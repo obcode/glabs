@@ -57,6 +57,9 @@ Contents:
       per: <student|group> # generate per student (default) or per group
       startercode:
         url: <url to repo> # only via SSH atm
+        fromBranch: <branchName in startercode> # default master
+        toBranch: <branchName in generated repo> # default master
+        protectToBranch: <false|true> # whether only maintainer can push, default false
       # accesslevel should be guest, developer, reporter, maintainer
       # if not defined accesslevel is developer
       accesslevel: <accesslevel for students>
@@ -85,6 +88,8 @@ algdati:
     description: Blatt 0, Algorithmen und Datenstrukturen I, WS 20/21
     startercode:
       url: git@gitlab.lrz.de:algdati/startercode/startercodeBlatt1.git
+      fromBranch: ws20
+      protectToBranch: true
     # accesslevel: developer # default
 ```
 
@@ -116,3 +121,38 @@ Before generating check wheter all students exist or not using the command
 ```
 glabs check [course]
 ```
+
+## Using starter code as a template
+
+Currently glabs does not support rewritting git history.
+
+What you can do is the following:
+
+1. Clone your starter code repository.
+2. Create a new branch. Example:
+
+    ```
+    $ git checkout -B ws20
+    ```
+
+3. Commit the whole tree with `commit-tree`. Be sure to remember the the
+   commit object id. Example:
+
+    ```
+    $ git commit-tree HEAD^{tree} -m "Initial"
+    6439f935612064028d6678c457991660cfe7e15e
+    ```
+
+4. Reset the current branch to the new commit. Example:
+
+    ```
+    git reset 6439f935612064028d6678c457991660cfe7e15e
+    ```
+
+5. Push the new branch to origin. Example:
+
+    ```
+    git push origin ws20
+    ```
+
+6. Use `fromBranch` in your assignment config.

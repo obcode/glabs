@@ -74,7 +74,7 @@ func initConfig() {
 			viper.SetConfigName(course)
 			err = viper.MergeInConfig()
 			if err != nil {
-				panic(fmt.Errorf("fatal error config file %s: %s", course, err))
+				panic(fmt.Errorf("%s: should be %s.yml", err, course))
 			}
 		}
 	} else {

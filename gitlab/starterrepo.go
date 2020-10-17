@@ -18,12 +18,12 @@ type starterrepo struct {
 	publickeys *ssh.PublicKeys
 }
 
-func prepareStartercodeRepo(group, assignment string) *starterrepo {
-	startercodeKey := group + "." + assignment + ".startercode"
+func prepareStartercodeRepo(course, assignment string) *starterrepo {
+	startercodeKey := course + "." + assignment + ".startercode"
 	startercode := viper.GetStringMapString(startercodeKey)
 
 	if len(startercode) == 0 {
-		log.Debug().Str("group", group).Str("assignment", assignment).Msg("no startercode provided")
+		log.Debug().Str("course", course).Str("assignment", assignment).Msg("no startercode provided")
 		return nil
 	}
 
@@ -34,14 +34,10 @@ func prepareStartercodeRepo(group, assignment string) *starterrepo {
 
 	log.Debug().Str("privatekeyfile", privateKeyFile).Msg("using private key from file")
 
-	template := viper.GetBool(startercodeKey + ".template")
-
-	log.Debug().Bool("template", template).Msg("using startercode as template?")
-
 	url, ok := startercode["url"]
 	if !ok {
 		log.Fatal().Err(errors.New("url for startercode not set")).
-			Str("group", group).Str("assignment", assignment).
+			Str("course", course).Str("assignment", assignment).
 			Msg("url for startercode missing")
 	}
 

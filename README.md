@@ -14,9 +14,9 @@ Contents:
 gitlab:
   host: <URL of GitLab host>
   token: <personal access token>
-groupsfilepath: <path where config files for groups are>
-groups:
-  - <basenames of groupfiles>
+coursesfilepath: <path where config files for courses are>
+courses:
+  - <basenames of coursesfiles>
 ```
 
 Example:
@@ -25,31 +25,33 @@ Example:
 gitlab:
   host: https://gitlab.mydomain.nz
   token: abced871263876132jkd
-groupsfilepath: $HOME/HM/labs/20WS
-groups:
+coursesfilepath: $HOME/HM/labs/20WS
+courses:
   - algdati
   - vss
 ```
 
-### Group config file
+### Course config file
 
 Contents:
 
 ```.yaml
-<baseNameOfGroup>:
-    group: <base group name>
-    # if you want to generate directly in group, do not define semestergroup
-    semestergroup: <subgroup of group used for this semester>
-    students:
+<baseNameOfCourse>:
+    # can contain slashes for gitlab subgroups
+    coursepath: <base path of course in gitlab>
+    # if you want to generate directly in coursepath, do not define semesterpath
+    semesterpath: <gitlab subgroup of coursepath used for this semester>
+    students: # needs only to defined if generating per student
       <array of students account names>
-    groups:
+    groups: # if students are allowed to work in groups
       <name of fst group>:
         <array of student in group>
       <name of snd group>:
         <array of student in group>
       ...
     <name of assignemnt>:
-      group: <subgroup of semestergroup used for assignment>
+      assignmentpath: <gitlab subgroup of semesterpath (or coursepath, if semesterpath is empty)
+                       used for assignment>
       # also optional
       description: <project description> # optional
       per: <student|group> # generate per student (default) or per group
@@ -64,8 +66,8 @@ Example:
 
 ```.yaml
 algdati:
-  group: algdati
-  semestergroup: semester/ob-20ws
+  coursepath: algdati
+  semesterpath: semester/ob-20ws
   students:
     - olli
     - ob
@@ -78,7 +80,7 @@ algdati:
       - su
       - allen
   blatt0:
-    group: blatt0
+    assignmentpath: blatt0
     per: group
     description: Blatt 0, Algorithmen und Datenstrukturen I, WS 20/21
     startercode:
@@ -95,10 +97,10 @@ Usage:
   glabs [command]
 
 Available Commands:
-  check       check group config
+  check       check course config
   generate    Generate repositories for each student.
   help        Help about any command
-  show-config Show config of a group
+  show-config Show config of a course
   version     Print the version number of Glabs
 
 Flags:
@@ -112,5 +114,5 @@ Use "glabs [command] --help" for more information about a command.
 Before generating check wheter all students exist or not using the command
 
 ```
-glabs check [group]
+glabs check [course]
 ```

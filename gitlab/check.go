@@ -7,12 +7,12 @@ import (
 	"github.com/ttacon/chalk"
 )
 
-func (c *Client) Check(group string) bool {
+func (c *Client) Check(course string) bool {
 	noOfErrors := 0
-	header(fmt.Sprintf("> checking usernames config of %s\n", group))
+	header(fmt.Sprintf("> checking usernames config of %s\n", course))
 	header(fmt.Sprintln(">> checking students"))
 
-	for _, student := range viper.GetStringSlice(group + ".students") {
+	for _, student := range viper.GetStringSlice(course + ".students") {
 		if !c.checkStudent(student) {
 			noOfErrors++
 		}
@@ -20,7 +20,7 @@ func (c *Client) Check(group string) bool {
 
 	header(fmt.Sprintln(">> checking students in groups"))
 
-	groups := viper.GetStringMapStringSlice(group + ".groups")
+	groups := viper.GetStringMapStringSlice(course + ".groups")
 
 	for subgroup, members := range groups {
 		header(fmt.Sprintf(">>> checking %s\n", subgroup))

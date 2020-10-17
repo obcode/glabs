@@ -11,9 +11,9 @@ func init() {
 }
 
 var checkCmd = &cobra.Command{
-	Use:   "check [group]",
-	Short: "check group config",
-	Long:  `Check config of a group, especially if all student names exist`,
+	Use:   "check [course]",
+	Short: "check course config",
+	Long:  `Check config of a course, especially if all student names exist`,
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		viper.Set("show-success", true)

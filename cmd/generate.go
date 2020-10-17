@@ -10,9 +10,9 @@ func init() {
 }
 
 var generateCmd = &cobra.Command{
-	Use:   "generate [group] [assignment]",
+	Use:   "generate [course] [assignment]",
 	Short: "Generate repositories for each student.",
-	Long:  `Generate repositories for each student in [group] for [assignment]`,
+	Long:  `Generate repositories for each student in [course] for [assignment]`,
 	Args:  cobra.ExactArgs(2), //nolint:gomnd
 	Run: func(cmd *cobra.Command, args []string) {
 		c := gitlab.NewClient()

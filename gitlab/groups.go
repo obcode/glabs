@@ -1,48 +1,53 @@
 package gitlab
 
 import (
-	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
 
-func (c *Client) getGroupID(group, assignmentKey string) (int, string, error) {
-	semesterGroup := group
-	if semestergroup := viper.GetString(group + ".semestergroup"); len(semestergroup) > 0 {
-		semesterGroup += "/" + semestergroup
+func (c *Client) getGroupID(course, assignmentKey string) (int, string, error) {
+	path := viper.GetString(course + ".coursepath")
+	if semesterpath := viper.GetString(course + ".semesterpath"); len(semesterpath) > 0 {
+		path += "/" + semesterpath
 	}
 
-	assignmentGroup := semesterGroup
-	if group := viper.GetString(assignmentKey + ".group"); len(group) > 0 {
-		assignmentGroup += "/" + group
+	assignmentpath := path
+	if group := viper.GetString(assignmentKey + ".assignmentpath"); len(group) > 0 {
+		assignmentpath += "/" + group
 	}
 
-	groupnames := strings.Split(assignmentGroup, "/")
-	groups, _, err := c.Groups.SearchGroup(groupnames[len(groupnames)-1])
+	pathParts := strings.Split(assignmentpath, "/")
+	groups, _, err := c.Groups.SearchGroup(pathParts[len(pathParts)-1])
 
 	if err != nil {
-		log.Error().Err(err).Str("group", group).Msg("error while searching id of group")
+		log.Error().Err(err).
+			Str("course", course).
+			Str("assignmentpath", assignmentpath).
+			Msg("error while searching id of assignmentPath")
 		return 0, "", err
 	}
 
 	if len(groups) == 0 {
-		log.Debug().Str("group", group).Msg("no group found")
-		return 0, "", errors.New("no group found")
+		log.Debug().Str("group", course).
+			Str("assignmentpath", assignmentpath).
+			Msg("no group found")
+		return 0, "", fmt.Errorf("no gitlab group found for assignmentpath %s", assignmentpath)
 	}
 
-	log.Debug().Str("assignmentGroup", assignmentGroup).Msg("searching id of group")
+	log.Debug().Str("assignmentpath", assignmentpath).Msg("searching id of gitlab group")
 
-	// semesterGroupID := 0
+	// semesterpathID := 0
 	assignmentGroupID := 0
 
 	for _, group := range groups {
-		// if group.Path == semesterGroup {
+		// if group.Path == semesterpath {
 		// 	log.Debug().Str("group.Path", group.Path).Msg("found semester group")
-		// 	semesterGroupID = group.ID
+		// 	semesterpathID = group.ID
 		// }
-		if group.FullPath == assignmentGroup {
+		if group.FullPath == assignmentpath {
 			log.Debug().Str("group.FullPath", group.FullPath).Msg("found assignment group")
 			assignmentGroupID = group.ID
 		}
@@ -50,8 +55,11 @@ func (c *Client) getGroupID(group, assignmentKey string) (int, string, error) {
 
 	if assignmentGroupID == 0 {
 		log.Info().Msg("creating assignment group")
-		panic("implement me") // TODO: implement me
+		log.Error().
+			Str("course", course).
+			Str("assignmentpath", assignmentpath).
+			Msg("please go to the gitlab website and create the subgroup with the assignment patz")
 	}
 
-	return assignmentGroupID, assignmentGroup, nil
+	return assignmentGroupID, assignmentpath, nil
 }

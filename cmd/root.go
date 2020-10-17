@@ -31,7 +31,7 @@ var (
 			} else {
 				zerolog.SetGlobalLevel(zerolog.InfoLevel)
 			}
-			log.Logger = zerolog.New(output).With().Timestamp().Logger()
+			log.Logger = zerolog.New(output).With().Caller().Timestamp().Logger()
 		},
 	}
 )
@@ -70,11 +70,11 @@ func initConfig() {
 
 	if err := viper.ReadInConfig(); err == nil {
 		viper.AddConfigPath(viper.GetString("coursesfilepath"))
-		for _, group := range viper.GetStringSlice("courses") {
-			viper.SetConfigName(group)
+		for _, course := range viper.GetStringSlice("courses") {
+			viper.SetConfigName(course)
 			err = viper.MergeInConfig()
 			if err != nil {
-				panic(fmt.Errorf("fatal error config file %s: %s", group, err))
+				panic(fmt.Errorf("fatal error config file %s: %s", course, err))
 			}
 		}
 	} else {

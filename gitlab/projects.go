@@ -20,6 +20,12 @@ func (c *Client) generateProject(prefix, course, assignment, assignmentPath stri
 
 	log.Debug().Str("desciption", description).Msg("generating with description")
 
+	containerRegistryEnabled := false
+
+	if viper.GetBool(course + "." + assignment + ".containerRegistry") {
+		containerRegistryEnabled = true
+	}
+
 	p := &gitlab.CreateProjectOptions{
 		Name:                     gitlab.String(name),
 		Description:              gitlab.String(description),
@@ -29,6 +35,7 @@ func (c *Client) generateProject(prefix, course, assignment, assignmentPath stri
 		BuildsAccessLevel:        gitlab.AccessControl("enabled"),
 		JobsEnabled:              gitlab.Bool(true),
 		Visibility:               gitlab.Visibility(gitlab.PrivateVisibility),
+		ContainerRegistryEnabled: gitlab.Bool(containerRegistryEnabled),
 	}
 
 	project, _, err := c.Projects.CreateProject(p)

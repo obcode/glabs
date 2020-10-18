@@ -55,6 +55,7 @@ Contents:
       # also optional
       description: <project description> # optional
       per: <student|group> # generate per student (default) or per group
+      containerRegistry: <false|true> # enable container registry, default false
       startercode:
         url: <url to repo> # only via SSH atm
         fromBranch: <branchName in startercode> # default master

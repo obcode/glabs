@@ -111,6 +111,8 @@ func (c *Client) pushStartercode(course, assignment string, from *starterrepo, p
 		Str("refSpec", string(refSpec)).
 		Str("name", project.Name).
 		Str("toURL", project.SSHURLToRepo).
+		Str("fromBranch", fromBranch).
+		Str("toBranch", toBranch).
 		Msg("pushing starter code")
 
 	pushOpts := &git.PushOptions{

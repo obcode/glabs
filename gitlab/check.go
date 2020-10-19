@@ -3,11 +3,19 @@ package gitlab
 import (
 	"fmt"
 
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"github.com/ttacon/chalk"
 )
 
 func (c *Client) Check(course string) bool {
+	if !viper.IsSet(course) {
+		log.Error().
+			Str("course", course).
+			Msg("configuration for course does not exist")
+		return false
+	}
+
 	noOfErrors := 0
 	header(fmt.Sprintf("> checking usernames config of %s\n", course))
 	header(fmt.Sprintln(">> checking students"))

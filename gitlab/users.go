@@ -4,8 +4,8 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/obcode/glabs/config"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 	"github.com/xanzy/go-gitlab"
 )
 
@@ -32,23 +32,10 @@ func (c *Client) getUserID(username string) (int, error) {
 	return userID, nil
 }
 
-func (c *Client) addMember(projectID, userID int, assignmentKey string) error {
-	accesslevel := 30 // Developer is default
-
-	if accesslevelIdentifier := viper.GetString(assignmentKey + ".accesslevel"); accesslevelIdentifier != "" {
-		switch accesslevelIdentifier {
-		case "guest":
-			accesslevel = 10
-		case "reporter":
-			accesslevel = 20
-		case "maintainer":
-			accesslevel = 40
-		}
-	}
-
+func (c *Client) addMember(assignmentConfig *config.AssignmentConfig, projectID, userID int) error {
 	m := &gitlab.AddProjectMemberOptions{
 		UserID:      gitlab.Int(userID),
-		AccessLevel: gitlab.AccessLevel(gitlab.AccessLevelValue(accesslevel)),
+		AccessLevel: gitlab.AccessLevel(gitlab.AccessLevelValue(assignmentConfig.AccessLevel)),
 	}
 	_, resp, err := c.ProjectMembers.AddProjectMember(projectID, m)
 	if err != nil {

@@ -3,83 +3,64 @@ package gitlab
 import (
 	"fmt"
 
+	"github.com/obcode/glabs/config"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 )
 
-func (c *Client) Generate(course, assignment string, onlyForStudentsOrGroups ...string) {
-	if courseConf := viper.GetStringMap(course); len(courseConf) == 0 {
-		log.Info().Str("course", course).Msg("configuration for course not found")
-		return
-	}
-
-	assignmentKey := course + "." + assignment
-
-	if assignmentConfig := viper.GetStringMap(assignmentKey); len(assignmentConfig) == 0 {
-		log.Info().Str("assignment", assignment).Msg("no configuration for assignment found")
-		return
-	}
-
-	assignmentGitLabGroupID, assignmentPath, err := c.getGroupID(course, assignmentKey)
+func (c *Client) Generate(assignmentCfg *config.AssignmentConfig) {
+	assignmentGitLabGroupID, err := c.getGroupID(assignmentCfg)
 	if err != nil {
-		log.Error().Err(err).
-			Str("assignment", assignment).
-			Str("course", course).
+		log.Debug().Err(err).
+			Str("assignment", assignmentCfg.Name).
+			Str("course", assignmentCfg.Course).
 			Msg("gitlab group for assignment does not exist")
+		fmt.Printf("error: GitLab group for assignment does not exist, please create the group %s\n", assignmentCfg.URL)
 		return
 	}
 
-	starterrepo := prepareStartercodeRepo(course, assignment)
+	starterrepo := prepareStartercodeRepo(assignmentCfg)
 
-	if len(onlyForStudentsOrGroups) > 0 {
-		log.Info().Interface("only for", onlyForStudentsOrGroups).
-			Msg("generating only for...")
-	}
-
-	switch viper.GetString(assignmentKey + ".per") {
-	case "group":
+	switch assignmentCfg.Per {
+	case config.PerGroup:
 		log.Info().Msg("generating for groups")
 		fmt.Print("Press 'Enter' to continue or `Ctrl-C` to stop ...")
 		fmt.Scanln()
-		c.generatePerGroup(course, assignment, assignmentPath, assignmentGitLabGroupID, starterrepo,
-			onlyForStudentsOrGroups...)
-	case "student", "":
-		log.Info().Msg("generating per student")
+		c.generatePerGroup(assignmentCfg, assignmentGitLabGroupID, starterrepo)
+	case config.PerStudent:
+		log.Debug().
+			Interface("students", assignmentCfg.Students).
+			Msg("generating per student")
 		fmt.Print("Press 'Enter' to continue or `Ctrl-C` to stop ...")
 		fmt.Scanln()
-		c.generatePerStudent(course, assignment, assignmentPath, assignmentGitLabGroupID, starterrepo,
-			onlyForStudentsOrGroups...)
+		c.generatePerStudent(assignmentCfg, assignmentGitLabGroupID, starterrepo)
 	default:
 		log.Info().Msg("generating per unknown")
 		return
 	}
 }
 
-func (c *Client) generatePerStudent(course, assignment, assignmentPath string, assignmentGroupID int,
-	starterrepo *starterrepo, onlyForStudents ...string) {
-	students := viper.GetStringSlice(course + ".students")
-	if len(onlyForStudents) > 0 {
-		students = onlyForStudents
-	}
-
-	if len(students) == 0 {
-		log.Info().Str("course", course).Msg("no students found")
+func (c *Client) generatePerStudent(assignmentCfg *config.AssignmentConfig, assignmentGroupID int,
+	starterrepo *starterrepo) {
+	if len(assignmentCfg.Students) == 0 {
+		log.Info().Str("course", assignmentCfg.Course).Msg("no students found")
 		return
 	}
 
-	for _, student := range students {
-		project, generated, err := c.generateProject(student, course, assignment, assignmentPath, assignmentGroupID)
+	for _, student := range assignmentCfg.Students {
+		log.Debug().Str("student", student).Msg("generating for...")
+
+		project, generated, err := c.generateProject(assignmentCfg, student, assignmentGroupID)
 		if err != nil {
 			log.Error().Err(err).
 				Str("student", student).
-				Str("course", course).
-				Str("assignment", assignment).
+				Str("course", assignmentCfg.Course).
+				Str("assignment", assignmentCfg.Name).
 				Msg("error while generating project")
 			break
 		}
 
 		if generated && starterrepo != nil {
-			c.pushStartercode(course, assignment, starterrepo, project)
+			c.pushStartercode(assignmentCfg, starterrepo, project)
 		}
 
 		userID, err := c.getUserID(student)
@@ -90,56 +71,42 @@ func (c *Client) generatePerStudent(course, assignment, assignmentPath string, a
 			break
 		}
 
-		err = c.addMember(project.ID, userID, course+"."+assignment)
+		err = c.addMember(assignmentCfg, project.ID, userID)
 		if err != nil {
 			log.Error().Err(err).
 				Int("projectID", project.ID).
 				Int("userID", userID).
 				Str("student", student).
-				Str("course", course).
-				Str("assignment", assignment).
+				Str("course", assignmentCfg.Course).
+				Str("assignment", assignmentCfg.Name).
 				Msg("error while adding member")
-			break
 		}
 	}
 }
 
-func (c *Client) generatePerGroup(course, assignment, assignmentPath string, assignmentGroupID int,
-	starterrepo *starterrepo, onlyForGroups ...string) {
-	groups := viper.GetStringMapStringSlice(course + ".groups")
-	if len(onlyForGroups) > 0 {
-		onlyTheseGroups := make(map[string][]string)
-		for _, onlyGroup := range onlyForGroups {
-			for groupname, students := range groups {
-				if onlyGroup == groupname {
-					onlyTheseGroups[groupname] = students
-				}
-			}
-		}
-		groups = onlyTheseGroups
-	}
-
-	if len(groups) == 0 {
-		log.Info().Str("group", course).Msg("no groups found")
+func (c *Client) generatePerGroup(assignmentCfg *config.AssignmentConfig, assignmentGroupID int,
+	starterrepo *starterrepo) {
+	if len(assignmentCfg.Groups) == 0 {
+		log.Info().Str("group", assignmentCfg.Course).Msg("no groups found")
 		return
 	}
 
-	for grp, students := range groups {
-		project, generated, err := c.generateProject(grp, course, assignment, assignmentPath, assignmentGroupID)
+	for _, grp := range assignmentCfg.Groups {
+		project, generated, err := c.generateProject(assignmentCfg, grp.GroupName, assignmentGroupID)
 		if err != nil {
 			log.Error().Err(err).
-				Str("group", grp).
-				Str("course", course).
-				Str("assignment", assignment).
+				Str("group", grp.GroupName).
+				Str("course", assignmentCfg.Course).
+				Str("assignment", assignmentCfg.Name).
 				Msg("error while generating project")
 			break
 		}
 
 		if generated && starterrepo != nil {
-			c.pushStartercode(course, assignment, starterrepo, project)
+			c.pushStartercode(assignmentCfg, starterrepo, project)
 		}
 
-		for _, student := range students {
+		for _, student := range grp.Members {
 			userID, err := c.getUserID(student)
 			if err != nil {
 				log.Error().Err(err).
@@ -148,14 +115,14 @@ func (c *Client) generatePerGroup(course, assignment, assignmentPath string, ass
 				break
 			}
 
-			err = c.addMember(project.ID, userID, course+"."+assignment)
+			err = c.addMember(assignmentCfg, project.ID, userID)
 			if err != nil {
 				log.Error().Err(err).
 					Int("projectID", project.ID).
 					Int("userID", userID).
 					Str("student", student).
-					Str("course", course).
-					Str("assignment", assignment).
+					Str("course", assignmentCfg.Course).
+					Str("assignment", assignmentCfg.Name).
 					Msg("error while adding member")
 				break
 			}

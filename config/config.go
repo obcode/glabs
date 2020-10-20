@@ -9,6 +9,7 @@ type AssignmentConfig struct {
 	Course            string
 	Name              string
 	Path              string
+	URL               string
 	Per               Per
 	Description       string
 	ContainerRegistry bool
@@ -64,10 +65,14 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 	assignmentKey := course + "." + assignment
 	per := per(assignmentKey)
 
+	path := assignmentPath(course, assignment)
+	url := viper.GetString("gitlab.host") + "/" + path
+
 	assignmentConfig := &AssignmentConfig{
 		Course:            course,
 		Name:              assignment,
-		Path:              assignmentPath(course, assignment),
+		Path:              path,
+		URL:               url,
 		Per:               per,
 		Description:       description(assignmentKey),
 		ContainerRegistry: viper.GetBool(assignmentKey + ".containerRegistry"),
@@ -143,6 +148,7 @@ func students(per Per, course string, onlyForStudentsOrGroups ...string) []strin
 		students = onlyForStudents
 	}
 
+	log.Debug().Interface("students", students).Msg("found students")
 	return students
 }
 

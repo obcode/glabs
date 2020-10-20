@@ -6,6 +6,7 @@ import (
 )
 
 type AssignmentConfig struct {
+	Course            string
 	Name              string
 	Path              string
 	Per               Per
@@ -64,6 +65,7 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 	per := per(assignmentKey)
 
 	assignmentConfig := &AssignmentConfig{
+		Course:            course,
 		Name:              assignment,
 		Path:              assignmentPath(course, assignment),
 		Per:               per,

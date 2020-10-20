@@ -48,7 +48,7 @@ func (c *Client) generateProject(prefix, course, assignment, assignmentPath stri
 		if project == nil {
 			projectname := assignmentPath + "/" + name
 			log.Debug().Err(err).Str("name", projectname).Msg("searching for project")
-			project, err = c.findProject(projectname)
+			project, err = c.getProjectByName(projectname)
 			if err != nil {
 				log.Fatal().Err(err)
 				return nil, false, fmt.Errorf("%w", err)
@@ -61,15 +61,15 @@ func (c *Client) generateProject(prefix, course, assignment, assignmentPath stri
 	return project, generated, nil
 }
 
-func (c *Client) findProject(projectname string) (*gitlab.Project, error) {
+func (c *Client) getProjectByName(fullpathprojectname string) (*gitlab.Project, error) {
 	opt := &gitlab.ListProjectsOptions{
-		Search:           gitlab.String(projectname),
+		Search:           gitlab.String(fullpathprojectname),
 		SearchNamespaces: gitlab.Bool(true),
 	}
 	projects, _, err := c.Projects.ListProjects(opt)
 	if err != nil {
 		log.Error().Err(err).
-			Str("projectname", projectname).
+			Str("projectname", fullpathprojectname).
 			Msg("no project found")
 	} else {
 		switch len(projects) {
@@ -81,12 +81,12 @@ func (c *Client) findProject(projectname string) (*gitlab.Project, error) {
 		default:
 			log.Debug().Msg("more than one project matching the search string found")
 			for _, project := range projects {
-				if project.PathWithNamespace == projectname {
-					log.Debug().Str("name", projectname).Msg("found project")
+				if project.PathWithNamespace == fullpathprojectname {
+					log.Debug().Str("name", fullpathprojectname).Msg("found project")
 					return project, nil
 				}
 			}
-			log.Debug().Str("name", projectname).Msg("project not found")
+			log.Debug().Str("name", fullpathprojectname).Msg("project not found")
 			return nil, errors.New("project not found")
 		}
 	}

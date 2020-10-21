@@ -1,7 +1,6 @@
 package gitlab
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
@@ -10,42 +9,33 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/go-git/go-git/v5/storage/memory"
+	cfg "github.com/obcode/glabs/config"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 	"github.com/xanzy/go-gitlab"
 )
-
-const master = "master"
 
 type starterrepo struct {
 	repo       *git.Repository
 	publickeys *ssh.PublicKeys
 }
 
-func prepareStartercodeRepo(course, assignment string) *starterrepo {
-	startercodeKey := course + "." + assignment + ".startercode"
-	startercode := viper.GetStringMapString(startercodeKey)
-
-	if len(startercode) == 0 {
-		log.Debug().Str("course", course).Str("assignment", assignment).Msg("no startercode provided")
+func prepareStartercodeRepo(assignmentCfg *cfg.AssignmentConfig) *starterrepo {
+	if assignmentCfg.Startercode == nil {
+		log.Debug().
+			Str("course", assignmentCfg.Course).
+			Str("assignment", assignmentCfg.Name).
+			Msg("no startercode provided")
 		return nil
 	}
 
 	privateKeyFile := fmt.Sprintf("%s/.ssh/id_rsa", os.Getenv("HOME"))
-	if pkf := startercode["privatekeyfile"]; pkf != "" {
-		privateKeyFile = pkf
-	}
+	// if pkf := startercode["privatekeyfile"]; pkf != "" {
+	// 	privateKeyFile = pkf
+	// }
 
 	log.Debug().Str("privatekeyfile", privateKeyFile).Msg("using private key from file")
 
-	url, ok := startercode["url"]
-	if !ok {
-		log.Fatal().Err(errors.New("url for startercode not set")).
-			Str("course", course).Str("assignment", assignment).
-			Msg("url for startercode missing")
-	}
-
-	log.Debug().Str("url", url).Msg("using startercode from url")
+	log.Debug().Str("url", assignmentCfg.Startercode.URL).Msg("using startercode from url")
 
 	_, err := os.Stat(privateKeyFile)
 	if err != nil {
@@ -59,15 +49,10 @@ func prepareStartercodeRepo(course, assignment string) *starterrepo {
 		return nil
 	}
 
-	fromBranch := master
-	if fB := viper.GetString(course + "." + assignment + ".startercode.fromBranch"); len(fB) > 0 {
-		fromBranch = fB
-	}
-
 	r, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
 		Auth:          publicKeys,
-		URL:           url,
-		ReferenceName: plumbing.ReferenceName("refs/heads/" + fromBranch),
+		URL:           assignmentCfg.Startercode.URL,
+		ReferenceName: plumbing.ReferenceName("refs/heads/" + assignmentCfg.Startercode.FromBranch),
 		Progress:      os.Stdout,
 	})
 
@@ -82,7 +67,7 @@ func prepareStartercodeRepo(course, assignment string) *starterrepo {
 	}
 }
 
-func (c *Client) pushStartercode(course, assignment string, from *starterrepo, project *gitlab.Project) {
+func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *starterrepo, project *gitlab.Project) {
 	conf := &config.RemoteConfig{
 		Name: project.Name,
 		URLs: []string{project.SSHURLToRepo},
@@ -95,24 +80,15 @@ func (c *Client) pushStartercode(course, assignment string, from *starterrepo, p
 			Msg("cannot create remote")
 	}
 
-	fromBranch := master
-	if fB := viper.GetString(course + "." + assignment + ".startercode.fromBranch"); len(fB) > 0 {
-		fromBranch = fB
-	}
-
-	toBranch := master
-	if tB := viper.GetString(course + "." + assignment + ".startercode.toBranch"); len(tB) > 0 {
-		toBranch = tB
-	}
-
-	refSpec := config.RefSpec("refs/heads/" + fromBranch + ":refs/heads/" + toBranch)
+	refSpec := config.RefSpec("refs/heads/" + assignmentCfg.Startercode.FromBranch +
+		":refs/heads/" + assignmentCfg.Startercode.ToBranch)
 
 	log.Debug().
 		Str("refSpec", string(refSpec)).
 		Str("name", project.Name).
 		Str("toURL", project.SSHURLToRepo).
-		Str("fromBranch", fromBranch).
-		Str("toBranch", toBranch).
+		Str("fromBranch", assignmentCfg.Startercode.FromBranch).
+		Str("toBranch", assignmentCfg.Startercode.ToBranch).
 		Msg("pushing starter code")
 
 	pushOpts := &git.PushOptions{
@@ -127,19 +103,19 @@ func (c *Client) pushStartercode(course, assignment string, from *starterrepo, p
 			Msg("cannot push to remote")
 	}
 
-	c.protectBranch(course, assignment, toBranch, project)
+	c.protectBranch(assignmentCfg, project)
 }
 
-func (c *Client) protectBranch(course, assignment, toBranch string, project *gitlab.Project) {
-	if viper.GetBool(course + "." + assignment + ".startercode.protectToBranch") {
+func (c *Client) protectBranch(assignmentCfg *cfg.AssignmentConfig, project *gitlab.Project) {
+	if assignmentCfg.Startercode.ProtectToBranch {
 		log.Debug().
 			Str("name", project.Name).
 			Str("toURL", project.SSHURLToRepo).
-			Str("branch", toBranch).
+			Str("branch", assignmentCfg.Startercode.ToBranch).
 			Msg("protecting branch")
 
 		opts := &gitlab.ProtectRepositoryBranchesOptions{
-			Name: gitlab.String(toBranch),
+			Name: gitlab.String(assignmentCfg.Startercode.ToBranch),
 		}
 
 		_, _, err := c.ProtectedBranches.ProtectRepositoryBranches(project.ID, opts)
@@ -147,7 +123,7 @@ func (c *Client) protectBranch(course, assignment, toBranch string, project *git
 			log.Error().Err(err).
 				Str("name", project.Name).
 				Str("toURL", project.SSHURLToRepo).
-				Str("branch", toBranch).
+				Str("branch", assignmentCfg.Startercode.ToBranch).
 				Msg("error while protecting branch")
 		}
 	}

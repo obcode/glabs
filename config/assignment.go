@@ -1,6 +1,8 @@
 package config
 
 import (
+	"sort"
+
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
@@ -149,6 +151,7 @@ func students(per Per, course string, onlyForStudentsOrGroups ...string) []strin
 	}
 
 	log.Debug().Interface("students", students).Msg("found students")
+	sort.Strings(students)
 	return students
 }
 
@@ -172,6 +175,7 @@ func groups(per Per, course string, onlyForStudentsOrGroups ...string) []*Group 
 
 	groups := make([]*Group, 0, len(groupsMap))
 	for groupname, members := range groupsMap {
+		sort.Strings(members)
 		groups = append(groups, &Group{
 			GroupName: groupname,
 			Members:   members,

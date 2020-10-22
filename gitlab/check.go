@@ -1,19 +1,16 @@
 package gitlab
 
 import (
-	"fmt"
-
+	"github.com/gookit/color"
 	"github.com/obcode/glabs/config"
-	"github.com/spf13/viper"
-	"github.com/ttacon/chalk"
 )
 
 func (c *Client) CheckCourse(cfg *config.CourseConfig) bool {
 	noOfErrors := 0
-	header(fmt.Sprintf("%s:\n", cfg.Course))
+	color.Cyan.Printf("%s:\n", cfg.Course)
 
 	if len(cfg.Students) > 0 {
-		header(fmt.Sprintln("  - students:"))
+		color.Cyan.Println("  - students:")
 
 		for _, student := range cfg.Students {
 			if !c.checkStudent(student, "") {
@@ -23,10 +20,10 @@ func (c *Client) CheckCourse(cfg *config.CourseConfig) bool {
 	}
 
 	if len(cfg.Groups) > 0 {
-		header(fmt.Sprintln("  - groups:"))
+		color.Cyan.Println("  - groups:")
 
 		for _, grp := range cfg.Groups {
-			header(fmt.Sprintf("    - %s:\n", grp.GroupName))
+			color.Cyan.Printf("    - %s:\n", grp.Name)
 			for _, student := range grp.Members {
 				if !c.checkStudent(student, "  ") {
 					noOfErrors++
@@ -34,13 +31,13 @@ func (c *Client) CheckCourse(cfg *config.CourseConfig) bool {
 			}
 		}
 
-		header("  # checking duplicates in groups\n")
+		color.Cyan.Print("  # checking duplicates in groups")
 		foundDup := false
 
 		if studsInMoreGroups := checkDupsInGroups(cfg.Groups); len(studsInMoreGroups) > 0 {
 
 			for student, inGroups := range studsInMoreGroups {
-				failure(fmt.Sprintf("   # %s is in more than one group: %v\n", student, inGroups))
+				color.Red.Printf("\n  # %s is in more than one group: %v", student, inGroups)
 				foundDup = true
 				noOfErrors++
 			}
@@ -48,12 +45,17 @@ func (c *Client) CheckCourse(cfg *config.CourseConfig) bool {
 		}
 
 		if !foundDup {
-			header("    # no duplicate found\n")
+			color.Green.Println("... no duplicate found")
 		}
 	}
 
 	if noOfErrors > 0 {
-		failure(fmt.Sprintf("# ===> %d error(s)\n", noOfErrors))
+		color.Red.Printf("\n# ===> %d error", noOfErrors)
+		if noOfErrors == 1 {
+			color.Red.Println()
+		} else {
+			color.Red.Println("s")
+		}
 		return false
 	}
 	return true
@@ -62,10 +64,11 @@ func (c *Client) CheckCourse(cfg *config.CourseConfig) bool {
 func (c *Client) checkStudent(name, prefix string) bool {
 	user, err := c.getUser(name)
 	if err != nil {
-		failure(fmt.Sprintf("    # %s, error: %v\n", name, err))
+		color.Red.Printf("    # %s, error: %v\n", name, err)
 		return false
 	}
-	success(fmt.Sprintf("%s     - %s # %s\n", prefix, user.Username, user.Name))
+	color.Cyan.Printf("%s     - %s", prefix, user.Username)
+	color.Green.Printf(" # %s\n", user.Name)
 	return true
 }
 
@@ -75,9 +78,9 @@ func checkDupsInGroups(groups []*config.Group) map[string][]string {
 		for _, student := range grp.Members {
 			_, ok := studsWithGroups[student]
 			if !ok {
-				studsWithGroups[student] = []string{grp.GroupName}
+				studsWithGroups[student] = []string{grp.Name}
 			} else {
-				studsWithGroups[student] = append(studsWithGroups[student], grp.GroupName)
+				studsWithGroups[student] = append(studsWithGroups[student], grp.Name)
 			}
 		}
 	}
@@ -90,20 +93,4 @@ func checkDupsInGroups(groups []*config.Group) map[string][]string {
 	}
 
 	return problems
-}
-
-func header(str string) {
-	if viper.GetBool("show-success") {
-		fmt.Print(chalk.Blue, chalk.Bold, str, chalk.Reset)
-	}
-}
-
-func success(str string) {
-	if viper.GetBool("show-success") {
-		fmt.Print(chalk.Green, str, chalk.Reset)
-	}
-}
-
-func failure(str string) {
-	fmt.Print(chalk.Red, str, chalk.Reset)
 }

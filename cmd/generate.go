@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+
+	"github.com/gookit/color"
 	"github.com/obcode/glabs/config"
 	"github.com/obcode/glabs/gitlab"
 	"github.com/spf13/cobra"
@@ -19,6 +22,9 @@ A student needs to exist on GitLab, a group needs to exist in the configuration 
 	Args: cobra.MinimumNArgs(2), //nolint:gomnd
 	Run: func(cmd *cobra.Command, args []string) {
 		assignmentConfig := config.GetAssignmentConfig(args[0], args[1], args[2:]...)
+		assignmentConfig.Show()
+		color.Red.Print("Config okay? Press 'Enter' to continue or 'Ctrl-C' to stop ...")
+		fmt.Scanln()
 		c := gitlab.NewClient()
 		c.Generate(assignmentConfig)
 	},

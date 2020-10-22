@@ -24,8 +24,8 @@ type AssignmentConfig struct {
 type Per string
 
 const (
-	PerStudent Per = "Student"
-	PerGroup   Per = "Group"
+	PerStudent Per = "student"
+	PerGroup   Per = "group"
 	PerFailed  Per = "could not happen"
 )
 
@@ -37,8 +37,8 @@ type Startercode struct {
 }
 
 type Group struct {
-	GroupName string
-	Members   []string
+	Name    string
+	Members []string
 }
 
 type AccessLevel int
@@ -49,6 +49,19 @@ const (
 	Developer  AccessLevel = 30
 	Maintainer AccessLevel = 40
 )
+
+func (ac AccessLevel) show() string {
+	if ac == 10 {
+		return "guest"
+	}
+	if ac == 20 {
+		return "reporter"
+	}
+	if ac == 30 {
+		return "developer"
+	}
+	return "maintainer"
+}
 
 func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...string) *AssignmentConfig {
 	if !viper.IsSet(course) {
@@ -173,12 +186,19 @@ func groups(per Per, course string, onlyForStudentsOrGroups ...string) []*Group 
 		groupsMap = onlyTheseGroups
 	}
 
+	keys := make([]string, 0, len(groupsMap))
+	for k := range groupsMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
 	groups := make([]*Group, 0, len(groupsMap))
-	for groupname, members := range groupsMap {
+	for _, groupname := range keys {
+		members := groupsMap[groupname]
 		sort.Strings(members)
 		groups = append(groups, &Group{
-			GroupName: groupname,
-			Members:   members,
+			Name:    groupname,
+			Members: members,
 		})
 	}
 

@@ -92,10 +92,10 @@ func (c *Client) generatePerGroup(assignmentCfg *config.AssignmentConfig, assign
 	}
 
 	for _, grp := range assignmentCfg.Groups {
-		project, generated, err := c.generateProject(assignmentCfg, grp.GroupName, assignmentGroupID)
+		project, generated, err := c.generateProject(assignmentCfg, grp.Name, assignmentGroupID)
 		if err != nil {
 			log.Error().Err(err).
-				Str("group", grp.GroupName).
+				Str("group", grp.Name).
 				Str("course", assignmentCfg.Course).
 				Str("assignment", assignmentCfg.Name).
 				Msg("error while generating project")

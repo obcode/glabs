@@ -23,7 +23,7 @@ func (c *Client) CheckCourse(cfg *config.CourseConfig) bool {
 		color.Cyan.Println("  - groups:")
 
 		for _, grp := range cfg.Groups {
-			color.Cyan.Printf("    - %s:\n", grp.GroupName)
+			color.Cyan.Printf("    - %s:\n", grp.Name)
 			for _, student := range grp.Members {
 				if !c.checkStudent(student, "  ") {
 					noOfErrors++
@@ -78,9 +78,9 @@ func checkDupsInGroups(groups []*config.Group) map[string][]string {
 		for _, student := range grp.Members {
 			_, ok := studsWithGroups[student]
 			if !ok {
-				studsWithGroups[student] = []string{grp.GroupName}
+				studsWithGroups[student] = []string{grp.Name}
 			} else {
-				studsWithGroups[student] = append(studsWithGroups[student], grp.GroupName)
+				studsWithGroups[student] = append(studsWithGroups[student], grp.Name)
 			}
 		}
 	}

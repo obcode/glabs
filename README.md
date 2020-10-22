@@ -106,7 +106,7 @@ Available Commands:
   check       check course config
   generate    Generate repositories for each student.
   help        Help about any command
-  show-config Show config of a course
+  show        Show config of an assignment
   version     Print the version number of Glabs
 
 Flags:

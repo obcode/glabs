@@ -2,99 +2,22 @@ package gitlab
 
 import (
 	"fmt"
-	"os"
-	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
-	"github.com/go-git/go-git/v5/storage/memory"
-	"github.com/logrusorgru/aurora"
 	cfg "github.com/obcode/glabs/config"
+	g "github.com/obcode/glabs/git"
 	"github.com/rs/zerolog/log"
-	"github.com/theckman/yacspin"
 	"github.com/xanzy/go-gitlab"
 )
 
-type starterrepo struct {
-	repo       *git.Repository
-	publickeys *ssh.PublicKeys
-}
-
-func prepareStartercodeRepo(assignmentCfg *cfg.AssignmentConfig) (*starterrepo, error) {
-	if assignmentCfg.Startercode == nil {
-		log.Debug().
-			Str("course", assignmentCfg.Course).
-			Str("assignment", assignmentCfg.Name).
-			Msg("no startercode provided")
-		return nil, nil
-	}
-
-	privateKeyFile := fmt.Sprintf("%s/.ssh/id_rsa", os.Getenv("HOME"))
-	// if pkf := startercode["privatekeyfile"]; pkf != "" {
-	// 	privateKeyFile = pkf
-	// }
-
-	_, err := os.Stat(privateKeyFile)
-	if err != nil {
-		return nil, fmt.Errorf("cannot read ssh key from file: %w", err)
-	}
-
-	publicKeys, err := ssh.NewPublicKeysFromFile("git", privateKeyFile, "")
-	if err != nil {
-		return nil, fmt.Errorf("cannot generate publickeys from file %s:  %w", privateKeyFile, err)
-	}
-
-	cfg := yacspin.Config{
-		Frequency: 100 * time.Millisecond,
-		CharSet:   yacspin.CharSets[69],
-		Suffix: aurora.Sprintf(aurora.Cyan(" cloning startercode from %s, branch %s"),
-			aurora.Yellow(assignmentCfg.Startercode.URL),
-			aurora.Yellow(assignmentCfg.Startercode.FromBranch),
-		),
-		SuffixAutoColon: true,
-		StopCharacter:   "✓",
-		StopColors:      []string{"fgGreen"},
-	}
-
-	spinner, err := yacspin.New(cfg)
-	if err != nil {
-		log.Debug().Err(err).Msg("cannot create spinner")
-	}
-	err = spinner.Start()
-	if err != nil {
-		log.Debug().Err(err).Msg("cannot start spinner")
-	}
-
-	r, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
-		Auth:          publicKeys,
-		URL:           assignmentCfg.Startercode.URL,
-		ReferenceName: plumbing.ReferenceName("refs/heads/" + assignmentCfg.Startercode.FromBranch),
-	})
-
-	errs := spinner.Stop()
-	if errs != nil {
-		log.Debug().Err(err).Msg("cannot stop spinner")
-	}
-
-	if err != nil {
-		return nil, fmt.Errorf("error while cloning repo (wrong URL or no rights?): %w", err)
-	}
-
-	return &starterrepo{
-		repo:       r,
-		publickeys: publicKeys,
-	}, nil
-}
-
-func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *starterrepo, project *gitlab.Project) error {
+func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *g.Starterrepo, project *gitlab.Project) error {
 	conf := &config.RemoteConfig{
 		Name: project.Name,
 		URLs: []string{project.SSHURLToRepo},
 	}
 
-	remote, err := from.repo.CreateRemote(conf)
+	remote, err := from.Repo.CreateRemote(conf)
 	if err != nil {
 		log.Debug().Err(err).
 			Str("name", project.Name).Str("url", project.SSHURLToRepo).
@@ -116,9 +39,9 @@ func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *star
 	pushOpts := &git.PushOptions{
 		RemoteName: remote.Config().Name,
 		RefSpecs:   []config.RefSpec{refSpec},
-		Auth:       from.publickeys,
+		Auth:       from.Publickeys,
 	}
-	err = from.repo.Push(pushOpts)
+	err = from.Repo.Push(pushOpts)
 	if err != nil {
 		log.Debug().Err(err).
 			Str("name", project.Name).Str("url", project.SSHURLToRepo).

@@ -19,6 +19,7 @@ type AssignmentConfig struct {
 	Students          []string
 	Groups            []*Group
 	Startercode       *Startercode
+	Clone             *Clone
 }
 
 type Per string
@@ -34,6 +35,11 @@ type Startercode struct {
 	FromBranch      string
 	ToBranch        string
 	ProtectToBranch bool
+}
+
+type Clone struct {
+	LocalPath string
+	Branch    string
 }
 
 type Group struct {
@@ -95,6 +101,7 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 		Students:          students(per, course, onlyForStudentsOrGroups...),
 		Groups:            groups(per, course, onlyForStudentsOrGroups...),
 		Startercode:       startercode(assignmentKey),
+		Clone:             clone(assignmentKey),
 	}
 
 	return assignmentConfig
@@ -235,4 +242,31 @@ func startercode(assignmentKey string) *Startercode {
 		ToBranch:        toBranch,
 		ProtectToBranch: viper.GetBool(assignmentKey + ".startercode.protectToBranch"),
 	}
+}
+
+func clone(assignmentKey string) *Clone {
+	cloneMap := viper.GetStringMapString(assignmentKey + ".clone")
+
+	localpath, ok := cloneMap["localpath"]
+	if !ok {
+		localpath = "."
+	}
+
+	branch, ok := cloneMap["branch"]
+	if !ok {
+		branch = "master"
+	}
+
+	return &Clone{
+		LocalPath: localpath,
+		Branch:    branch,
+	}
+}
+
+func (cfg *AssignmentConfig) SetBranch(branch string) {
+	cfg.Clone.Branch = branch
+}
+
+func (cfg *AssignmentConfig) SetLocalpath(localpath string) {
+	cfg.Clone.LocalPath = localpath
 }

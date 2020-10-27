@@ -27,6 +27,16 @@ func (cfg *AssignmentConfig) Show() {
 		)
 	}
 
+	clone := aurora.Sprintf(aurora.Red("        not defined"))
+	if cfg.Clone != nil {
+		clone = aurora.Sprintf(aurora.Cyan(`Clone:
+  Localpath:        %s
+  Branch:           %s`),
+			aurora.Yellow(cfg.Clone.LocalPath),
+			aurora.Yellow(cfg.Clone.Branch),
+		)
+	}
+
 	var per strings.Builder
 	switch cfg.Per {
 	case PerStudent:
@@ -65,6 +75,7 @@ AccessLevel:        %s
 Container-Registry: %s
 Startercode:%s
 %s
+%s
 `),
 		aurora.Yellow(cfg.Course),
 		aurora.Yellow(cfg.Name),
@@ -74,6 +85,7 @@ Startercode:%s
 		aurora.Yellow(cfg.AccessLevel.String()),
 		containerRegistry,
 		startercode,
+		clone,
 		groupsOrStudents,
 	))
 

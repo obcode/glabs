@@ -50,7 +50,7 @@ const (
 	Maintainer AccessLevel = 40
 )
 
-func (ac AccessLevel) show() string {
+func (ac AccessLevel) String() string {
 	if ac == 10 {
 		return "guest"
 	}

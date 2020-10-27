@@ -71,7 +71,7 @@ Startercode:%s
 		aurora.Yellow(cfg.Per),
 		aurora.Yellow(cfg.URL),
 		aurora.Yellow(cfg.Description),
-		aurora.Yellow(cfg.AccessLevel.show()),
+		aurora.Yellow(cfg.AccessLevel.String()),
 		containerRegistry,
 		startercode,
 		groupsOrStudents,

@@ -3,7 +3,6 @@ package gitlab
 import (
 	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/obcode/glabs/config"
 	"github.com/rs/zerolog/log"
@@ -44,21 +43,37 @@ func (c *Client) getUserID(username string) (int, error) {
 	return userID, nil
 }
 
-func (c *Client) addMember(assignmentConfig *config.AssignmentConfig, projectID, userID int) error {
+func (c *Client) addMember(assignmentConfig *config.AssignmentConfig, projectID, userID int) (string, error) {
+	member, _, _ := c.ProjectMembers.GetInheritedProjectMember(projectID, userID)
+	if member != nil {
+		if member.AccessLevel == gitlab.OwnerPermissions {
+			return "already owner", nil
+		}
+
+		if member.AccessLevel != gitlab.AccessLevelValue(assignmentConfig.AccessLevel) {
+			e := &gitlab.EditProjectMemberOptions{
+				AccessLevel: gitlab.AccessLevel(gitlab.AccessLevelValue(assignmentConfig.AccessLevel)),
+			}
+			_, _, err := c.ProjectMembers.EditProjectMember(projectID, userID, e)
+			if err != nil {
+				return "", fmt.Errorf("error while trying to change access level: %w", err)
+			}
+
+			return fmt.Sprintf("set accesslevel from %s to %s", config.AccessLevel(member.AccessLevel).String(), assignmentConfig.AccessLevel.String()), nil
+		}
+
+		return fmt.Sprintf("already member with accesslevel %s", config.AccessLevel(member.AccessLevel).String()), nil
+	}
+
 	m := &gitlab.AddProjectMemberOptions{
 		UserID:      gitlab.Int(userID),
 		AccessLevel: gitlab.AccessLevel(gitlab.AccessLevelValue(assignmentConfig.AccessLevel)),
 	}
-	_, resp, err := c.ProjectMembers.AddProjectMember(projectID, m)
+	member, _, err := c.ProjectMembers.AddProjectMember(projectID, m)
 	if err != nil {
-		if resp.StatusCode == http.StatusConflict {
-			log.Debug().Int("projectID", projectID).Msg("user should have already access to repo")
-			return nil
-		}
-		log.Debug().Err(err).Msg("error while adding member")
-		return fmt.Errorf("problem while adding member with id %d: %w", userID, err)
+		return "", fmt.Errorf("problem while adding member with id... %d: %w", userID, err)
 	}
 
 	log.Debug().Int("projectID", projectID).Msg("granted access to repo")
-	return nil
+	return fmt.Sprintf("added successfully with accesslevel %s", config.AccessLevel(member.AccessLevel).String()), nil
 }

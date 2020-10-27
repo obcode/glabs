@@ -78,44 +78,53 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 		}
 		return
 	} else {
+		if !generated {
+			spinner.StopMessage(aurora.Sprintf(aurora.Red("project already exists")))
+		}
+
 		err = spinner.Stop()
 		if err != nil {
 			log.Debug().Err(err).Msg("cannot stop spinner")
 		}
 	}
 
-	if generated && starterrepo != nil {
-		cfg.Suffix = aurora.Sprintf(aurora.Cyan("  ↪ pushing startercode"))
-		spinner, err := yacspin.New(cfg)
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot create spinner")
-		}
-		err = spinner.Start()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot start spinner")
-		}
+	if starterrepo != nil {
+		if !generated {
+			fmt.Println(aurora.Red("    ↪ not trying to push startercode to existing project"))
+		} else {
+			cfg.Suffix = aurora.Sprintf(aurora.Cyan(" ↪ pushing startercode"))
+			spinner, err := yacspin.New(cfg)
+			if err != nil {
+				log.Debug().Err(err).Msg("cannot create spinner")
+			}
+			err = spinner.Start()
+			if err != nil {
+				log.Debug().Err(err).Msg("cannot start spinner")
+			}
 
-		err = c.pushStartercode(assignmentCfg, starterrepo, project)
-		if err != nil {
-			spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
+			err = c.pushStartercode(assignmentCfg, starterrepo, project)
+			if err != nil {
+				spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
 
-			err := spinner.StopFail()
+				err := spinner.StopFail()
+				if err != nil {
+					log.Debug().Err(err).Msg("cannot stop spinner")
+				}
+				return
+			}
+
+			err = spinner.Stop()
 			if err != nil {
 				log.Debug().Err(err).Msg("cannot stop spinner")
 			}
-			return
-		}
-
-		err = spinner.Stop()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
 		}
 	}
 
 	for _, student := range members {
-		cfg.Suffix = aurora.Sprintf(aurora.Cyan(" ↪ adding member %s to %s"),
+		cfg.Suffix = aurora.Sprintf(aurora.Cyan(" ↪ adding member %s to %s as %s"),
 			aurora.Yellow(student),
 			aurora.Magenta(projectname),
+			aurora.Magenta(assignmentCfg.AccessLevel.String()),
 		)
 		spinner, err := yacspin.New(cfg)
 		if err != nil {
@@ -137,7 +146,7 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 			continue
 		}
 
-		err = c.addMember(assignmentCfg, project.ID, userID)
+		info, err := c.addMember(assignmentCfg, project.ID, userID)
 		if err != nil {
 			log.Debug().Err(err).
 				Int("projectID", project.ID).
@@ -156,6 +165,7 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 			continue
 		}
 
+		spinner.StopMessage(aurora.Sprintf(aurora.Red(info)))
 		err = spinner.Stop()
 		if err != nil {
 			log.Debug().Err(err).Msg("cannot stop spinner")

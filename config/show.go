@@ -4,50 +4,50 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gookit/color"
+	"github.com/logrusorgru/aurora/v3"
 )
 
 func (cfg *AssignmentConfig) Show() {
-	containerRegistry := "disabled"
+	containerRegistry := aurora.Red("disabled")
 	if cfg.ContainerRegistry {
-		containerRegistry = "enabled"
+		containerRegistry = aurora.Green("enabled")
 	}
 
-	startercode := "---"
+	startercode := aurora.Sprintf(aurora.Red("        not defined"))
 	if cfg.Startercode != nil {
-		startercode = fmt.Sprintf(`
+		startercode = aurora.Sprintf(aurora.Cyan(`
   URL:              %s
   FromBranch:       %s
   ToBranch:         %s
-  ProtectToBranch:  %t`,
-			cfg.Startercode.URL,
-			cfg.Startercode.FromBranch,
-			cfg.Startercode.ToBranch,
-			cfg.Startercode.ProtectToBranch,
+  ProtectToBranch:  %t`),
+			aurora.Yellow(cfg.Startercode.URL),
+			aurora.Yellow(cfg.Startercode.FromBranch),
+			aurora.Yellow(cfg.Startercode.ToBranch),
+			aurora.Yellow(cfg.Startercode.ProtectToBranch),
 		)
 	}
 
 	var per strings.Builder
 	switch cfg.Per {
 	case PerStudent:
-		per.WriteString("Students:\n")
+		per.WriteString(aurora.Sprintf(aurora.Cyan("Students:\n")))
 		for _, s := range cfg.Students {
-			per.WriteString("  - ")
-			per.WriteString(s)
+			per.WriteString(aurora.Sprintf(aurora.Cyan("  - ")))
+			per.WriteString(aurora.Sprintf(aurora.Yellow(s)))
 			per.WriteString("\n")
 		}
 	case PerGroup:
-		per.WriteString("Groups:\n")
+		per.WriteString(aurora.Sprintf(aurora.Cyan("Groups:\n")))
 		for _, grp := range cfg.Groups {
-			per.WriteString("  - ")
-			per.WriteString(grp.Name)
-			per.WriteString(": ")
+			per.WriteString(aurora.Sprintf(aurora.Cyan("  - ")))
+			per.WriteString(aurora.Sprintf(aurora.Yellow(grp.Name)))
+			per.WriteString(aurora.Sprintf(aurora.Cyan(": ")))
 			for i, m := range grp.Members {
-				per.WriteString(m)
+				per.WriteString(aurora.Sprintf(aurora.Green(m)))
 				if i == len(grp.Members)-1 {
 					per.WriteString("\n")
 				} else {
-					per.WriteString(", ")
+					per.WriteString(aurora.Sprintf(aurora.Cyan(", ")))
 				}
 			}
 		}
@@ -55,7 +55,7 @@ func (cfg *AssignmentConfig) Show() {
 
 	groupsOrStudents := per.String()
 
-	color.Cyan.Printf(`
+	fmt.Print(aurora.Sprintf(aurora.Cyan(`
 Course:             %s
 Assignment:         %s
 Per:                %s
@@ -65,16 +65,16 @@ AccessLevel:        %s
 Container-Registry: %s
 Startercode:%s
 %s
-`,
-		cfg.Course,
-		cfg.Name,
-		cfg.Per,
-		cfg.URL,
-		cfg.Description,
-		cfg.AccessLevel.show(),
+`),
+		aurora.Yellow(cfg.Course),
+		aurora.Yellow(cfg.Name),
+		aurora.Yellow(cfg.Per),
+		aurora.Yellow(cfg.URL),
+		aurora.Yellow(cfg.Description),
+		aurora.Yellow(cfg.AccessLevel.show()),
 		containerRegistry,
 		startercode,
 		groupsOrStudents,
-	)
+	))
 
 }

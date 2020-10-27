@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/obcode/glabs/config"
@@ -33,7 +34,8 @@ func (c *Client) getUserID(username string) (int, error) {
 	user, err := c.getUser(username)
 
 	if err != nil {
-		return 0, err
+		log.Debug().Err(err).Str("username", username).Msg("cannot get User")
+		return 0, fmt.Errorf("cannot get user: %w", err)
 	}
 
 	userID := user.ID
@@ -53,8 +55,8 @@ func (c *Client) addMember(assignmentConfig *config.AssignmentConfig, projectID,
 			log.Debug().Int("projectID", projectID).Msg("user should have already access to repo")
 			return nil
 		}
-		log.Error().Err(err).Msg("error while adding member")
-		return err
+		log.Debug().Err(err).Msg("error while adding member")
+		return fmt.Errorf("problem while adding member with id %d: %w", userID, err)
 	}
 
 	log.Debug().Int("projectID", projectID).Msg("granted access to repo")

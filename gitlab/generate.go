@@ -2,85 +2,177 @@ package gitlab
 
 import (
 	"fmt"
+	"os"
+	"time"
 
+	"github.com/logrusorgru/aurora"
 	"github.com/obcode/glabs/config"
 	"github.com/rs/zerolog/log"
+	"github.com/theckman/yacspin"
 )
 
 func (c *Client) Generate(assignmentCfg *config.AssignmentConfig) {
 	assignmentGitLabGroupID, err := c.getGroupID(assignmentCfg)
 	if err != nil {
-		log.Debug().Err(err).
-			Str("assignment", assignmentCfg.Name).
-			Str("course", assignmentCfg.Course).
-			Msg("gitlab group for assignment does not exist")
 		fmt.Printf("error: GitLab group for assignment does not exist, please create the group %s\n", assignmentCfg.URL)
-		return
+		os.Exit(1)
 	}
 
-	starterrepo := prepareStartercodeRepo(assignmentCfg)
+	var starterrepo *starterrepo
 
-	switch assignmentCfg.Per {
+	if assignmentCfg.Startercode != nil {
+		starterrepo, err = prepareStartercodeRepo(assignmentCfg)
+
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	}
+
+	switch per := assignmentCfg.Per; per {
 	case config.PerGroup:
-		log.Info().Msg("generating for groups")
-		fmt.Print("Press 'Enter' to continue or `Ctrl-C` to stop ...")
-		fmt.Scanln()
 		c.generatePerGroup(assignmentCfg, assignmentGitLabGroupID, starterrepo)
 	case config.PerStudent:
-		log.Debug().
-			Interface("students", assignmentCfg.Students).
-			Msg("generating per student")
-		fmt.Print("Press 'Enter' to continue or `Ctrl-C` to stop ...")
-		fmt.Scanln()
 		c.generatePerStudent(assignmentCfg, assignmentGitLabGroupID, starterrepo)
 	default:
-		log.Info().Msg("generating per unknown")
-		return
+		fmt.Printf("it is only possible to generate for students oder groups, not for %v", per)
+		os.Exit(1)
 	}
 }
 
-func (c *Client) generatePerStudent(assignmentCfg *config.AssignmentConfig, assignmentGroupID int,
-	starterrepo *starterrepo) {
-	if len(assignmentCfg.Students) == 0 {
-		log.Info().Str("course", assignmentCfg.Course).Msg("no students found")
-		return
+func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGroupID int,
+	projectname string, members []string, starterrepo *starterrepo) {
+
+	cfg := yacspin.Config{
+		Frequency: 100 * time.Millisecond,
+		CharSet:   yacspin.CharSets[69],
+		Suffix: aurora.Sprintf(aurora.Cyan(" generating project %s at %s"),
+			aurora.Yellow(projectname),
+			aurora.Magenta(assignmentCfg.URL+"/"+projectname),
+		),
+		SuffixAutoColon:   true,
+		StopCharacter:     "✓",
+		StopColors:        []string{"fgGreen"},
+		StopFailMessage:   "error",
+		StopFailCharacter: "✗",
+		StopFailColors:    []string{"fgRed"},
 	}
 
-	for _, student := range assignmentCfg.Students {
-		log.Debug().Str("student", student).Msg("generating for...")
+	spinner, err := yacspin.New(cfg)
+	if err != nil {
+		log.Debug().Err(err).Msg("cannot create spinner")
+	}
+	err = spinner.Start()
+	if err != nil {
+		log.Debug().Err(err).Msg("cannot start spinner")
+	}
 
-		project, generated, err := c.generateProject(assignmentCfg, student, assignmentGroupID)
+	spinner.Message("generating project on host")
+	project, generated, err := c.generateProject(assignmentCfg, projectname, assignmentGroupID)
+	if err != nil {
+		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
+
+		err := spinner.StopFail()
 		if err != nil {
-			log.Error().Err(err).
-				Str("student", student).
-				Str("course", assignmentCfg.Course).
-				Str("assignment", assignmentCfg.Name).
-				Msg("error while generating project")
-			break
+			log.Debug().Err(err).Msg("cannot stop spinner")
+		}
+		return
+	} else {
+		err = spinner.Stop()
+		if err != nil {
+			log.Debug().Err(err).Msg("cannot stop spinner")
+		}
+	}
+
+	if generated && starterrepo != nil {
+		cfg.Suffix = aurora.Sprintf(aurora.Cyan("  ↪ pushing startercode"))
+		spinner, err := yacspin.New(cfg)
+		if err != nil {
+			log.Debug().Err(err).Msg("cannot create spinner")
+		}
+		err = spinner.Start()
+		if err != nil {
+			log.Debug().Err(err).Msg("cannot start spinner")
 		}
 
-		if generated && starterrepo != nil {
-			c.pushStartercode(assignmentCfg, starterrepo, project)
+		err = c.pushStartercode(assignmentCfg, starterrepo, project)
+		if err != nil {
+			spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
+
+			err := spinner.StopFail()
+			if err != nil {
+				log.Debug().Err(err).Msg("cannot stop spinner")
+			}
+			return
+		}
+
+		err = spinner.Stop()
+		if err != nil {
+			log.Debug().Err(err).Msg("cannot stop spinner")
+		}
+	}
+
+	for _, student := range members {
+		cfg.Suffix = aurora.Sprintf(aurora.Cyan(" ↪ adding member %s to %s"),
+			aurora.Yellow(student),
+			aurora.Magenta(projectname),
+		)
+		spinner, err := yacspin.New(cfg)
+		if err != nil {
+			log.Debug().Err(err).Msg("cannot create spinner")
+		}
+		err = spinner.Start()
+		if err != nil {
+			log.Debug().Err(err).Msg("cannot start spinner")
 		}
 
 		userID, err := c.getUserID(student)
 		if err != nil {
-			log.Error().Err(err).
-				Str("student", student).
-				Msg("error while trying to get student id")
-			break
+			spinner.StopFailMessage(fmt.Sprintf("cannot get user id: %v", err))
+
+			err := spinner.StopFail()
+			if err != nil {
+				log.Debug().Err(err).Msg("cannot stop spinner")
+			}
+			continue
 		}
 
 		err = c.addMember(assignmentCfg, project.ID, userID)
 		if err != nil {
-			log.Error().Err(err).
+			log.Debug().Err(err).
 				Int("projectID", project.ID).
 				Int("userID", userID).
 				Str("student", student).
 				Str("course", assignmentCfg.Course).
 				Str("assignment", assignmentCfg.Name).
 				Msg("error while adding member")
+
+			spinner.StopFailMessage(fmt.Sprintf("cannot add user %s: %v", student, err))
+
+			err := spinner.StopFail()
+			if err != nil {
+				log.Debug().Err(err).Msg("cannot stop spinner")
+			}
+			continue
 		}
+
+		err = spinner.Stop()
+		if err != nil {
+			log.Debug().Err(err).Msg("cannot stop spinner")
+		}
+	}
+
+}
+
+func (c *Client) generatePerStudent(assignmentCfg *config.AssignmentConfig, assignmentGroupID int,
+	starterrepo *starterrepo) {
+	if len(assignmentCfg.Students) == 0 {
+		fmt.Println("no students in config for assignment found")
+		return
+	}
+
+	for _, student := range assignmentCfg.Students {
+		c.generate(assignmentCfg, assignmentGroupID, assignmentCfg.Name+"-"+student, []string{student}, starterrepo)
 	}
 }
 
@@ -92,40 +184,6 @@ func (c *Client) generatePerGroup(assignmentCfg *config.AssignmentConfig, assign
 	}
 
 	for _, grp := range assignmentCfg.Groups {
-		project, generated, err := c.generateProject(assignmentCfg, grp.Name, assignmentGroupID)
-		if err != nil {
-			log.Error().Err(err).
-				Str("group", grp.Name).
-				Str("course", assignmentCfg.Course).
-				Str("assignment", assignmentCfg.Name).
-				Msg("error while generating project")
-			break
-		}
-
-		if generated && starterrepo != nil {
-			c.pushStartercode(assignmentCfg, starterrepo, project)
-		}
-
-		for _, student := range grp.Members {
-			userID, err := c.getUserID(student)
-			if err != nil {
-				log.Error().Err(err).
-					Str("student", student).
-					Msg("error while trying to get student id")
-				break
-			}
-
-			err = c.addMember(assignmentCfg, project.ID, userID)
-			if err != nil {
-				log.Error().Err(err).
-					Int("projectID", project.ID).
-					Int("userID", userID).
-					Str("student", student).
-					Str("course", assignmentCfg.Course).
-					Str("assignment", assignmentCfg.Name).
-					Msg("error while adding member")
-				break
-			}
-		}
+		c.generate(assignmentCfg, assignmentGroupID, assignmentCfg.Name+"-"+grp.Name, grp.Members, starterrepo)
 	}
 }

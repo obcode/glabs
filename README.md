@@ -64,6 +64,9 @@ Contents:
       # accesslevel should be guest, developer, reporter, maintainer
       # if not defined accesslevel is developer
       accesslevel: <accesslevel for students>
+      clone:
+        localpath: <local base path for repositories to clone in> # default "."
+        branch: <checkout branch> # default master
 ```
 
 Example:
@@ -92,6 +95,9 @@ algdati:
       fromBranch: ws20
       protectToBranch: true
     # accesslevel: developer # default
+    clone:
+      localpath: /tmp
+      branch: develop
 ```
 
 ## Usage
@@ -104,7 +110,8 @@ Usage:
 
 Available Commands:
   check       check course config
-  generate    Generate repositories for each student.
+  clone       Clone repositories.
+  generate    Generate repositories.
   help        Help about any command
   show        Show config of an assignment
   version     Print the version number of Glabs
@@ -122,6 +129,27 @@ Before generating check wheter all students exist or not using the command
 ```
 glabs check [course]
 ```
+
+## Cloning Repos
+
+```
+Clone repositories for each student or group in course for assignment.
+                You can specify students or groups in order to clone only for these.
+
+Usage:
+  glabs clone course assignment [groups...|students...] [flags]
+
+Flags:
+  -b, --branch string   checkout branch after cloning
+  -h, --help            help for clone
+  -p, --path string     clone in this directory
+
+Global Flags:
+      --config string   config file (default is $HOME/.glabs.yml)
+  -v, --verbose         verbose output
+```
+
+Command line options (`-b` and `-p`) override the config file settings.
 
 ## Using starter code as a template
 

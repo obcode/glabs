@@ -9,10 +9,8 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-func (c *Client) generateProject(assignmentCfg *config.AssignmentConfig, suffix string, inID int) (*gitlab.Project, bool, error) {
+func (c *Client) generateProject(assignmentCfg *config.AssignmentConfig, name string, inID int) (*gitlab.Project, bool, error) {
 	generated := false
-	name := assignmentCfg.Name + "-" + suffix
-
 	p := &gitlab.CreateProjectOptions{
 		Name:                     gitlab.String(name),
 		Description:              gitlab.String(assignmentCfg.Description),
@@ -36,11 +34,12 @@ func (c *Client) generateProject(assignmentCfg *config.AssignmentConfig, suffix 
 			log.Debug().Err(err).Str("name", projectname).Msg("searching for project")
 			project, err = c.getProjectByName(projectname)
 			if err != nil {
-				log.Fatal().Err(err)
-				return nil, false, fmt.Errorf("%w", err)
+				log.Debug().Err(err).Msg("project not found")
+				return nil, false, fmt.Errorf("problem while creating project %w", err)
 			}
 		} else {
-			log.Fatal().Err(err)
+			log.Debug().Err(err).Msg("got project, but error")
+			return nil, false, err
 		}
 	}
 
@@ -54,16 +53,17 @@ func (c *Client) getProjectByName(fullpathprojectname string) (*gitlab.Project, 
 	}
 	projects, _, err := c.Projects.ListProjects(opt)
 	if err != nil {
-		log.Error().Err(err).
+		log.Debug().Err(err).
 			Str("projectname", fullpathprojectname).
 			Msg("no project found")
+		return nil, fmt.Errorf("error while trying to find project: %w", err)
 	} else {
 		switch len(projects) {
 		case 1:
 			return projects[0], nil
 		case 0:
-			log.Debug().Interface("projects", projects).Msg("more than one project found")
-			return nil, errors.New("more than one project found")
+			log.Debug().Msg("no project found")
+			return nil, errors.New("project not found")
 		default:
 			log.Debug().Msg("more than one project matching the search string found")
 			for _, project := range projects {
@@ -72,9 +72,7 @@ func (c *Client) getProjectByName(fullpathprojectname string) (*gitlab.Project, 
 					return project, nil
 				}
 			}
-			log.Debug().Str("name", fullpathprojectname).Msg("project not found")
-			return nil, errors.New("project not found")
+			return nil, errors.New("more than one project matching the search string found")
 		}
 	}
-	return nil, nil // could not happen
 }

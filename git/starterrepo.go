@@ -15,8 +15,8 @@ import (
 )
 
 type Starterrepo struct {
-	Repo       *git.Repository
-	Publickeys *ssh.PublicKeys
+	Repo *git.Repository
+	Auth ssh.AuthMethod
 }
 
 func PrepareStartercodeRepo(assignmentCfg *config.AssignmentConfig) (*Starterrepo, error) {
@@ -52,7 +52,7 @@ func PrepareStartercodeRepo(assignmentCfg *config.AssignmentConfig) (*Starterrep
 		log.Debug().Err(err).Msg("cannot start spinner")
 	}
 
-	publicKeys, err := publickeys()
+	auth, err := getAuth()
 	if err != nil {
 		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
 
@@ -64,7 +64,7 @@ func PrepareStartercodeRepo(assignmentCfg *config.AssignmentConfig) (*Starterrep
 	}
 
 	r, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
-		Auth:          publicKeys,
+		Auth:          auth,
 		URL:           assignmentCfg.Startercode.URL,
 		ReferenceName: plumbing.ReferenceName("refs/heads/" + assignmentCfg.Startercode.FromBranch),
 	})
@@ -79,7 +79,7 @@ func PrepareStartercodeRepo(assignmentCfg *config.AssignmentConfig) (*Starterrep
 	}
 
 	return &Starterrepo{
-		Repo:       r,
-		Publickeys: publicKeys,
+		Repo: r,
+		Auth: auth,
 	}, nil
 }

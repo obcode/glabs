@@ -39,7 +39,7 @@ func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *g.St
 	pushOpts := &git.PushOptions{
 		RemoteName: remote.Config().Name,
 		RefSpecs:   []config.RefSpec{refSpec},
-		Auth:       from.Publickeys,
+		Auth:       from.Auth,
 	}
 	err = from.Repo.Push(pushOpts)
 	if err != nil {

@@ -15,7 +15,7 @@ import (
 )
 
 func Clone(cfg *config.AssignmentConfig) {
-	publickeys, err := publickeys()
+	auth, err := getAuth()
 	if err != nil {
 		fmt.Printf("error: %v", err)
 		return
@@ -24,11 +24,11 @@ func Clone(cfg *config.AssignmentConfig) {
 	switch cfg.Per {
 	case config.PerStudent:
 		for _, suffix := range cfg.Students {
-			clone(localpath(cfg, suffix), cfg.Clone.Branch, cloneurl(cfg, suffix), publickeys)
+			clone(localpath(cfg, suffix), cfg.Clone.Branch, cloneurl(cfg, suffix), auth)
 		}
 	case config.PerGroup:
 		for _, grp := range cfg.Groups {
-			clone(localpath(cfg, grp.Name), cfg.Clone.Branch, cloneurl(cfg, grp.Name), publickeys)
+			clone(localpath(cfg, grp.Name), cfg.Clone.Branch, cloneurl(cfg, grp.Name), auth)
 		}
 	}
 }
@@ -43,7 +43,7 @@ func localpath(cfg *config.AssignmentConfig, suffix string) string {
 	return fmt.Sprintf("%s/%s-%s", cfg.Clone.LocalPath, cfg.Name, suffix)
 }
 
-func clone(localpath, branch, cloneurl string, publickeys *ssh.PublicKeys) {
+func clone(localpath, branch, cloneurl string, auth ssh.AuthMethod) {
 	cfg := yacspin.Config{
 		Frequency: 100 * time.Millisecond,
 		CharSet:   yacspin.CharSets[69],
@@ -70,7 +70,7 @@ func clone(localpath, branch, cloneurl string, publickeys *ssh.PublicKeys) {
 	}
 
 	_, err = git.PlainClone(localpath, false, &git.CloneOptions{
-		Auth:          publickeys,
+		Auth:          auth,
 		URL:           cloneurl,
 		ReferenceName: plumbing.ReferenceName("refs/heads/" + branch),
 	})

@@ -14,6 +14,7 @@ Contents:
 gitlab:
   host: <URL of GitLab host>
   token: <personal access token>
+  sshprivatekey: <optional path to an unencrypted ssh private key; uses ssh-agent otherwise>
 coursesfilepath: <path where config files for courses are>
 courses:
   - <basenames of coursesfiles>

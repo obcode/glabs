@@ -5,13 +5,15 @@ import (
 	"os"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	"github.com/spf13/viper"
 )
 
-func publickeys() (*ssh.PublicKeys, error) {
-	privateKeyFile := fmt.Sprintf("%s/.ssh/id_rsa", os.Getenv("HOME"))
-	// if pkf := startercode["privatekeyfile"]; pkf != "" {
-	// 	privateKeyFile = pkf
-	// }
+func getAuth() (ssh.AuthMethod, error) {
+	privateKeyFile := viper.GetString("gitlab.sshprivatekey")
+
+	if privateKeyFile == "" {
+		return nil, nil
+	}
 
 	_, err := os.Stat(privateKeyFile)
 	if err != nil {

@@ -50,7 +50,7 @@ Contents:
       <name of snd group>:
         <array of student in group>
       ...
-    <name of assignemnt>:
+    <name of assignment>:
       assignmentpath: <gitlab subgroup of semesterpath (or coursepath, if semesterpath is empty)
                        used for assignment>
       # also optional
@@ -125,7 +125,7 @@ Flags:
 Use "glabs [command] --help" for more information about a command.
 ```
 
-Before generating check wheter all students exist or not using the command
+Before generating check whether all students exist or not using the command
 
 ```
 glabs check [course]
@@ -154,7 +154,7 @@ Command line options (`-b` and `-p`) override the config file settings.
 
 ## Using starter code as a template
 
-Currently glabs does not support rewritting git history.
+Currently glabs does not support rewriting git history.
 
 What you can do is the following:
 

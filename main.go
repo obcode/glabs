@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/obcode/glabs/cmd"
 	"github.com/spf13/viper"
 )
@@ -19,6 +22,10 @@ func main() {
 	viper.Set("BuiltBy", builtBy)
 	err := cmd.Execute()
 	if err != nil {
-		panic(err)
+		_, err := fmt.Fprintln(os.Stderr, "Error:", err)
+		if err != nil {
+			panic(err)
+		}
+		os.Exit(-1)
 	}
 }

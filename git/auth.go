@@ -9,7 +9,7 @@ import (
 )
 
 func getAuth() (ssh.AuthMethod, error) {
-	privateKeyFile := viper.GetString("gitlab.sshprivatekey")
+	privateKeyFile := viper.GetString("sshprivatekey")
 
 	if privateKeyFile == "" {
 		return nil, nil

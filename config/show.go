@@ -31,9 +31,11 @@ func (cfg *AssignmentConfig) Show() {
 	if cfg.Clone != nil {
 		clone = aurora.Sprintf(aurora.Cyan(`Clone:
   Localpath:        %s
-  Branch:           %s`),
+  Branch:           %s
+  Force:            %t`),
 			aurora.Yellow(cfg.Clone.LocalPath),
 			aurora.Yellow(cfg.Clone.Branch),
+			aurora.Yellow(cfg.Clone.Force),
 		)
 	}
 

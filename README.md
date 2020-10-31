@@ -68,6 +68,7 @@ Contents:
       clone:
         localpath: <local base path for repositories to clone in> # default "."
         branch: <checkout branch> # default master
+        force: <false|true> # remove directory if it exists. default false
 ```
 
 Example:
@@ -99,6 +100,7 @@ algdati:
     clone:
       localpath: /tmp
       branch: develop
+      clone: true
 ```
 
 ## Usage

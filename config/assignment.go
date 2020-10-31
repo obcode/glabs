@@ -40,6 +40,7 @@ type Startercode struct {
 type Clone struct {
 	LocalPath string
 	Branch    string
+	Force     bool
 }
 
 type Group struct {
@@ -257,9 +258,12 @@ func clone(assignmentKey string) *Clone {
 		branch = "master"
 	}
 
+	force := viper.GetBool(assignmentKey + ".clone.force")
+
 	return &Clone{
 		LocalPath: localpath,
 		Branch:    branch,
+		Force:     force,
 	}
 }
 
@@ -269,4 +273,8 @@ func (cfg *AssignmentConfig) SetBranch(branch string) {
 
 func (cfg *AssignmentConfig) SetLocalpath(localpath string) {
 	cfg.Clone.LocalPath = localpath
+}
+
+func (cfg *AssignmentConfig) SetForce() {
+	cfg.Clone.Force = true
 }

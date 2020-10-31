@@ -24,6 +24,9 @@ var (
 			if len(Localpath) > 0 {
 				assignmentConfig.SetLocalpath(Localpath)
 			}
+			if Force {
+				assignmentConfig.SetForce()
+			}
 			assignmentConfig.Show()
 			fmt.Println(aurora.Magenta("Config okay? Press 'Enter' to continue or 'Ctrl-C' to stop ..."))
 			fmt.Scanln()
@@ -33,10 +36,12 @@ var (
 	}
 	Localpath string
 	Branch    string
+	Force     bool
 )
 
 func init() {
 	rootCmd.AddCommand(cloneCmd)
 	cloneCmd.Flags().StringVarP(&Localpath, "path", "p", "", "clone in this directory")
 	cloneCmd.Flags().StringVarP(&Branch, "branch", "b", "", "checkout branch after cloning")
+	cloneCmd.Flags().BoolVarP(&Force, "force", "f", false, "remove directory if it already exists")
 }

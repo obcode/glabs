@@ -1,10 +1,16 @@
 package config
 
 import (
+	"fmt"
 	"sort"
+	"strings"
+	"syscall"
 
+	"github.com/logrusorgru/aurora"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
+	"golang.org/x/crypto/openpgp"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type AssignmentConfig struct {
@@ -20,6 +26,7 @@ type AssignmentConfig struct {
 	Groups            []*Group
 	Startercode       *Startercode
 	Clone             *Clone
+	Seeder            *Seeder
 }
 
 type Per string
@@ -29,6 +36,16 @@ const (
 	PerGroup   Per = "group"
 	PerFailed  Per = "could not happen"
 )
+
+type Seeder struct {
+	Command         string
+	Args            []string
+	Name            string
+	EMail           string
+	SignKey         *openpgp.Entity
+	ToBranch        string
+	ProtectToBranch bool
+}
 
 type Startercode struct {
 	URL             string
@@ -103,6 +120,7 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 		Groups:            groups(per, course, onlyForStudentsOrGroups...),
 		Startercode:       startercode(assignmentKey),
 		Clone:             clone(assignmentKey),
+		Seeder:            seeder(assignmentKey),
 	}
 
 	return assignmentConfig
@@ -242,6 +260,56 @@ func startercode(assignmentKey string) *Startercode {
 		FromBranch:      fromBranch,
 		ToBranch:        toBranch,
 		ProtectToBranch: viper.GetBool(assignmentKey + ".startercode.protectToBranch"),
+	}
+}
+
+func seeder(assignmentKey string) *Seeder {
+	seederMap := viper.GetStringMapString(assignmentKey + ".seeder")
+
+	if len(seederMap) == 0 {
+		log.Debug().Str("assignmemtKey", assignmentKey).Msg("no seeder provided")
+		return nil
+	}
+
+	cmd, ok := seederMap["cmd"]
+	if !ok {
+		log.Fatal().Str("assignmemtKey", assignmentKey).Msg("seeder provided without cmd")
+		return nil
+	}
+
+	toBranch, ok := seederMap["toBranch"]
+	if !ok {
+		toBranch = "master"
+	}
+
+	privKeyString := viper.GetString(assignmentKey + ".seeder.signKey")
+	var entity *openpgp.Entity
+	entity = nil
+	if privKeyString != "" {
+		entities, err := openpgp.ReadArmoredKeyRing(strings.NewReader(privKeyString))
+		if err != nil {
+			log.Fatal()
+		}
+		if entities[0].PrivateKey.Encrypted {
+			fmt.Println(aurora.Blue("Passphrase for signing key is required. Please enter it now:"))
+			passphrase, _ := terminal.ReadPassword(int(syscall.Stdin))
+			err = entities[0].PrivateKey.Decrypt(passphrase)
+			if err != nil {
+				log.Fatal()
+			}
+		}
+		entity = entities[0]
+
+	}
+
+	return &Seeder{
+		Command:         cmd,
+		Args:            viper.GetStringSlice(assignmentKey + ".seeder.args"),
+		Name:            viper.GetString(assignmentKey + ".seeder.name"),
+		SignKey:         entity,
+		EMail:           viper.GetString(assignmentKey + ".seeder.email"),
+		ToBranch:        toBranch,
+		ProtectToBranch: viper.GetBool(assignmentKey + ".seeder.protectToBranch"),
 	}
 }
 

@@ -25,7 +25,12 @@ func (c *Client) runSeeder(assignmentCfg *cfg.AssignmentConfig, project *gitlab.
 
 	path := localpath(assignmentCfg, project.Name)
 
-	os.Mkdir(path, 0755)
+	err := os.Mkdir(path, 0755)
+	if err != nil {
+		log.Debug().Err(err).
+			Msg("cannot create new directory for seeding")
+		return err
+	}
 
 	args := assignmentCfg.Seeder.Args
 	for index, item := range assignmentCfg.Seeder.Args {
@@ -36,14 +41,19 @@ func (c *Client) runSeeder(assignmentCfg *cfg.AssignmentConfig, project *gitlab.
 
 	cmd := exec.Command(assignmentCfg.Seeder.Command, args...)
 	cmd.Dir = path
-	err := cmd.Run()
+	err = cmd.Run()
 
 	if err != nil {
 		log.Debug().Err(err)
 		return fmt.Errorf("running seeding application %s failed: %v", assignmentCfg.Seeder.Command, err)
 	}
 
-	git.PlainInit(path, false)
+	_, err = git.PlainInit(path, false)
+	if err != nil {
+		log.Debug().Err(err).
+			Msg("cannot initalize repository for seeding")
+		return err
+	}
 
 	repo, err := git.PlainOpen(path)
 	if err != nil {
@@ -59,11 +69,13 @@ func (c *Client) runSeeder(assignmentCfg *cfg.AssignmentConfig, project *gitlab.
 
 	err = addAndCommit(wtree, assignmentCfg)
 	if err != nil {
-		log.Debug().Err(err)
 		return err
 	}
 
-	push(assignmentCfg, repo, wtree, project)
+	err = push(assignmentCfg, repo, wtree, project)
+	if err != nil {
+		return err
+	}
 
 	if assignmentCfg.Seeder.ProtectToBranch {
 		opts := &gitlab.ProtectRepositoryBranchesOptions{

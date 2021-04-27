@@ -10,7 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/openpgp"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 type AssignmentConfig struct {
@@ -292,7 +292,7 @@ func seeder(assignmentKey string) *Seeder {
 		}
 		if entities[0].PrivateKey.Encrypted {
 			fmt.Println(aurora.Blue("Passphrase for signing key is required. Please enter it now:"))
-			passphrase, _ := terminal.ReadPassword(int(syscall.Stdin))
+			passphrase, _ := term.ReadPassword(int(syscall.Stdin))
 			err = entities[0].PrivateKey.Decrypt(passphrase)
 			if err != nil {
 				log.Fatal()

@@ -2,6 +2,7 @@ package config
 
 import (
 	"sort"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -106,6 +107,14 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 	}
 
 	return assignmentConfig
+}
+
+// Using email addresses instead of usernames/user-id's results in @ and . in the student's name.
+// This is incompatible to the filesystem and gitlab so replacing the values is necessary.
+func (cfg *AssignmentConfig) EscapeUserName(name string) string {
+	name = strings.ReplaceAll(name, "@", "_")
+	name = strings.ReplaceAll(name, ".", "_")
+	return name
 }
 
 func assignmentPath(course, assignment string) string {

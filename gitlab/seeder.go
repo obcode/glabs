@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -31,7 +32,7 @@ func (c *Client) runSeeder(assignmentCfg *cfg.AssignmentConfig, project *gitlab.
 			Msg("cannot create new directory for seeding")
 		return err
 	}
-
+	path, _ = filepath.Abs(path)
 	args := assignmentCfg.Seeder.Args
 	for index, item := range assignmentCfg.Seeder.Args {
 		if strings.Count(item, "%s") == 1 {
@@ -41,8 +42,9 @@ func (c *Client) runSeeder(assignmentCfg *cfg.AssignmentConfig, project *gitlab.
 
 	cmd := exec.Command(assignmentCfg.Seeder.Command, args...)
 	cmd.Dir = path
-	err = cmd.Run()
+	out, err := cmd.CombinedOutput()
 
+	log.Debug().Msg(fmt.Sprintf("seeder returned: %v ", string(out)))
 	if err != nil {
 		log.Debug().Err(err)
 		return fmt.Errorf("running seeding application %s failed: %v", assignmentCfg.Seeder.Command, err)
@@ -88,6 +90,10 @@ func (c *Client) runSeeder(assignmentCfg *cfg.AssignmentConfig, project *gitlab.
 			return err
 		}
 	}
+	err = os.RemoveAll(path)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -121,7 +127,7 @@ func push(assignmentCfg *cfg.AssignmentConfig, repo *git.Repository, wtree *git.
 	branch := fmt.Sprintf("refs/heads/%s", assignmentCfg.Seeder.ToBranch)
 	b := plumbing.ReferenceName(branch)
 
-	err = wtree.Checkout(&git.CheckoutOptions{Create: true, Branch: b})
+	err = wtree.Checkout(&git.CheckoutOptions{Create: false, Branch: b})
 	if err != nil {
 		log.Debug().Err(err).
 			Str("branch", branch).

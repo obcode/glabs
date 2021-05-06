@@ -277,9 +277,9 @@ func seeder(assignmentKey string) *Seeder {
 		return nil
 	}
 
-	toBranch, ok := seederMap["toBranch"]
-	if !ok {
-		toBranch = "master"
+	toBranch := "master"
+	if tB := viper.GetString(assignmentKey + ".seeder.toBranch"); len(tB) > 0 {
+		toBranch = tB
 	}
 
 	privKeyString := viper.GetString(assignmentKey + ".seeder.signKey")

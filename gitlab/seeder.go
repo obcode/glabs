@@ -127,7 +127,13 @@ func push(assignmentCfg *cfg.AssignmentConfig, repo *git.Repository, wtree *git.
 	branch := fmt.Sprintf("refs/heads/%s", assignmentCfg.Seeder.ToBranch)
 	b := plumbing.ReferenceName(branch)
 
-	err = wtree.Checkout(&git.CheckoutOptions{Create: false, Branch: b})
+	create := false
+	_, err = repo.Branch(branch)
+	if err != nil {
+		create = true
+	}
+
+	err = wtree.Checkout(&git.CheckoutOptions{Create: create, Branch: b})
 	if err != nil {
 		log.Debug().Err(err).
 			Str("branch", branch).

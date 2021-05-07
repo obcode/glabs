@@ -69,6 +69,8 @@ Contents:
         localpath: <local base path for repositories to clone in> # default "."
         branch: <checkout branch> # default master
         force: <false|true> # remove directory if it exists. default false
+      students: <add students to global student list, which might be empty>
+      groups: <add or redefine groups>
 ```
 
 Example:
@@ -101,6 +103,12 @@ algdati:
       localpath: /tmp
       branch: develop
       clone: true
+    grp00:
+      - stan
+    grp01:
+      - hugo
+      - sandra
+      - quentin
 ```
 
 ## Usage

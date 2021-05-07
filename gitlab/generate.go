@@ -166,7 +166,7 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 			continue
 		}
 
-		spinner.StopMessage(aurora.Sprintf(aurora.Red(info)))
+		spinner.StopMessage(aurora.Sprintf(aurora.Green(info)))
 		err = spinner.Stop()
 		if err != nil {
 			log.Debug().Err(err).Msg("cannot stop spinner")

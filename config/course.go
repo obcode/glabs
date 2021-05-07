@@ -21,7 +21,7 @@ func GetCourseConfig(course string) *CourseConfig {
 
 	return &CourseConfig{
 		Course:   course,
-		Students: students(PerStudent, course),
-		Groups:   groups(PerGroup, course),
+		Students: students(PerStudent, course, ""),
+		Groups:   groups(PerGroup, course, ""),
 	}
 }

@@ -99,8 +99,8 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 		Description:       description(assignmentKey),
 		ContainerRegistry: viper.GetBool(assignmentKey + ".containerRegistry"),
 		AccessLevel:       accessLevel(assignmentKey),
-		Students:          students(per, course, onlyForStudentsOrGroups...),
-		Groups:            groups(per, course, onlyForStudentsOrGroups...),
+		Students:          students(per, course, assignment, onlyForStudentsOrGroups...),
+		Groups:            groups(per, course, assignment, onlyForStudentsOrGroups...),
 		Startercode:       startercode(assignmentKey),
 		Clone:             clone(assignmentKey),
 	}
@@ -154,11 +154,20 @@ func accessLevel(assignmentKey string) AccessLevel {
 	return Developer
 }
 
-func students(per Per, course string, onlyForStudentsOrGroups ...string) []string {
+func students(per Per, course, assignment string, onlyForStudentsOrGroups ...string) []string {
 	if per == PerGroup {
 		return nil
 	}
-	students := viper.GetStringSlice(course + ".students")
+
+	students := viper.GetStringSlice(course + "." + assignment + ".students")
+	studentsGlobal := viper.GetStringSlice(course + ".students")
+
+	if len(students) == 0 {
+		students = studentsGlobal
+	} else {
+		students = append(students, studentsGlobal...)
+	}
+
 	if len(onlyForStudentsOrGroups) > 0 {
 		onlyForStudents := make([]string, 0, len(onlyForStudentsOrGroups))
 		for _, onlyStudent := range onlyForStudentsOrGroups {
@@ -176,12 +185,20 @@ func students(per Per, course string, onlyForStudentsOrGroups ...string) []strin
 	return students
 }
 
-func groups(per Per, course string, onlyForStudentsOrGroups ...string) []*Group {
+func groups(per Per, course, assignment string, onlyForStudentsOrGroups ...string) []*Group {
 	if per == PerStudent {
 		return nil
 	}
 
+	groupsMapAssignmemt := viper.GetStringMapStringSlice(course + "." + assignment + ".groups")
 	groupsMap := viper.GetStringMapStringSlice(course + ".groups")
+
+	if len(groupsMapAssignmemt) > 0 {
+		for k, v := range groupsMapAssignmemt {
+			groupsMap[k] = v
+		}
+	}
+
 	if len(onlyForStudentsOrGroups) > 0 {
 		onlyTheseGroups := make(map[string][]string)
 		for _, onlyGroup := range onlyForStudentsOrGroups {

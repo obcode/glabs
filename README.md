@@ -59,15 +59,15 @@ Contents:
       containerRegistry: <false|true> # enable container registry, default false
       startercode:
         url: <url to repo> # only via SSH atm
-        fromBranch: <branchName in startercode> # default master
-        toBranch: <branchName in generated repo> # default master
+        fromBranch: <branchName in startercode> # default main
+        toBranch: <branchName in generated repo> # default main
         protectToBranch: <false|true> # whether only maintainer can push, default false
       # accesslevel should be guest, developer, reporter, maintainer
       # if not defined accesslevel is developer
       accesslevel: <accesslevel for students>
       clone:
         localpath: <local base path for repositories to clone in> # default "."
-        branch: <checkout branch> # default master
+        branch: <checkout branch> # default main
         force: <false|true> # remove directory if it exists. default false
       students: <add students to global student list, which might be empty>
       groups: <add or redefine groups>

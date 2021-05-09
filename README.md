@@ -65,6 +65,16 @@ Contents:
       # accesslevel should be guest, developer, reporter, maintainer
       # if not defined accesslevel is developer
       accesslevel: <accesslevel for students>
+      # It is possible to seed repositories using a custom tool instead of using a startercode.      
+      seeder:
+        cmd: <path to seeding tool> # e.g. python
+        args:
+          - <list of arguments passed. %s gets replaced by the path of the repository>
+        name: <name of the author used for commit>
+        email: <email of the author used for commit>
+        toBranch: <branch to commit to> # default master 
+        signKey: <plaintext private key for signing commits> # Optional key for signing the commit. If the key is encrypted the password will be requested on running the tool.
+        protectToBranch:  <false|true> # whether only maintainer can push, default false
       clone:
         localpath: <local base path for repositories to clone in> # default "."
         branch: <checkout branch> # default master
@@ -153,6 +163,43 @@ Global Flags:
 ```
 
 Command line options (`-b` and `-p`) override the config file settings.
+
+## Seeding using a custom tool
+
+Instead of providing each student/group the same repository using the startercode option it is possible to run a tool to seed each repository individually.
+
+1. Therefore a new repository gets created at the `clone.localpath` location.
+2. Afterwards the tool runs inside this location. The argument `%s` gets replaced by the location e.g. helpfull storing some solutions for the matching repo somewhere else.
+3. The files get added to the repository.
+4. The changes get commited using `seeder.name` and `seeder.email`.
+5. Finally the changes get pushed to the remote location.
+
+### Example using `seeder` Option
+
+```.yaml
+algdati:
+  coursepath: algdati
+  semesterpath: semester/ob-20ws
+  students:
+    - olli
+    - ob
+    - obcode
+  blatt0:
+    assignmentpath: blatt0
+    per: group
+    description: Blatt 0, Algorithmen und Datenstrukturen I, WS 20/21
+    seeder:
+      cmd: python
+      args:
+        - /data/repos/generate.py
+        - generate-keys
+        - %s
+      name: Your Name
+      email: foo@bar.com
+      toBranch: main
+    clone:
+      localpath: /tmp
+```
 
 ## Using starter code as a template
 

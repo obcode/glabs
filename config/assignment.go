@@ -244,12 +244,12 @@ func startercode(assignmentKey string) *Startercode {
 		return nil
 	}
 
-	fromBranch := "master"
+	fromBranch := "main"
 	if fB := viper.GetString(assignmentKey + ".startercode.fromBranch"); len(fB) > 0 {
 		fromBranch = fB
 	}
 
-	toBranch := "master"
+	toBranch := "main"
 	if tB := viper.GetString(assignmentKey + ".startercode.toBranch"); len(tB) > 0 {
 		toBranch = tB
 	}
@@ -272,7 +272,7 @@ func clone(assignmentKey string) *Clone {
 
 	branch, ok := cloneMap["branch"]
 	if !ok {
-		branch = "master"
+		branch = "main"
 	}
 
 	force := viper.GetBool(assignmentKey + ".clone.force")

@@ -72,7 +72,7 @@ Contents:
           - <list of arguments passed. %s gets replaced by the path of the repository>
         name: <name of the author used for commit>
         email: <email of the author used for commit>
-        toBranch: <branch to commit to> # default master 
+        toBranch: <branch to commit to> # default main 
         signKey: <plaintext private key for signing commits> # Optional key for signing the commit. If the key is encrypted the password will be requested on running the tool.
         protectToBranch:  <false|true> # whether only maintainer can push, default false
       clone:

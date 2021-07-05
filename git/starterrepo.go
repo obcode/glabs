@@ -52,7 +52,7 @@ func PrepareStartercodeRepo(assignmentCfg *config.AssignmentConfig) (*Starterrep
 		log.Debug().Err(err).Msg("cannot start spinner")
 	}
 
-	auth, err := getAuth()
+	auth, err := GetAuth()
 	if err != nil {
 		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
 

@@ -119,6 +119,39 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 				log.Debug().Err(err).Msg("cannot stop spinner")
 			}
 		}
+	} else if assignmentCfg.Seeder != nil {
+		if !generated {
+			fmt.Println(aurora.Red("    ↪ not running seeder for existing project"))
+		} else {
+			cfg.Suffix = aurora.Sprintf(aurora.Cyan(" ↪ seeding project %s using %s"),
+				aurora.Magenta(projectname),
+				aurora.Magenta(assignmentCfg.Seeder.Command),
+			)
+			spinner, err := yacspin.New(cfg)
+			if err != nil {
+				log.Debug().Err(err).Msg("cannot create spinner")
+			}
+			err = spinner.Start()
+			if err != nil {
+				log.Debug().Err(err).Msg("cannot start spinner")
+			}
+
+			err = c.runSeeder(assignmentCfg, project)
+			if err != nil {
+				spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
+
+				err := spinner.StopFail()
+				if err != nil {
+					log.Debug().Err(err).Msg("cannot stop spinner")
+				}
+				return
+			}
+
+			err = spinner.Stop()
+			if err != nil {
+				log.Debug().Err(err).Msg("cannot stop spinner")
+			}
+		}
 	}
 
 	for _, student := range members {

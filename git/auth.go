@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func getAuth() (ssh.AuthMethod, error) {
+func GetAuth() (ssh.AuthMethod, error) {
 	privateKeyFile := viper.GetString("sshprivatekey")
 
 	if privateKeyFile == "" {

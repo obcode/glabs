@@ -13,7 +13,7 @@ func (cfg *AssignmentConfig) Show() {
 		containerRegistry = aurora.Green("enabled")
 	}
 
-	startercode := aurora.Sprintf(aurora.Red("        not defined"))
+	startercode := aurora.Sprintf(aurora.Red("not defined"))
 	if cfg.Startercode != nil {
 		startercode = aurora.Sprintf(aurora.Cyan(`
   URL:              %s
@@ -26,7 +26,23 @@ func (cfg *AssignmentConfig) Show() {
 			aurora.Yellow(cfg.Startercode.ProtectToBranch),
 		)
 	}
-
+	seeding := aurora.Sprintf(aurora.Red("not defined"))
+	if cfg.Seeder != nil {
+		seeding = aurora.Sprintf(aurora.Cyan(`
+  Command:          %s
+  Args:             %v
+  Author:           %s
+  EMail:            %s
+  ToBranch:         %s
+  ProtectToBranch:  %t`),
+			aurora.Yellow(cfg.Seeder.Command),
+			aurora.Yellow(cfg.Seeder.Args),
+			aurora.Yellow(cfg.Seeder.Name),
+			aurora.Yellow(cfg.Seeder.EMail),
+			aurora.Yellow(cfg.Seeder.ToBranch),
+			aurora.Yellow(cfg.Seeder.ProtectToBranch),
+		)
+	}
 	clone := aurora.Sprintf(aurora.Red("        not defined"))
 	if cfg.Clone != nil {
 		clone = aurora.Sprintf(aurora.Cyan(`Clone:
@@ -75,7 +91,8 @@ Base-URL:           %s
 Description:	    %s
 AccessLevel:        %s
 Container-Registry: %s
-Startercode:%s
+Startercode:        %s
+Seeding:            %s
 %s
 %s
 `),
@@ -87,6 +104,7 @@ Startercode:%s
 		aurora.Yellow(cfg.AccessLevel.String()),
 		containerRegistry,
 		startercode,
+		seeding,
 		clone,
 		groupsOrStudents,
 	))

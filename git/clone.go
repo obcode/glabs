@@ -16,7 +16,7 @@ import (
 )
 
 func Clone(cfg *config.AssignmentConfig) {
-	auth, err := getAuth()
+	auth, err := GetAuth()
 	if err != nil {
 		fmt.Printf("error: %v", err)
 		return

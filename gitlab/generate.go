@@ -3,6 +3,7 @@ package gitlab
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/logrusorgru/aurora"
@@ -10,6 +11,7 @@ import (
 	"github.com/obcode/glabs/git"
 	"github.com/rs/zerolog/log"
 	"github.com/theckman/yacspin"
+	"github.com/xanzy/go-gitlab"
 )
 
 func (c *Client) Generate(assignmentCfg *config.AssignmentConfig) {
@@ -171,11 +173,31 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 
 		userID, err := c.getUserID(student)
 		if err != nil {
-			spinner.StopFailMessage(fmt.Sprintf("cannot get user id: %v", err))
+			if strings.Contains(student, "@") {
+				info, err := c.inviteByEmail(assignmentCfg, project.ID, student)
+				if err != nil {
+					spinner.StopFailMessage(fmt.Sprintf("%v", err))
 
-			err := spinner.StopFail()
-			if err != nil {
-				log.Debug().Err(err).Msg("cannot stop spinner")
+					err := spinner.StopFail()
+					if err != nil {
+						log.Debug().Err(err).Msg("cannot stop spinner")
+					}
+				} else {
+
+					spinner.StopMessage(aurora.Sprintf(aurora.Green(info)))
+					err = spinner.Stop()
+					if err != nil {
+						log.Debug().Err(err).Msg("cannot stop spinner")
+					}
+				}
+				continue
+			} else {
+				spinner.StopFailMessage(fmt.Sprintf("cannot get user id: %v", err))
+
+				err := spinner.StopFail()
+				if err != nil {
+					log.Debug().Err(err).Msg("cannot stop spinner")
+				}
 			}
 			continue
 		}
@@ -208,6 +230,22 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 
 }
 
+func (c *Client) inviteByEmail(cfg *config.AssignmentConfig, projectID int, email string) (string, error) {
+
+	m := &gitlab.InvitesOptions{
+		Email:       &email,
+		AccessLevel: gitlab.AccessLevel(gitlab.AccessLevelValue(cfg.AccessLevel)),
+	}
+	resp, _, err := c.Invites.ProjectInvites(projectID, m)
+	if err != nil {
+		return "", err
+	}
+	if resp.Status != "success" {
+		return "", fmt.Errorf("inviting user %s failed with %s", email, resp.Message[email])
+	}
+	return fmt.Sprintf("successfully invited user %s", email), nil
+}
+
 func (c *Client) generatePerStudent(assignmentCfg *config.AssignmentConfig, assignmentGroupID int,
 	starterrepo *git.Starterrepo) {
 	if len(assignmentCfg.Students) == 0 {
@@ -216,7 +254,8 @@ func (c *Client) generatePerStudent(assignmentCfg *config.AssignmentConfig, assi
 	}
 
 	for _, student := range assignmentCfg.Students {
-		c.generate(assignmentCfg, assignmentGroupID, assignmentCfg.Name+"-"+student, []string{student}, starterrepo)
+		name := assignmentCfg.Name + "-" + assignmentCfg.EscapeUserName(student)
+		c.generate(assignmentCfg, assignmentGroupID, name, []string{student}, starterrepo)
 	}
 }
 

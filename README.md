@@ -119,6 +119,9 @@ algdati:
       - hugo
       - sandra
       - quentin
+  assignemnt1:
+    assignmentpath: a1
+    per: student
 ```
 
 ## Usage

@@ -34,6 +34,8 @@ courses:
 
 ### Course config file
 
+Each course file must be named like the entries in the main config file, e.g., `algdatii.yml` and `vss.yml` in the above example.
+
 Contents:
 
 ```.yaml

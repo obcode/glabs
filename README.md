@@ -132,6 +132,7 @@ Usage:
 Available Commands:
   check       check course config
   clone       Clone repositories.
+  delete      Delete repositories.
   generate    Generate repositories.
   help        Help about any command
   show        Show config of an assignment

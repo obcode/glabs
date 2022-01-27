@@ -32,7 +32,11 @@ courses:
   - vss
 ```
 
+Placeholders like `$HOME` are not substituted but taken verbatim. It is therefore best to specify absolute paths.
+
 ### Course config file
+
+Each course file must be named like the entries in the main config file, e.g., `algdatii.yml` and `vss.yml` in the above example.
 
 Contents:
 
@@ -119,6 +123,9 @@ algdati:
       - hugo
       - sandra
       - quentin
+  assignemnt1:
+    assignmentpath: a1
+    per: student
 ```
 
 ## Usage

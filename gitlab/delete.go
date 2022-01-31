@@ -22,7 +22,7 @@ func (c *Client) Delete(assignmentCfg *config.AssignmentConfig) {
 	case config.PerStudent:
 		c.deletePerStudent(assignmentCfg, assignmentGitLabGroupID)
 	default:
-		fmt.Printf("it is only possible to generate for students oder groups, not for %v", per)
+		fmt.Printf("it is only possible to delete projects for students or groups, not for %v", per)
 		os.Exit(1)
 	}
 }

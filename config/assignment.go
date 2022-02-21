@@ -51,6 +51,7 @@ type Startercode struct {
 	URL             string
 	FromBranch      string
 	ToBranch        string
+	DevBranch       string
 	ProtectToBranch bool
 }
 
@@ -278,10 +279,16 @@ func startercode(assignmentKey string) *Startercode {
 		toBranch = tB
 	}
 
+	devBranch := toBranch
+	if dB := viper.GetString(assignmentKey + ".startercode.devBranch"); len(dB) > 0 {
+		devBranch = dB
+	}
+
 	return &Startercode{
 		URL:             url,
 		FromBranch:      fromBranch,
 		ToBranch:        toBranch,
+		DevBranch:       devBranch,
 		ProtectToBranch: viper.GetBool(assignmentKey + ".startercode.protectToBranch"),
 	}
 }

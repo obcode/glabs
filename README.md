@@ -65,18 +65,19 @@ Contents:
         url: <url to repo> # only via SSH atm
         fromBranch: <branchName in startercode> # default main
         toBranch: <branchName in generated repo> # default main
+        devBranch: <branchName used as default branch> # default toBranch
         protectToBranch: <false|true> # whether only maintainer can push, default false
       # accesslevel should be guest, developer, reporter, maintainer
       # if not defined accesslevel is developer
       accesslevel: <accesslevel for students>
-      # It is possible to seed repositories using a custom tool instead of using a startercode.      
+      # It is possible to seed repositories using a custom tool instead of using a startercode.
       seeder:
         cmd: <path to seeding tool> # e.g. python
         args:
           - <list of arguments passed. %s gets replaced by the path of the repository>
         name: <name of the author used for commit>
         email: <email of the author used for commit>
-        toBranch: <branch to commit to> # default main 
+        toBranch: <branch to commit to> # default main
         signKey: <plaintext private key for signing commits> # Optional key for signing the commit. If the key is encrypted the password will be requested on running the tool.
         protectToBranch:  <false|true> # whether only maintainer can push, default false
       clone:

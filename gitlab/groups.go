@@ -48,7 +48,8 @@ func (c *Client) getGroupID(assignmentCfg *config.AssignmentConfig) (int, error)
 		log.Error().
 			Str("course", assignmentCfg.Course).
 			Str("assignmentpath", assignmentCfg.Path).
-			Msg("please go to the gitlab website and create the subgroup with the assignment patz")
+			Msg("please go to the gitlab website and create the subgroup with the assignment path")
+		return 0, fmt.Errorf("please go to the gitlab website and create the subgroup with the assignment path")
 	}
 
 	return assignmentGroupID, nil

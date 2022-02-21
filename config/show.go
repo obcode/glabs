@@ -19,10 +19,12 @@ func (cfg *AssignmentConfig) Show() {
   URL:              %s
   FromBranch:       %s
   ToBranch:         %s
+  DevBranch:        %s
   ProtectToBranch:  %t`),
 			aurora.Yellow(cfg.Startercode.URL),
 			aurora.Yellow(cfg.Startercode.FromBranch),
 			aurora.Yellow(cfg.Startercode.ToBranch),
+			aurora.Yellow(cfg.Startercode.DevBranch),
 			aurora.Yellow(cfg.Startercode.ProtectToBranch),
 		)
 	}

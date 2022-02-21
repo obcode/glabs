@@ -32,7 +32,11 @@ courses:
   - vss
 ```
 
+Placeholders like `$HOME` are not substituted but taken verbatim. It is therefore best to specify absolute paths.
+
 ### Course config file
+
+Each course file must be named like the entries in the main config file, e.g., `algdatii.yml` and `vss.yml` in the above example.
 
 Contents:
 
@@ -61,18 +65,19 @@ Contents:
         url: <url to repo> # only via SSH atm
         fromBranch: <branchName in startercode> # default main
         toBranch: <branchName in generated repo> # default main
+        devBranch: <branchName used as default branch> # default toBranch
         protectToBranch: <false|true> # whether only maintainer can push, default false
       # accesslevel should be guest, developer, reporter, maintainer
       # if not defined accesslevel is developer
       accesslevel: <accesslevel for students>
-      # It is possible to seed repositories using a custom tool instead of using a startercode.      
+      # It is possible to seed repositories using a custom tool instead of using a startercode.
       seeder:
         cmd: <path to seeding tool> # e.g. python
         args:
           - <list of arguments passed. %s gets replaced by the path of the repository>
         name: <name of the author used for commit>
         email: <email of the author used for commit>
-        toBranch: <branch to commit to> # default main 
+        toBranch: <branch to commit to> # default main
         signKey: <plaintext private key for signing commits> # Optional key for signing the commit. If the key is encrypted the password will be requested on running the tool.
         protectToBranch:  <false|true> # whether only maintainer can push, default false
       clone:
@@ -119,6 +124,9 @@ algdati:
       - hugo
       - sandra
       - quentin
+  assignemnt1:
+    assignmentpath: a1
+    per: student
 ```
 
 ## Usage
@@ -132,6 +140,7 @@ Usage:
 Available Commands:
   check       check course config
   clone       Clone repositories.
+  delete      Delete repositories.
   generate    Generate repositories.
   help        Help about any command
   show        Show config of an assignment

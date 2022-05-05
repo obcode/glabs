@@ -15,5 +15,6 @@ require (
 	github.com/theckman/yacspin v0.8.0
 	github.com/xanzy/go-gitlab v0.47.0
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
-	golang.org/x/term v0.0.0-20210422114643-f5beecf764ed // indirect
+	golang.org/x/sys v0.0.0-20220503163025-988cb79eb6c6 // indirect
+	golang.org/x/term v0.0.0-20210422114643-f5beecf764ed
 )

@@ -164,6 +164,20 @@ func description(assignmentKey string) string {
 	return description
 }
 
+func (cfg *AssignmentConfig) SetAccessLevel(level string) {
+	accesslevel := Developer
+	switch level {
+	case "guest":
+		accesslevel = Guest
+	case "reporter":
+		accesslevel = Reporter
+	case "maintainer":
+		accesslevel = Maintainer
+	}
+
+	cfg.AccessLevel = accesslevel
+}
+
 func accessLevel(assignmentKey string) AccessLevel {
 	accesslevelIdentifier := viper.GetString(assignmentKey + ".accesslevel")
 

@@ -143,6 +143,7 @@ Available Commands:
   delete      Delete repositories.
   generate    Generate repositories.
   help        Help about any command
+  setaccess   Set access level for exisiting repositories.
   show        Show config of an assignment
   version     Print the version number of Glabs
 

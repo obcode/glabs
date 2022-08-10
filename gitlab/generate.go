@@ -3,7 +3,6 @@ package gitlab
 import (
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/logrusorgru/aurora"
@@ -11,7 +10,6 @@ import (
 	"github.com/obcode/glabs/git"
 	"github.com/rs/zerolog/log"
 	"github.com/theckman/yacspin"
-	"github.com/xanzy/go-gitlab"
 )
 
 func (c *Client) Generate(assignmentCfg *config.AssignmentConfig) {
@@ -155,95 +153,7 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 			}
 		}
 	}
-
-	for _, student := range members {
-		cfg.Suffix = aurora.Sprintf(aurora.Cyan(" ↪ adding member %s to %s as %s"),
-			aurora.Yellow(student),
-			aurora.Magenta(projectname),
-			aurora.Magenta(assignmentCfg.AccessLevel.String()),
-		)
-		spinner, err := yacspin.New(cfg)
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot create spinner")
-		}
-		err = spinner.Start()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot start spinner")
-		}
-
-		userID, err := c.getUserID(student)
-		if err != nil {
-			if strings.Contains(student, "@") {
-				info, err := c.inviteByEmail(assignmentCfg, project.ID, student)
-				if err != nil {
-					spinner.StopFailMessage(fmt.Sprintf("%v", err))
-
-					err := spinner.StopFail()
-					if err != nil {
-						log.Debug().Err(err).Msg("cannot stop spinner")
-					}
-				} else {
-
-					spinner.StopMessage(aurora.Sprintf(aurora.Green(info)))
-					err = spinner.Stop()
-					if err != nil {
-						log.Debug().Err(err).Msg("cannot stop spinner")
-					}
-				}
-				continue
-			} else {
-				spinner.StopFailMessage(fmt.Sprintf("cannot get user id: %v", err))
-
-				err := spinner.StopFail()
-				if err != nil {
-					log.Debug().Err(err).Msg("cannot stop spinner")
-				}
-			}
-			continue
-		}
-
-		info, err := c.addMember(assignmentCfg, project.ID, userID)
-		if err != nil {
-			log.Debug().Err(err).
-				Int("projectID", project.ID).
-				Int("userID", userID).
-				Str("student", student).
-				Str("course", assignmentCfg.Course).
-				Str("assignment", assignmentCfg.Name).
-				Msg("error while adding member")
-
-			spinner.StopFailMessage(fmt.Sprintf("cannot add user %s: %v", student, err))
-
-			err := spinner.StopFail()
-			if err != nil {
-				log.Debug().Err(err).Msg("cannot stop spinner")
-			}
-			continue
-		}
-
-		spinner.StopMessage(aurora.Sprintf(aurora.Green(info)))
-		err = spinner.Stop()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
-	}
-
-}
-
-func (c *Client) inviteByEmail(cfg *config.AssignmentConfig, projectID int, email string) (string, error) {
-
-	m := &gitlab.InvitesOptions{
-		Email:       &email,
-		AccessLevel: gitlab.AccessLevel(gitlab.AccessLevelValue(cfg.AccessLevel)),
-	}
-	resp, _, err := c.Invites.ProjectInvites(projectID, m)
-	if err != nil {
-		return "", err
-	}
-	if resp.Status != "success" {
-		return "", fmt.Errorf("inviting user %s failed with %s", email, resp.Message[email])
-	}
-	return fmt.Sprintf("successfully invited user %s", email), nil
+	c.setaccess(assignmentCfg, project, members, &cfg)
 }
 
 func (c *Client) generatePerStudent(assignmentCfg *config.AssignmentConfig, assignmentGroupID int,

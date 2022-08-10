@@ -3,7 +3,7 @@ package gitlab
 import (
 	"fmt"
 
-	"github.com/go-git/go-git/v5"
+	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	cfg "github.com/obcode/glabs/config"
 	g "github.com/obcode/glabs/git"
@@ -111,7 +111,10 @@ func (c *Client) protectBranch(assignmentCfg *cfg.AssignmentConfig, project *git
 			Msg("protecting branch")
 
 		opts := &gitlab.ProtectRepositoryBranchesOptions{
-			Name: gitlab.String(assignmentCfg.Startercode.ToBranch),
+			PushAccessLevel:      gitlab.AccessLevel(gitlab.MaintainerPermissions),
+			MergeAccessLevel:     gitlab.AccessLevel(gitlab.MaintainerPermissions),
+			UnprotectAccessLevel: gitlab.AccessLevel(gitlab.MaintainerPermissions),
+			Name:                 gitlab.String(assignmentCfg.Startercode.ToBranch),
 		}
 
 		_, _, err := c.ProtectedBranches.ProtectRepositoryBranches(project.ID, opts)

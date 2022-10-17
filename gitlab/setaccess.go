@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"strconv"
 	"time"
 
 	"github.com/logrusorgru/aurora"
@@ -80,7 +81,19 @@ func (c *Client) setaccess(assignmentCfg *config.AssignmentConfig,
 			log.Debug().Err(err).Msg("cannot start spinner")
 		}
 
-		userID, err := c.getUserID(student)
+		var userID int
+
+		if strings.HasPrefix(student, "id:") {
+			asRunes := []rune(student)
+			userIDStr := string(asRunes[3:])
+			userID, err = strconv.Atoi(userIDStr)
+			if err != nil {
+				log.Debug().Err(err).Msg("cannot interpret specified user id as numeric id")
+			}
+		} else {
+			userID, err = c.getUserID(student)
+		}
+
 		if err != nil {
 			if strings.Contains(student, "@") {
 				info, err := c.inviteByEmail(assignmentCfg, project.ID, student)

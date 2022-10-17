@@ -129,6 +129,18 @@ algdati:
     per: student
 ```
 
+**Using Student User IDs instead of Student Account Names**
+
+Instead of specifying the users to be added to a project by using the student account name, you can also specify them by using the corresponding user IDs if the prefix "id:" is used. 
+
+Example:
+```.yaml
+[...]
+  students:
+   - id:8183
+[...]
+```
+
 ## Usage
 
 ```

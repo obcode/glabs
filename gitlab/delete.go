@@ -34,7 +34,7 @@ func (c *Client) deletePerStudent(assignmentCfg *config.AssignmentConfig, assign
 	}
 
 	for _, student := range assignmentCfg.Students {
-		name := assignmentCfg.Name + "-" + assignmentCfg.EscapeUserName(student)
+		name := assignmentCfg.Name + "-" + assignmentCfg.RepoSuffix(student)
 		c.delete(assignmentCfg, assignmentGroupID, name)
 	}
 }

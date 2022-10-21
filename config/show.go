@@ -63,7 +63,7 @@ func (cfg *AssignmentConfig) Show() {
 		per.WriteString(aurora.Sprintf(aurora.Cyan("Students:\n")))
 		for _, s := range cfg.Students {
 			per.WriteString(aurora.Sprintf(aurora.Cyan("  - ")))
-			per.WriteString(aurora.Sprintf(aurora.Yellow(s)))
+			per.WriteString(aurora.Sprintf(aurora.Yellow(s.Raw)))
 			per.WriteString("\n")
 		}
 	case PerGroup:
@@ -73,7 +73,7 @@ func (cfg *AssignmentConfig) Show() {
 			per.WriteString(aurora.Sprintf(aurora.Yellow(grp.Name)))
 			per.WriteString(aurora.Sprintf(aurora.Cyan(": ")))
 			for i, m := range grp.Members {
-				per.WriteString(aurora.Sprintf(aurora.Green(m)))
+				per.WriteString(aurora.Sprintf(aurora.Green(m.Raw)))
 				if i == len(grp.Members)-1 {
 					per.WriteString("\n")
 				} else {

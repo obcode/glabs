@@ -9,36 +9,53 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-func (c *Client) getUser(searchPattern string) (*gitlab.User, error) {
-	u := &gitlab.ListUsersOptions{
-		Search: gitlab.String(searchPattern),
-	}
-	users, _, err := c.Users.ListUsers(u)
-	if err != nil {
-		log.Fatal().Err(err)
-	}
+func (c *Client) getUser(student *config.Student) (*gitlab.User, error) {
+	var options *gitlab.ListUsersOptions
 
-	if len(users) == 0 {
-		log.Debug().Str("searchPattern", searchPattern).Msg("user not found")
-		return nil, errors.New("user not found")
-	} else if len(users) > 1 {
-		log.Debug().Str("searchPattern", searchPattern).Msg("more than one user found")
-		return nil, errors.New("more than one user found")
-	}
+	if student.Id != nil {
+		user, _, err := c.Users.GetUser(*student.Id)
+		return user, err
+	} else {
 
-	return users[0], nil
+		searchPattern := ""
+
+		if student.Email != nil {
+			searchPattern = *student.Email
+		} else if student.Username != nil {
+			searchPattern = *student.Username
+		}
+
+		options = &gitlab.ListUsersOptions{
+			Search: gitlab.String(searchPattern),
+		}
+
+		users, _, err := c.Users.ListUsers(options)
+		if err != nil {
+			log.Fatal().Err(err)
+		}
+
+		if len(users) == 0 {
+			log.Debug().Str("searchPattern", searchPattern).Msg("user not found")
+			return nil, errors.New("user not found")
+		} else if len(users) > 1 {
+			log.Debug().Str("searchPattern", searchPattern).Msg("more than one user found")
+			return nil, errors.New("more than one user found")
+		}
+
+		return users[0], nil
+	}
 }
 
-func (c *Client) getUserID(searchPattern string) (int, error) {
-	user, err := c.getUser(searchPattern)
+func (c *Client) getUserID(student *config.Student) (int, error) {
+	user, err := c.getUser(student)
 
 	if err != nil {
-		log.Debug().Err(err).Str("searchPattern", searchPattern).Msg("cannot get User")
+		log.Debug().Err(err).Interface("user", student).Msg("cannot get User")
 		return 0, fmt.Errorf("cannot get user: %w", err)
 	}
 
 	userID := user.ID
-	log.Debug().Str("searchPattern", searchPattern).Int("userID", userID).Msg("found user with id")
+	log.Debug().Interface("user", student).Int("userID", userID).Msg("found user with id")
 
 	return userID, nil
 }

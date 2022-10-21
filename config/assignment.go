@@ -2,77 +2,10 @@ package config
 
 import (
 	"fmt"
-	"sort"
 	"strings"
-	"syscall"
 
-	"github.com/logrusorgru/aurora"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
-	"golang.org/x/crypto/openpgp"
-	"golang.org/x/term"
-)
-
-type AssignmentConfig struct {
-	Course            string
-	Name              string
-	Path              string
-	URL               string
-	Per               Per
-	Description       string
-	ContainerRegistry bool
-	AccessLevel       AccessLevel
-	Students          []string
-	Groups            []*Group
-	Startercode       *Startercode
-	Clone             *Clone
-	Seeder            *Seeder
-}
-
-type Per string
-
-const (
-	PerStudent Per = "student"
-	PerGroup   Per = "group"
-	PerFailed  Per = "could not happen"
-)
-
-type Seeder struct {
-	Command         string
-	Args            []string
-	Name            string
-	EMail           string
-	SignKey         *openpgp.Entity
-	ToBranch        string
-	ProtectToBranch bool
-}
-
-type Startercode struct {
-	URL             string
-	FromBranch      string
-	ToBranch        string
-	DevBranch       string
-	ProtectToBranch bool
-}
-
-type Clone struct {
-	LocalPath string
-	Branch    string
-	Force     bool
-}
-
-type Group struct {
-	Name    string
-	Members []string
-}
-
-type AccessLevel int
-
-const (
-	Guest      AccessLevel = 10
-	Reporter   AccessLevel = 20
-	Developer  AccessLevel = 30
-	Maintainer AccessLevel = 40
 )
 
 func (ac AccessLevel) String() string {
@@ -129,8 +62,18 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 
 // Using email addresses instead of usernames/user-id's results in @ in the student's name.
 // This is incompatible to the filesystem and gitlab so replacing the values is necessary.
-func (cfg *AssignmentConfig) EscapeUserName(name string) string {
-	return strings.ReplaceAll(name, "@", "_at_")
+func (cfg *AssignmentConfig) RepoSuffix(student *Student) string {
+	if student.Email != nil {
+		return strings.ReplaceAll(*student.Email, "@", "_at_")
+	}
+	if student.Id != nil {
+		return fmt.Sprint(*student.Id)
+	}
+	if student.Username != nil {
+		return *student.Username
+	}
+
+	return ""
 }
 
 func assignmentPath(course, assignment string) string {
@@ -162,231 +105,4 @@ func description(assignmentKey string) string {
 	}
 
 	return description
-}
-
-func (cfg *AssignmentConfig) SetAccessLevel(level string) {
-	accesslevel := Developer
-	switch level {
-	case "guest":
-		accesslevel = Guest
-	case "reporter":
-		accesslevel = Reporter
-	case "maintainer":
-		accesslevel = Maintainer
-	}
-
-	cfg.AccessLevel = accesslevel
-}
-
-func accessLevel(assignmentKey string) AccessLevel {
-	accesslevelIdentifier := viper.GetString(assignmentKey + ".accesslevel")
-
-	switch accesslevelIdentifier {
-	case "guest":
-		return Guest
-	case "reporter":
-		return Reporter
-	case "maintainer":
-		return Maintainer
-	}
-
-	return Developer
-}
-
-func students(per Per, course, assignment string, onlyForStudentsOrGroups ...string) []string {
-	if per == PerGroup {
-		return nil
-	}
-
-	students := viper.GetStringSlice(course + "." + assignment + ".students")
-	studentsGlobal := viper.GetStringSlice(course + ".students")
-
-	if len(students) == 0 {
-		students = studentsGlobal
-	} else {
-		students = append(students, studentsGlobal...)
-	}
-
-	if len(onlyForStudentsOrGroups) > 0 {
-		onlyForStudents := make([]string, 0, len(onlyForStudentsOrGroups))
-		for _, onlyStudent := range onlyForStudentsOrGroups {
-			for _, student := range students {
-				if onlyStudent == student {
-					onlyForStudents = append(onlyForStudents, onlyStudent)
-				}
-			}
-		}
-		students = onlyForStudents
-	}
-
-	log.Debug().Interface("students", students).Msg("found students")
-	sort.Strings(students)
-	return students
-}
-
-func groups(per Per, course, assignment string, onlyForStudentsOrGroups ...string) []*Group {
-	if per == PerStudent {
-		return nil
-	}
-
-	groupsMapAssignmemt := viper.GetStringMapStringSlice(course + "." + assignment + ".groups")
-	groupsMap := viper.GetStringMapStringSlice(course + ".groups")
-
-	if len(groupsMapAssignmemt) > 0 {
-		for k, v := range groupsMapAssignmemt {
-			groupsMap[k] = v
-		}
-	}
-
-	if len(onlyForStudentsOrGroups) > 0 {
-		onlyTheseGroups := make(map[string][]string)
-		for _, onlyGroup := range onlyForStudentsOrGroups {
-			for groupname, students := range groupsMap {
-				if onlyGroup == groupname {
-					onlyTheseGroups[groupname] = students
-				}
-			}
-		}
-		groupsMap = onlyTheseGroups
-	}
-
-	keys := make([]string, 0, len(groupsMap))
-	for k := range groupsMap {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	groups := make([]*Group, 0, len(groupsMap))
-	for _, groupname := range keys {
-		members := groupsMap[groupname]
-		sort.Strings(members)
-		groups = append(groups, &Group{
-			Name:    groupname,
-			Members: members,
-		})
-	}
-
-	return groups
-}
-
-func startercode(assignmentKey string) *Startercode {
-	startercodeMap := viper.GetStringMapString(assignmentKey + ".startercode")
-
-	if len(startercodeMap) == 0 {
-		log.Debug().Str("assignmemtKey", assignmentKey).Msg("no startercode provided")
-		return nil
-	}
-
-	url, ok := startercodeMap["url"]
-	if !ok {
-		log.Fatal().Str("assignmemtKey", assignmentKey).Msg("startercode provided without url")
-		return nil
-	}
-
-	fromBranch := "main"
-	if fB := viper.GetString(assignmentKey + ".startercode.fromBranch"); len(fB) > 0 {
-		fromBranch = fB
-	}
-
-	toBranch := "main"
-	if tB := viper.GetString(assignmentKey + ".startercode.toBranch"); len(tB) > 0 {
-		toBranch = tB
-	}
-
-	devBranch := toBranch
-	if dB := viper.GetString(assignmentKey + ".startercode.devBranch"); len(dB) > 0 {
-		devBranch = dB
-	}
-
-	return &Startercode{
-		URL:             url,
-		FromBranch:      fromBranch,
-		ToBranch:        toBranch,
-		DevBranch:       devBranch,
-		ProtectToBranch: viper.GetBool(assignmentKey + ".startercode.protectToBranch"),
-	}
-}
-
-func seeder(assignmentKey string) *Seeder {
-	seederMap := viper.GetStringMapString(assignmentKey + ".seeder")
-
-	if len(seederMap) == 0 {
-		log.Debug().Str("assignmemtKey", assignmentKey).Msg("no seeder provided")
-		return nil
-	}
-
-	cmd, ok := seederMap["cmd"]
-	if !ok {
-		log.Fatal().Str("assignmemtKey", assignmentKey).Msg("seeder provided without cmd")
-		return nil
-	}
-
-	toBranch := "main"
-	if tB := viper.GetString(assignmentKey + ".seeder.toBranch"); len(tB) > 0 {
-		toBranch = tB
-	}
-
-	privKeyString := viper.GetString(assignmentKey + ".seeder.signKey")
-	var entity *openpgp.Entity
-	entity = nil
-	if privKeyString != "" {
-		entities, err := openpgp.ReadArmoredKeyRing(strings.NewReader(privKeyString))
-		if err != nil {
-			log.Fatal()
-		}
-		if entities[0].PrivateKey.Encrypted {
-			fmt.Println(aurora.Blue("Passphrase for signing key is required. Please enter it now:"))
-			passphrase, _ := term.ReadPassword(int(syscall.Stdin))
-			err = entities[0].PrivateKey.Decrypt(passphrase)
-			if err != nil {
-				log.Fatal()
-			}
-		}
-		entity = entities[0]
-
-	}
-
-	return &Seeder{
-		Command:         cmd,
-		Args:            viper.GetStringSlice(assignmentKey + ".seeder.args"),
-		Name:            viper.GetString(assignmentKey + ".seeder.name"),
-		SignKey:         entity,
-		EMail:           viper.GetString(assignmentKey + ".seeder.email"),
-		ToBranch:        toBranch,
-		ProtectToBranch: viper.GetBool(assignmentKey + ".seeder.protectToBranch"),
-	}
-}
-
-func clone(assignmentKey string) *Clone {
-	cloneMap := viper.GetStringMapString(assignmentKey + ".clone")
-
-	localpath, ok := cloneMap["localpath"]
-	if !ok {
-		localpath = "."
-	}
-
-	branch, ok := cloneMap["branch"]
-	if !ok {
-		branch = "main"
-	}
-
-	force := viper.GetBool(assignmentKey + ".clone.force")
-
-	return &Clone{
-		LocalPath: localpath,
-		Branch:    branch,
-		Force:     force,
-	}
-}
-
-func (cfg *AssignmentConfig) SetBranch(branch string) {
-	cfg.Clone.Branch = branch
-}
-
-func (cfg *AssignmentConfig) SetLocalpath(localpath string) {
-	cfg.Clone.LocalPath = localpath
-}
-
-func (cfg *AssignmentConfig) SetForce() {
-	cfg.Clone.Force = true
 }

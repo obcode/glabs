@@ -38,6 +38,15 @@ Placeholders like `$HOME` are not substituted but taken verbatim. It is therefor
 
 Each course file must be named like the entries in the main config file, e.g., `algdatii.yml` and `vss.yml` in the above example.
 
+Students can be specified by the following:
+
+-   the GitLab user ID (if it is an int)
+-   an email address (if it is valid)
+-   the GitLab username (everything else)
+
+Since the users can change their username, it is recommended to use
+the GitLab ID or an email address.
+
 Contents:
 
 ```.yaml
@@ -47,7 +56,7 @@ Contents:
     # if you want to generate directly in coursepath, do not define semesterpath
     semesterpath: <gitlab subgroup of coursepath used for this semester>
     students: # needs only to defined if generating per student
-      <array of students account names>
+      <array of student specifier>
     groups: # if students are allowed to work in groups
       <name of fst group>:
         <array of student in group>
@@ -95,16 +104,16 @@ algdati:
   coursepath: algdati
   semesterpath: semester/ob-20ws
   students:
-    - olli
-    - ob
-    - obcode
+    - 12334         # GitLab ID
+    - ob@glabs.io   # email address
+    - daCoolestName # GitLab username
   groups:
     grp01:
-      - hugo
-      - sandra
+      - hugo@glabs.inc
+      - 2345
     grp02:
-      - su
-      - allen
+      - su@u.du
+      - allen@u2.du
   blatt0:
     assignmentpath: blatt0
     per: group

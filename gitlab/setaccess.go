@@ -3,7 +3,6 @@ package gitlab
 import (
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/logrusorgru/aurora"
@@ -32,7 +31,7 @@ func (c *Client) Setaccess(assignmentCfg *config.AssignmentConfig) {
 }
 
 func (c *Client) setaccess(assignmentCfg *config.AssignmentConfig,
-	project *gitlab.Project, members []string, cfgP *yacspin.Config) {
+	project *gitlab.Project, members []*config.Student, cfgP *yacspin.Config) {
 	var cfg yacspin.Config
 	if cfgP == nil {
 		cfg = yacspin.Config{
@@ -67,7 +66,7 @@ func (c *Client) setaccess(assignmentCfg *config.AssignmentConfig,
 
 	for _, student := range members {
 		cfg.Suffix = aurora.Sprintf(aurora.Cyan(" ↪ adding member %s to %s as %s"),
-			aurora.Yellow(student),
+			aurora.Yellow(student.Raw),
 			aurora.Magenta(project.Name),
 			aurora.Magenta(assignmentCfg.AccessLevel.String()),
 		)
@@ -82,8 +81,8 @@ func (c *Client) setaccess(assignmentCfg *config.AssignmentConfig,
 
 		userID, err := c.getUserID(student)
 		if err != nil {
-			if strings.Contains(student, "@") {
-				info, err := c.inviteByEmail(assignmentCfg, project.ID, student)
+			if student.Email != nil {
+				info, err := c.inviteByEmail(assignmentCfg, project.ID, *student.Email)
 				if err != nil {
 					spinner.StopFailMessage(fmt.Sprintf("%v", err))
 
@@ -92,8 +91,8 @@ func (c *Client) setaccess(assignmentCfg *config.AssignmentConfig,
 						log.Debug().Err(err).Msg("cannot stop spinner")
 					}
 				} else {
-
 					spinner.StopMessage(aurora.Sprintf(aurora.Green(info)))
+
 					err = spinner.Stop()
 					if err != nil {
 						log.Debug().Err(err).Msg("cannot stop spinner")
@@ -116,12 +115,12 @@ func (c *Client) setaccess(assignmentCfg *config.AssignmentConfig,
 			log.Debug().Err(err).
 				Int("projectID", project.ID).
 				Int("userID", userID).
-				Str("student", student).
+				Str("student", student.Raw).
 				Str("course", assignmentCfg.Course).
 				Str("assignment", assignmentCfg.Name).
 				Msg("error while adding member")
 
-			spinner.StopFailMessage(fmt.Sprintf("cannot add user %s: %v", student, err))
+			spinner.StopFailMessage(fmt.Sprintf("cannot add user %v: %v", student, err))
 
 			err := spinner.StopFail()
 			if err != nil {
@@ -160,7 +159,7 @@ func (c *Client) setaccessPerStudent(assignmentCfg *config.AssignmentConfig, ass
 	}
 
 	for _, student := range assignmentCfg.Students {
-		name := assignmentCfg.Name + "-" + assignmentCfg.EscapeUserName(student)
+		name := assignmentCfg.Name + "-" + assignmentCfg.RepoSuffix(student)
 		projectname := fmt.Sprintf("%s/%s", assignmentCfg.Path, name)
 		project, _, err := c.Projects.GetProject(
 			projectname,
@@ -170,7 +169,7 @@ func (c *Client) setaccessPerStudent(assignmentCfg *config.AssignmentConfig, ass
 			fmt.Printf("cannot set access for project %s failed with %s", projectname, err)
 			return
 		}
-		c.setaccess(assignmentCfg, project, []string{student}, nil)
+		c.setaccess(assignmentCfg, project, []*config.Student{student}, nil)
 	}
 }
 

@@ -1,8 +1,6 @@
 package gitlab
 
 import (
-	"strings"
-
 	"github.com/gookit/color"
 	"github.com/obcode/glabs/config"
 )
@@ -63,20 +61,26 @@ func (c *Client) CheckCourse(cfg *config.CourseConfig) bool {
 	return true
 }
 
-func (c *Client) checkStudent(searchPattern, prefix string) bool {
-	user, err := c.getUser(searchPattern)
+func (c *Client) checkStudent(student *config.Student, prefix string) bool {
+	user, err := c.getUser(student)
 	if err != nil {
-		if strings.Contains(searchPattern, "@") {
-			color.Yellow.Printf("%s     - %s # Inviting via email\n", prefix, searchPattern)
+		if student.Email != nil {
+			color.Yellow.Printf("%s     - %s # Inviting via email\n", prefix, *student.Email)
 			return true
 		} else {
-			color.Red.Printf("    # %s, error: %v\n", searchPattern, err)
+			color.Red.Printf("    # %v, error: %v\n", student, err)
 			return false
 		}
-
 	}
-	color.Cyan.Printf("%s     - %s", prefix, user.Username)
-	color.Green.Printf(" # %s (%s)\n", user.Name, searchPattern)
+
+	if student.Id != nil {
+		color.Yellow.Printf("%s     - %d # %s\n", prefix, *student.Id, user.Name)
+	}
+	if student.Username != nil {
+		color.Cyan.Printf("%s     - %d", prefix, user.ID)
+		color.Red.Printf("--- %v ---", student)
+		color.Green.Printf(" # %s (%s)\n", user.Name, *student.Username)
+	}
 	return true
 }
 
@@ -84,11 +88,11 @@ func checkDupsInGroups(groups []*config.Group) map[string][]string {
 	studsWithGroups := make(map[string][]string)
 	for _, grp := range groups {
 		for _, student := range grp.Members {
-			_, ok := studsWithGroups[student]
+			_, ok := studsWithGroups[student.Raw]
 			if !ok {
-				studsWithGroups[student] = []string{grp.Name}
+				studsWithGroups[student.Raw] = []string{grp.Name}
 			} else {
-				studsWithGroups[student] = append(studsWithGroups[student], grp.Name)
+				studsWithGroups[student.Raw] = append(studsWithGroups[student.Raw], grp.Name)
 			}
 		}
 	}

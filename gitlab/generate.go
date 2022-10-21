@@ -42,7 +42,7 @@ func (c *Client) Generate(assignmentCfg *config.AssignmentConfig) {
 }
 
 func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGroupID int,
-	projectname string, members []string, starterrepo *git.Starterrepo) {
+	projectname string, members []*config.Student, starterrepo *git.Starterrepo) {
 
 	cfg := yacspin.Config{
 		Frequency: 100 * time.Millisecond,
@@ -164,8 +164,8 @@ func (c *Client) generatePerStudent(assignmentCfg *config.AssignmentConfig, assi
 	}
 
 	for _, student := range assignmentCfg.Students {
-		name := assignmentCfg.Name + "-" + assignmentCfg.EscapeUserName(student)
-		c.generate(assignmentCfg, assignmentGroupID, name, []string{student}, starterrepo)
+		name := assignmentCfg.Name + "-" + assignmentCfg.RepoSuffix(student)
+		c.generate(assignmentCfg, assignmentGroupID, name, []*config.Student{student}, starterrepo)
 	}
 }
 

@@ -7,7 +7,7 @@ import (
 
 type CourseConfig struct {
 	Course   string
-	Students []string
+	Students []*Student
 	Groups   []*Group
 }
 

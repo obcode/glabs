@@ -24,8 +24,8 @@ func Clone(cfg *config.AssignmentConfig) {
 
 	switch cfg.Per {
 	case config.PerStudent:
-		for _, suffix := range cfg.Students {
-			suffix = cfg.EscapeUserName(suffix)
+		for _, stud := range cfg.Students {
+			suffix := cfg.RepoSuffix(stud)
 			clone(localpath(cfg, suffix), cfg.Clone.Branch, cloneurl(cfg, suffix), auth, cfg.Clone.Force)
 		}
 	case config.PerGroup:

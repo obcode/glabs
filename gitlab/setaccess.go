@@ -82,6 +82,7 @@ func (c *Client) setaccess(assignmentCfg *config.AssignmentConfig,
 		userID, err := c.getUserID(student)
 		if err != nil {
 			if student.Email != nil {
+				log.Debug().Str("email", *student.Email).Msg("inviting via email")
 				info, err := c.inviteByEmail(assignmentCfg, project.ID, *student.Email)
 				if err != nil {
 					spinner.StopFailMessage(fmt.Sprintf("%v", err))

@@ -42,10 +42,8 @@ Students can be specified by the following:
 
 -   the GitLab user ID (if it is an int)
 -   an email address (if it is valid)
--   the GitLab username (everything else)
 
-Since the users can change their username, it is recommended to use
-the GitLab ID or an email address.
+**Please do no longer specify students by their GitLab username.**
 
 Contents:
 

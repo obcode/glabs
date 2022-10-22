@@ -3,6 +3,7 @@ package gitlab
 import (
 	"github.com/gookit/color"
 	"github.com/obcode/glabs/config"
+	"github.com/rs/zerolog/log"
 )
 
 func (c *Client) CheckCourse(cfg *config.CourseConfig) bool {
@@ -13,6 +14,7 @@ func (c *Client) CheckCourse(cfg *config.CourseConfig) bool {
 		color.Cyan.Println("  - students:")
 
 		for _, student := range cfg.Students {
+			log.Debug().Interface("student", *student).Msg("checking student")
 			if !c.checkStudent(student, "") {
 				noOfErrors++
 			}
@@ -25,6 +27,7 @@ func (c *Client) CheckCourse(cfg *config.CourseConfig) bool {
 		for _, grp := range cfg.Groups {
 			color.Cyan.Printf("    - %s:\n", grp.Name)
 			for _, student := range grp.Members {
+				log.Debug().Interface("student", *student).Msg("checking student")
 				if !c.checkStudent(student, "  ") {
 					noOfErrors++
 				}
@@ -45,7 +48,7 @@ func (c *Client) CheckCourse(cfg *config.CourseConfig) bool {
 		}
 
 		if !foundDup {
-			color.Green.Println("... no duplicate found")
+			color.Green.Println("... no duplicate found (but checked only the raw input)")
 		}
 	}
 
@@ -65,21 +68,20 @@ func (c *Client) checkStudent(student *config.Student, prefix string) bool {
 	user, err := c.getUser(student)
 	if err != nil {
 		if student.Email != nil {
-			color.Yellow.Printf("%s     - %s # Inviting via email\n", prefix, *student.Email)
+			color.Yellow.Printf("%s     - %s # cannot get user info, inviting via email\n", prefix, *student.Email)
 			return true
 		} else {
-			color.Red.Printf("    # %v, error: %v\n", student, err)
+			color.Red.Printf("    # %+v, error: %v\n", student, err)
 			return false
 		}
 	}
 
 	if student.Id != nil {
-		color.Yellow.Printf("%s     - %d # %s\n", prefix, *student.Id, user.Name)
+		color.Green.Printf("%s     - %d # %s (@%s) specified via ID\n", prefix, user.ID, user.Name, user.Username)
 	}
 	if student.Username != nil {
-		color.Cyan.Printf("%s     - %d", prefix, user.ID)
-		color.Red.Printf("--- %v ---", student)
-		color.Green.Printf(" # %s (%s)\n", user.Name, *student.Username)
+		color.Red.Printf("%s     # please consider changing to UserID:\n", prefix)
+		color.Red.Printf("%s     - %d # %s (@%s) specified via Username\n", prefix, user.ID, user.Name, user.Username)
 	}
 	return true
 }

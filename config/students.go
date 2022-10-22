@@ -3,6 +3,7 @@ package config
 import (
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/go-email-validator/go-email-validator/pkg/ev"
 	"github.com/go-email-validator/go-email-validator/pkg/ev/evmail"
@@ -83,9 +84,9 @@ func mkStudents(studs []string) []*Student {
 		} else {
 			// ID?
 			userID, err := strconv.Atoi(stud)
-			if err != nil {
+			if strings.HasPrefix(stud, "0") || err != nil {
 				log.Debug().Str("student in config", stud).Msg("must be username")
-				student.Username = &stud
+				student.Username = &student.Raw
 			} else {
 				log.Debug().Str("student in config", stud).Msg("is user id")
 				student.Id = &userID

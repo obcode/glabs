@@ -76,19 +76,20 @@ func mkStudents(studs []string) []*Student {
 	students := make([]*Student, 0, len(studs))
 
 	for _, stud := range studs {
-		student := &Student{Raw: stud}
+		rawStud := stud
+		student := &Student{Raw: rawStud}
 		// E-Mail?
 		if ev.NewSyntaxValidator().Validate(ev.NewInput(evmail.FromString(stud))).IsValid() {
 			log.Debug().Str("student in config", stud).Msg("is valid email")
-			student.Email = &stud
+			student.Email = &rawStud
 		} else {
 			// ID?
-			userID, err := strconv.Atoi(stud)
-			if strings.HasPrefix(stud, "0") || err != nil {
-				log.Debug().Str("student in config", stud).Msg("must be username")
+			userID, err := strconv.Atoi(rawStud)
+			if strings.HasPrefix(rawStud, "0") || err != nil {
+				log.Debug().Str("student in config", rawStud).Msg("must be username")
 				student.Username = &student.Raw
 			} else {
-				log.Debug().Str("student in config", stud).Msg("is user id")
+				log.Debug().Str("student in config", rawStud).Msg("is user id")
 				student.Id = &userID
 			}
 		}

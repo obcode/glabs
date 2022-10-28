@@ -5,10 +5,11 @@ var HTMLTemplate = `
 <html>
 	<head>
 		<meta charset="UTF-8">
-		<title>Report Projects</title>
+		<title>glabs {{ .Course }} / {{ .Assignment }}</title>
 	</head>
 	<body>
-		<h1>Report Projects</h1>
+		<h1>Report <a href="{{ .URL }}">{{ .Course }} / {{ .Assignment }} </a> </h1>
+		<h3>{{ .Description }}</h3>
 		<ol>
 		{{range .Projects -}}
 			<li>

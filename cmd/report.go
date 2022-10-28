@@ -14,6 +14,7 @@ import (
 func init() {
 	rootCmd.AddCommand(reportCmd)
 	reportCmd.Flags().BoolVar(&Html, "html", false, "generate HTML")
+	reportCmd.Flags().BoolVar(&Json, "json", false, "generate JSON")
 	reportCmd.Flags().StringVarP(&Template, "tmpl", "t", "", "use template for HTML")
 	reportCmd.Flags().BoolVarP(&ExportTemplate, "export-default-template", "e", false, "export the default HTML template")
 	reportCmd.Flags().StringVarP(&OutPut, "output", "o", "", "output to <file>")
@@ -33,6 +34,10 @@ var (
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
+			if Html && Json {
+				panic(fmt.Errorf("error: do not use --html and --json together"))
+			}
+
 			var output *string
 			if len(OutPut) > 0 {
 				output = &OutPut
@@ -60,13 +65,16 @@ var (
 			}
 			assignmentConfig := config.GetAssignmentConfig(args[0], args[1], args[2:]...)
 			c := gitlab.NewClient()
-			if Html {
+			if Json {
+				c.ReportJSON(assignmentConfig, output)
+			} else if Html {
 				c.ReportHTML(assignmentConfig, template, output)
 			} else {
 				c.Report(assignmentConfig, template, output)
 			}
 		}}
 	Html           bool
+	Json           bool
 	Template       string
 	ExportTemplate bool
 	OutPut         string

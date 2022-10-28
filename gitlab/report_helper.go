@@ -5,29 +5,14 @@ import (
 	"os"
 	"sort"
 	"strconv"
-	"time"
 
 	"github.com/obcode/glabs/config"
+	"github.com/obcode/glabs/gitlab/report"
 	"github.com/rs/zerolog/log"
 	"github.com/xanzy/go-gitlab"
 )
 
-type Reports struct {
-	Projects []*ProjectReport
-}
-
-type ProjectReport struct {
-	Name               string
-	IsActive           bool
-	IsEmpty            bool
-	Commits            int
-	LastActivity       *time.Time
-	OpenIssuesCount    int
-	MergeRequestsCount int
-	WebURL             string
-}
-
-func (c *Client) report(assignmentCfg *config.AssignmentConfig) *Reports {
+func (c *Client) report(assignmentCfg *config.AssignmentConfig) *report.Reports {
 	groupID, err := c.getGroupID(assignmentCfg)
 	if err != nil {
 		fmt.Printf("error: GitLab group for assignment does not exist, please create the group %s\n", assignmentCfg.URL)
@@ -62,7 +47,7 @@ func (c *Client) report(assignmentCfg *config.AssignmentConfig) *Reports {
 
 	}
 
-	projectReportsMap := make(map[string]*ProjectReport)
+	projectReportsMap := make(map[string]*report.ProjectReport)
 	for _, project := range projects {
 		pojectName, projectReport := c.projectReport(assignmentCfg, project)
 		projectReportsMap[pojectName] = projectReport
@@ -73,25 +58,28 @@ func (c *Client) report(assignmentCfg *config.AssignmentConfig) *Reports {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	projectReports := make([]*ProjectReport, 0, len(projects))
+	projectReports := make([]*report.ProjectReport, 0, len(projects))
 	for _, projectName := range keys {
 		projectReports = append(projectReports, projectReportsMap[projectName])
 	}
 
-	return &Reports{
-		Projects: projectReports,
+	return &report.Reports{
+		Course:      assignmentCfg.Course,
+		Assignment:  assignmentCfg.Name,
+		URL:         assignmentCfg.URL,
+		Description: assignmentCfg.Description,
+		Projects:    projectReports,
 	}
 }
 
-func (c *Client) projectReport(assignmentCfg *config.AssignmentConfig, project *gitlab.Project) (string, *ProjectReport) {
-	return project.Name, &ProjectReport{
-		Name:               project.Name,
-		IsActive:           true,
-		IsEmpty:            project.EmptyRepo,
-		Commits:            0,
-		LastActivity:       project.LastActivityAt,
-		OpenIssuesCount:    project.OpenIssuesCount,
-		MergeRequestsCount: 0,
-		WebURL:             project.WebURL,
+func (c *Client) projectReport(assignmentCfg *config.AssignmentConfig, project *gitlab.Project) (string, *report.ProjectReport) {
+	return project.Name, &report.ProjectReport{
+		Name:            project.Name,
+		IsActive:        true,
+		IsEmpty:         project.EmptyRepo,
+		Commits:         0,
+		LastActivity:    project.LastActivityAt,
+		OpenIssuesCount: project.OpenIssuesCount,
+		WebURL:          project.WebURL,
 	}
 }

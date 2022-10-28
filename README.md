@@ -150,6 +150,7 @@ Available Commands:
   delete      Delete repositories.
   generate    Generate repositories.
   help        Help about any command
+  report      generate activity report
   setaccess   Set access level for exisiting repositories.
   show        Show config of an assignment
   version     Print the version number of Glabs
@@ -167,6 +168,33 @@ Before generating check whether all students exist or not using the command
 ```
 glabs check [course]
 ```
+
+## Generating Reports of Assignments
+
+It is possible to generate reports in plain text (by default), HTML or JSON via the
+`report` command:
+
+```
+Generate activity report
+
+Usage:
+  glabs report course assignment [flags]
+
+Flags:
+  -e, --export-default-template   export the default HTML template
+  -h, --help                      help for report
+      --html                      generate HTML
+      --json                      generate JSON
+  -o, --output string             output to <file>
+  -t, --tmpl string               use template for HTML
+```
+
+If you do not like the default plain text or HTML template feel free to use your
+own template via `-t`. You can simply export the default template via `-e` and adapt
+it to your needs.
+
+All available report information which can be used in the templates, can be found
+[here](https://github.com/obcode/glabs/blob/master/gitlab/report/types.go).
 
 ## Cloning Repos
 

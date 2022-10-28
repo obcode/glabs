@@ -75,7 +75,7 @@ func (c *Client) report(assignmentCfg *config.AssignmentConfig) *report.Reports 
 func (c *Client) projectReport(assignmentCfg *config.AssignmentConfig, project *gitlab.Project) (string, *report.ProjectReport) {
 	return project.Name, &report.ProjectReport{
 		Name:            project.Name,
-		IsActive:        true,
+		IsActive:        !project.CreatedAt.Equal(*project.LastActivityAt),
 		IsEmpty:         project.EmptyRepo,
 		Commits:         0,
 		CreatedAt:       project.CreatedAt,

@@ -22,7 +22,7 @@ func init() {
 
 var (
 	reportCmd = &cobra.Command{
-		Use:   "report course assignment [groups...|students...]",
+		Use:   "report course assignment",
 		Short: "generate activity report",
 		Long:  `Generate activity report`,
 		Args: func(cmd *cobra.Command, args []string) error {

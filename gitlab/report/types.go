@@ -15,7 +15,8 @@ type ProjectReport struct {
 	IsActive        bool       `json:"active"`
 	IsEmpty         bool       `json:"emptyRepo"`
 	Commits         int        `json:"commits"`
-	LastActivity    *time.Time `json:"lastActvity"`
+	CreatedAt       *time.Time `json:"createdAt"`
+	LastActivity    *time.Time `json:"lastActivity"`
 	OpenIssuesCount int        `json:"openIssuesCount"`
 	WebURL          string     `json:"webURL"`
 }

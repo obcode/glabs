@@ -78,6 +78,7 @@ func (c *Client) projectReport(assignmentCfg *config.AssignmentConfig, project *
 		IsActive:        true,
 		IsEmpty:         project.EmptyRepo,
 		Commits:         0,
+		CreatedAt:       project.CreatedAt,
 		LastActivity:    project.LastActivityAt,
 		OpenIssuesCount: project.OpenIssuesCount,
 		WebURL:          project.WebURL,

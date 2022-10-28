@@ -5,10 +5,10 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/logrusorgru/aurora"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
-	"golang.org/x/crypto/openpgp"
 	"golang.org/x/term"
 )
 

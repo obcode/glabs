@@ -73,13 +73,50 @@ func (c *Client) report(assignmentCfg *config.AssignmentConfig) *report.Reports 
 }
 
 func (c *Client) projectReport(assignmentCfg *config.AssignmentConfig, project *gitlab.Project) (string, *report.ProjectReport) {
+	branches, _, err := c.Branches.ListBranches(project.ID, nil)
+	if err != nil {
+		log.Error().Err(err).Msg("cannot get commits")
+	}
+
+	allCommits := make([]*gitlab.Commit, 0)
+
+	for _, branch := range branches {
+		opts := &gitlab.ListCommitsOptions{
+			ListOptions: gitlab.ListOptions{
+				Page:    0,
+				PerPage: 1000,
+			},
+			RefName: &branch.Name,
+			Since:   project.CreatedAt,
+		}
+		commits, _, err := c.Commits.ListCommits(project.ID, opts)
+		if err != nil {
+			log.Error().Err(err).Msg("cannot get commits")
+		}
+		allCommits = append(allCommits, commits...)
+	}
+
+	var lastCommit *report.Commit
+
+	for _, commit := range allCommits {
+		if lastCommit == nil || lastCommit.CommittedDate.Before(*commit.CommittedDate) {
+			lastCommit = &report.Commit{
+				Title:         commit.Title,
+				CommitterName: commit.CommitterName,
+				CommittedDate: commit.CommittedDate,
+				WebURL:        commit.WebURL,
+			}
+		}
+	}
+
 	return project.Name, &report.ProjectReport{
 		Name:            project.Name,
 		IsActive:        !project.CreatedAt.Equal(*project.LastActivityAt),
 		IsEmpty:         project.EmptyRepo,
-		Commits:         0,
+		Commits:         len(allCommits),
 		CreatedAt:       project.CreatedAt,
 		LastActivity:    project.LastActivityAt,
+		LastCommit:      lastCommit,
 		OpenIssuesCount: project.OpenIssuesCount,
 		WebURL:          project.WebURL,
 	}

@@ -17,6 +17,14 @@ type ProjectReport struct {
 	Commits         int        `json:"commits"`
 	CreatedAt       *time.Time `json:"createdAt"`
 	LastActivity    *time.Time `json:"lastActivity"`
+	LastCommit      *Commit    `json:"commit"`
 	OpenIssuesCount int        `json:"openIssuesCount"`
 	WebURL          string     `json:"webURL"`
+}
+
+type Commit struct {
+	Title         string     `json:"title"`
+	CommitterName string     `json:"committerName"`
+	CommittedDate *time.Time `json:"committedDate"`
+	WebURL        string     `json:"webURL"`
 }

@@ -1,11 +1,10 @@
 package report
 
 var TextTemplate = `
-Report Projects
-===============
+Report {{ .Course }} / {{ .Assignment}}
 
 {{range .Projects -}}
-{{ .Name}}: {{if .IsActive -}} active {{- else}} NOT active {{- end}} Last Activity {{ .LastActivity.Format "02.01.06, 15:04 MST"}}
+{{ .Name}}: {{if .IsActive -}} {{ .WebURL}} {{- else}} --- no activity found --- {{- end}}
 {{end}}
 
 `

@@ -1,6 +1,6 @@
 package config
 
-import "golang.org/x/crypto/openpgp"
+import "github.com/ProtonMail/go-crypto/openpgp"
 
 type Student struct {
 	Id       *int

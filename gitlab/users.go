@@ -13,7 +13,7 @@ func (c *Client) getUser(student *config.Student) (*gitlab.User, error) {
 	var options *gitlab.ListUsersOptions
 
 	if student.Id != nil {
-		user, _, err := c.Users.GetUser(*student.Id)
+		user, _, err := c.Users.GetUser(*student.Id, gitlab.GetUsersOptions{})
 		return user, err
 	} else {
 

@@ -2,22 +2,73 @@ package report
 
 var HTMLTemplate = `
 <!DOCTYPE html>
-<html>
+<html data-theme="cupcake">
 	<head>
 		<meta charset="UTF-8">
 		<title>glabs {{ .Course }} / {{ .Assignment }}</title>
+		<link href="https://cdn.jsdelivr.net/npm/daisyui@2.33.0/dist/full.css" rel="stylesheet" type="text/css" />
+		<script src="https://cdn.tailwindcss.com"></script>
 	</head>
 	<body>
-		<h1>Report <a href="{{ .URL }}">{{ .Course }} / {{ .Assignment }} </a> </h1>
-		<h3>{{ .Description }}</h3>
-		<ol>
+	<div class="p-8">
+	<div class="text-center m-2">
+		<div class="text-4xl text-center mt-8">
+			Report <a href="{{ .URL }}">{{ .Course }} / {{ .Assignment }} </a>
+		</div>
+		<div class="text-xl text-center m-8">{{ .Description }}</div>
+		<div class="text-xl text-center m-8">Generated: {{ .Generated.Format "02.01.06, 15:04 MST" }}</div>
+	</div>
+		<table class="table table-compact w-full">
+		<thead>
+		<tr>
+			<th>Name</th> 
+			<th>Member</th>
+			<th>Last Commit</th>
+			<th>Open Issues</th>
+			<th>Open Merge Requests</th>
+		</tr>
+		</thead> 
+		<tbody>
 		{{range .Projects -}}
-			<li>
-				<a href="{{ .WebURL}}">{{ .Name}}</a>
-				Last Activity {{ .LastActivity.Format "02.01.06, 15:04 MST"}}
-			</li>
-		{{end}}
-		</ol>
+			{{if and .IsActive (gt .Commits 0) }}<tr class="active">
+			{{else}} <tr>
+			{{end}}
+			<td><a href="{{ .WebURL}}">{{ .Name}}</a></td>
+			<td>
+				{{range .Members}}
+					<a href="{{ .WebURL }}">{{ .Name}}</a>,
+				{{end}}
+			</td>
+			<td>
+				{{if .LastCommit -}}
+				<a href="{{ .LastCommit.WebURL}}">last commit</a>
+				{{- end}}
+			</td>
+			<td>
+				{{if eq .OpenIssuesCount 1 -}}
+				<a href="{{ .WebURL }}/-/issues">{{ .OpenIssuesCount }} open issue</a>
+				{{else}}
+				{{if gt .OpenIssuesCount 1 -}}
+			   	<a href="{{ .WebURL }}/-/issues">{{ .OpenIssuesCount }} open issues</a>
+				{{- end}}
+				{{- end}}
+			</td>
+			<td>
+				{{if gt .OpenMergeRequestsCount 0 -}}
+				<a href="{{ .WebURL }}/-/merge_requests">{{ .OpenMergeRequestsCount }} open merge requests</a>
+				{{- end}}
+			</td>
+			</tr>
+			{{end}}
+		</tbody>
+		</table>
+	</div>
+
+	<footer class="footer footer-center p-4 bg-base-300 text-base-content">
+	<div>
+		<p>Generated with <a href="https://github.com/obcode/glabs">glabs</a>, {{ .Generated.Format "02.01.06, 15:04 MST" }}</p>
+	</div>
+	</footer>
 	</body>
 </html>
 `

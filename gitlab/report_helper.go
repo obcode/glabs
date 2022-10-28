@@ -108,12 +108,15 @@ func (c *Client) report(assignmentCfg *config.AssignmentConfig) *report.Reports 
 		log.Debug().Err(err).Msg("cannot stop spinner")
 	}
 
+	now := time.Now()
+
 	return &report.Reports{
 		Course:      assignmentCfg.Course,
 		Assignment:  assignmentCfg.Name,
 		URL:         assignmentCfg.URL,
 		Description: assignmentCfg.Description,
 		Projects:    projectReports,
+		Generated:   &now,
 	}
 }
 
@@ -154,15 +157,31 @@ func (c *Client) projectReport(assignmentCfg *config.AssignmentConfig, project *
 		}
 	}
 
+	members, _, err := c.ProjectMembers.ListProjectMembers(project.ID, nil)
+	if err != nil {
+		log.Error().Err(err).Msg("cannot get members")
+	}
+
+	opened := "opened"
+	opts := &gitlab.ListProjectMergeRequestsOptions{
+		State: &opened,
+	}
+	mergeRequests, _, err := c.MergeRequests.ListProjectMergeRequests(project.ID, opts)
+	if err != nil {
+		log.Error().Err(err).Msg("cannot get merge requests")
+	}
+
 	return project.Name, &report.ProjectReport{
-		Name:            project.Name,
-		IsActive:        !project.CreatedAt.Equal(*project.LastActivityAt) || len(allCommits) > 0,
-		IsEmpty:         project.EmptyRepo,
-		Commits:         len(allCommits),
-		CreatedAt:       project.CreatedAt,
-		LastActivity:    project.LastActivityAt,
-		LastCommit:      lastCommit,
-		OpenIssuesCount: project.OpenIssuesCount,
-		WebURL:          project.WebURL,
+		Name:                   project.Name,
+		IsActive:               !project.CreatedAt.Equal(*project.LastActivityAt) || len(allCommits) > 0,
+		IsEmpty:                project.EmptyRepo,
+		Commits:                len(allCommits),
+		CreatedAt:              project.CreatedAt,
+		LastActivity:           project.LastActivityAt,
+		LastCommit:             lastCommit,
+		OpenIssuesCount:        project.OpenIssuesCount,
+		OpenMergeRequestsCount: len(mergeRequests),
+		WebURL:                 project.WebURL,
+		Members:                members,
 	}
 }

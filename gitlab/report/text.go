@@ -4,7 +4,13 @@ var TextTemplate = `
 Report {{ .Course }} / {{ .Assignment}}
 
 {{range .Projects -}}
-{{ .Name}}: {{if .IsActive -}} {{ .WebURL}} {{- else}} --- no activity found --- {{- end}}
+{{ .Name -}}:
+{{- if .IsActive -}}
+	{{- if eq .Commits 0 }} --- no commits found ---
+	{{- else }} {{ .WebURL -}}
+	{{- end -}}
+{{- else }} --- no activity found ---
+{{- end}}
 {{end}}
 
 `

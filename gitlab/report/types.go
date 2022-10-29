@@ -27,6 +27,7 @@ type ProjectReport struct {
 	OpenMergeRequestsCount int                     `json:"openMergeRequestsCount"`
 	WebURL                 string                  `json:"webURL"`
 	Members                []*gitlab.ProjectMember `json:"members"`
+	Release                *Release                `json:"release"`
 }
 
 type Commit struct {
@@ -34,4 +35,23 @@ type Commit struct {
 	CommitterName string     `json:"committerName"`
 	CommittedDate *time.Time `json:"committedDate"`
 	WebURL        string     `json:"webURL"`
+}
+
+type MergeRequest struct {
+	WebURL         string `json:"webURL"`
+	PipelineStatus string `json:"pipelineStatus"`
+}
+
+type DockerImages struct {
+	AllAvailable bool           `json:"allAvailable"`
+	Images       []*DockerImage `json:"images"`
+}
+
+type DockerImage struct {
+	Wanted string  `json:"wanted"`
+	Image  *string `json:"image"`
+}
+type Release struct {
+	MergeRequest *MergeRequest `json:"mergeRequest"`
+	DockerImages *DockerImages `json:"dockerImages"`
 }

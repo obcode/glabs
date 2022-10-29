@@ -171,6 +171,48 @@ func (c *Client) projectReport(assignmentCfg *config.AssignmentConfig, project *
 		log.Error().Err(err).Msg("cannot get merge requests")
 	}
 
+	var release *report.Release
+	if assignmentCfg.Release != nil {
+		release = &report.Release{}
+		if assignmentCfg.Release.MergeRequest != nil {
+			for _, mr := range mergeRequests {
+				if mr.SourceBranch == assignmentCfg.Release.MergeRequest.SourceBranch &&
+					mr.TargetBranch == assignmentCfg.Release.MergeRequest.TargetBranch {
+
+					pipelineStatus := "not configured"
+					if assignmentCfg.Release.MergeRequest.HasPipeline {
+						pipelines, _, err := c.MergeRequests.ListMergeRequestPipelines(project.ID, mr.IID)
+						if err != nil {
+							log.Error().Err(err).Msg("cannot get pipeline of merge requests")
+							pipelineStatus = "no pipeline found"
+						} else {
+							if len(pipelines) == 0 {
+								pipelineStatus = "no pipeline found"
+							} else {
+								newestPipeline := pipelines[0]
+								for i, p := range pipelines {
+									if i == 0 {
+										continue
+									}
+									if newestPipeline.CreatedAt.Before(*p.CreatedAt) {
+										newestPipeline = p
+									}
+								}
+								pipelineStatus = newestPipeline.Status
+							}
+						}
+					}
+
+					release.MergeRequest = &report.MergeRequest{
+						WebURL:         mr.WebURL,
+						PipelineStatus: pipelineStatus,
+					}
+					break
+				}
+			}
+		}
+	}
+
 	return project.Name, &report.ProjectReport{
 		Name:                   project.Name,
 		IsActive:               !project.CreatedAt.Equal(*project.LastActivityAt) || len(allCommits) > 0,
@@ -183,5 +225,6 @@ func (c *Client) projectReport(assignmentCfg *config.AssignmentConfig, project *
 		OpenMergeRequestsCount: len(mergeRequests),
 		WebURL:                 project.WebURL,
 		Members:                members,
+		Release:                release,
 	}
 }

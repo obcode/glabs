@@ -8,7 +8,7 @@ require (
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/gookit/color v1.5.2
 	github.com/logrusorgru/aurora v2.0.3+incompatible
-	github.com/logrusorgru/aurora/v3 v3.0.0
+	github.com/logrusorgru/aurora/v4 v4.0.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/rs/zerolog v1.28.0
 	github.com/spf13/cobra v1.6.1

@@ -110,13 +110,23 @@ func (c *Client) report(assignmentCfg *config.AssignmentConfig) *report.Reports 
 
 	now := time.Now()
 
+	hasReleaseMergeRequest := false
+	hasReleaseDockerImages := false
+
+	if assignmentCfg.Release != nil {
+		hasReleaseMergeRequest = assignmentCfg.Release.MergeRequest != nil
+		hasReleaseDockerImages = assignmentCfg.Release.DockerImages != nil
+	}
+
 	return &report.Reports{
-		Course:      assignmentCfg.Course,
-		Assignment:  assignmentCfg.Name,
-		URL:         assignmentCfg.URL,
-		Description: assignmentCfg.Description,
-		Projects:    projectReports,
-		Generated:   &now,
+		Course:                 assignmentCfg.Course,
+		Assignment:             assignmentCfg.Name,
+		URL:                    assignmentCfg.URL,
+		Description:            assignmentCfg.Description,
+		Projects:               projectReports,
+		Generated:              &now,
+		HasReleaseMergeRequest: hasReleaseMergeRequest,
+		HasReleaseDockerImages: hasReleaseDockerImages,
 	}
 }
 
@@ -171,6 +181,84 @@ func (c *Client) projectReport(assignmentCfg *config.AssignmentConfig, project *
 		log.Error().Err(err).Msg("cannot get merge requests")
 	}
 
+	var release *report.Release
+	if assignmentCfg.Release != nil {
+		release = &report.Release{}
+		if assignmentCfg.Release.MergeRequest != nil {
+			release.MergeRequest = &report.MergeRequest{}
+			for _, mr := range mergeRequests {
+				if mr.SourceBranch == assignmentCfg.Release.MergeRequest.SourceBranch &&
+					mr.TargetBranch == assignmentCfg.Release.MergeRequest.TargetBranch {
+
+					pipelineStatus := "not configured"
+					if assignmentCfg.Release.MergeRequest.HasPipeline {
+						pipelines, _, err := c.MergeRequests.ListMergeRequestPipelines(project.ID, mr.IID)
+						if err != nil {
+							log.Error().Err(err).Msg("cannot get pipeline of merge requests")
+							pipelineStatus = "no pipeline found"
+						} else {
+							if len(pipelines) == 0 {
+								pipelineStatus = "no pipeline found"
+							} else {
+								newestPipeline := pipelines[0]
+								for i, p := range pipelines {
+									if i == 0 {
+										continue
+									}
+									if newestPipeline.CreatedAt.Before(*p.CreatedAt) {
+										newestPipeline = p
+									}
+								}
+								pipelineStatus = newestPipeline.Status
+							}
+						}
+					}
+
+					release.MergeRequest = &report.MergeRequest{
+						Found:          true,
+						WebURL:         mr.WebURL,
+						PipelineStatus: pipelineStatus,
+					}
+					break
+				}
+			}
+		}
+		if assignmentCfg.Release.DockerImages != nil {
+			t := true
+			opts := &gitlab.ListRegistryRepositoriesOptions{
+				Tags:      &t,
+				TagsCount: &t,
+			}
+			dockerImages := &report.DockerImages{
+				Status: "unknown",
+				Images: []*report.DockerImage{},
+			}
+			registries, _, err := c.ContainerRegistry.ListProjectRegistryRepositories(project.ID, opts)
+			if err != nil {
+				dockerImages.Status = ""
+			} else {
+				dockerImageSlice := make([]*report.DockerImage, 0, len(assignmentCfg.Release.DockerImages))
+				for _, dockerImageName := range assignmentCfg.Release.DockerImages {
+					for _, registryRepo := range registries {
+						if dockerImageName == registryRepo.Name {
+							dockerImageSlice = append(dockerImageSlice, &report.DockerImage{
+								Wanted: dockerImageName,
+								Image:  &registryRepo.Location,
+							})
+						}
+					}
+				}
+				dockerImages.Images = dockerImageSlice
+				if len(dockerImageSlice) == len(assignmentCfg.Release.DockerImages) {
+					dockerImages.Status = "all available"
+				} else {
+					dockerImages.Status = fmt.Sprintf("%d of %d available", len(dockerImageSlice), len(assignmentCfg.Release.DockerImages))
+				}
+			}
+			release.DockerImages = dockerImages
+		}
+	}
+
 	return project.Name, &report.ProjectReport{
 		Name:                   project.Name,
 		IsActive:               !project.CreatedAt.Equal(*project.LastActivityAt) || len(allCommits) > 0,
@@ -183,5 +271,6 @@ func (c *Client) projectReport(assignmentCfg *config.AssignmentConfig, project *
 		OpenMergeRequestsCount: len(mergeRequests),
 		WebURL:                 project.WebURL,
 		Members:                members,
+		Release:                release,
 	}
 }

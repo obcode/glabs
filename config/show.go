@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/logrusorgru/aurora/v3"
+	"github.com/logrusorgru/aurora/v4"
 )
 
 func (cfg *AssignmentConfig) Show() {
@@ -56,6 +56,42 @@ func (cfg *AssignmentConfig) Show() {
 			aurora.Yellow(cfg.Clone.Force),
 		)
 	}
+	release := aurora.Sprintf(aurora.Red("not defined"))
+	if cfg.Release != nil {
+		mergeRequest := aurora.Sprintf(aurora.Red("not defined"))
+		if cfg.Release.MergeRequest != nil {
+			mergeRequest = aurora.Sprintf(`
+    %s   %s
+    %s   %s
+    %s       %t`,
+				aurora.Cyan("SourceBranch:"),
+				aurora.Yellow(cfg.Release.MergeRequest.SourceBranch),
+				aurora.Cyan("TargetBranch:"),
+				aurora.Yellow(cfg.Release.MergeRequest.TargetBranch),
+				aurora.Cyan("Pipeline:"),
+				aurora.Yellow(cfg.Release.MergeRequest.HasPipeline),
+			)
+		}
+		dockerImages := aurora.Sprintf(aurora.Red("not defined"))
+		if cfg.Release.DockerImages != nil {
+			var images strings.Builder
+			images.WriteString(aurora.Sprintf(aurora.Cyan("\n")))
+			for _, image := range cfg.Release.DockerImages {
+				images.WriteString(aurora.Sprintf(aurora.Cyan("    - ")))
+				images.WriteString(aurora.Sprintf(aurora.Yellow(image)))
+				images.WriteString("\n")
+			}
+			dockerImages = images.String()
+		}
+		release = aurora.Sprintf(aurora.Cyan(`
+  %s     %s
+  %s     %s`),
+			aurora.Cyan("MergeRequest:"),
+			mergeRequest,
+			aurora.Cyan("DockerImages:"),
+			dockerImages,
+		)
+	}
 
 	var per strings.Builder
 	switch cfg.Per {
@@ -95,6 +131,7 @@ AccessLevel:        %s
 Container-Registry: %s
 Startercode:        %s
 Seeding:            %s
+Release:            %s
 %s
 %s
 `),
@@ -105,10 +142,10 @@ Seeding:            %s
 		aurora.Yellow(cfg.Description),
 		aurora.Yellow(cfg.AccessLevel.String()),
 		containerRegistry,
-		startercode,
-		seeding,
-		clone,
-		groupsOrStudents,
+		aurora.Yellow(startercode),
+		aurora.Yellow(seeding),
+		aurora.Yellow(release),
+		aurora.Yellow(clone),
+		aurora.Yellow(groupsOrStudents),
 	))
-
 }

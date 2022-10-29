@@ -41,6 +41,12 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 	path := assignmentPath(course, assignment)
 	url := viper.GetString("gitlab.host") + "/" + path
 
+	containerRegistry := viper.GetBool(assignmentKey + ".containerRegistry")
+	release := release(assignmentKey)
+	if release != nil && release.DockerImages != nil {
+		containerRegistry = true
+	}
+
 	assignmentConfig := &AssignmentConfig{
 		Course:            course,
 		Name:              assignment,
@@ -48,12 +54,13 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 		URL:               url,
 		Per:               per,
 		Description:       description(assignmentKey),
-		ContainerRegistry: viper.GetBool(assignmentKey + ".containerRegistry"),
+		ContainerRegistry: containerRegistry,
 		AccessLevel:       accessLevel(assignmentKey),
 		Students:          students(per, course, assignment, onlyForStudentsOrGroups...),
 		Groups:            groups(per, course, assignment, onlyForStudentsOrGroups...),
 		Startercode:       startercode(assignmentKey),
 		Clone:             clone(assignmentKey),
+		Release:           release,
 		Seeder:            seeder(assignmentKey),
 	}
 

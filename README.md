@@ -91,6 +91,13 @@ Contents:
         localpath: <local base path for repositories to clone in> # default "."
         branch: <checkout branch> # default main
         force: <false|true> # remove directory if it exists. default false
+      release: # to be included in the report
+        mergeRequest: # define if it is necessary to release with a merge request
+          source: <source branch> # default `develop`
+          target: <target branch> # default `main`
+          pipeline: <false|true> # default false
+        dockerImages: # define if it is necessary to release docker images
+          <array of docker image names>
       students: <add students to global student list, which might be empty>
       groups: <add or redefine groups>
 ```
@@ -133,6 +140,14 @@ algdati:
       - quentin
   assignemnt1:
     assignmentpath: a1
+    release:
+      mergeRequest:
+        source: develop
+        target: main
+        pipeline: true
+      dockerImages:
+        - customer
+        - book
     per: student
 ```
 

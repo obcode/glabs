@@ -7,12 +7,14 @@ import (
 )
 
 type Reports struct {
-	Course      string           `json:"course"`
-	Assignment  string           `json:"assignment"`
-	URL         string           `json:"url"`
-	Description string           `json:"description"`
-	Projects    []*ProjectReport `json:"projects"`
-	Generated   *time.Time       `json:"generated"`
+	Course                 string           `json:"course"`
+	Assignment             string           `json:"assignment"`
+	URL                    string           `json:"url"`
+	Description            string           `json:"description"`
+	Projects               []*ProjectReport `json:"projects"`
+	Generated              *time.Time       `json:"generated"`
+	HasReleaseMergeRequest bool             `json:"hasReleaseMergeRequest"`
+	HasReleaseDockerImages bool             `json:"hasReleaseDockerImages"`
 }
 
 type ProjectReport struct {
@@ -38,13 +40,14 @@ type Commit struct {
 }
 
 type MergeRequest struct {
+	Found          bool   `json:"found"`
 	WebURL         string `json:"webURL"`
 	PipelineStatus string `json:"pipelineStatus"`
 }
 
 type DockerImages struct {
-	AllAvailable bool           `json:"allAvailable"`
-	Images       []*DockerImage `json:"images"`
+	Status string         `json:"status"`
+	Images []*DockerImage `json:"images"`
 }
 
 type DockerImage struct {

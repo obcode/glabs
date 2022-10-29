@@ -110,13 +110,23 @@ func (c *Client) report(assignmentCfg *config.AssignmentConfig) *report.Reports 
 
 	now := time.Now()
 
+	hasReleaseMergeRequest := false
+	hasReleaseDockerImages := false
+
+	if assignmentCfg.Release != nil {
+		hasReleaseMergeRequest = assignmentCfg.Release.MergeRequest != nil
+		hasReleaseDockerImages = assignmentCfg.Release.DockerImages != nil
+	}
+
 	return &report.Reports{
-		Course:      assignmentCfg.Course,
-		Assignment:  assignmentCfg.Name,
-		URL:         assignmentCfg.URL,
-		Description: assignmentCfg.Description,
-		Projects:    projectReports,
-		Generated:   &now,
+		Course:                 assignmentCfg.Course,
+		Assignment:             assignmentCfg.Name,
+		URL:                    assignmentCfg.URL,
+		Description:            assignmentCfg.Description,
+		Projects:               projectReports,
+		Generated:              &now,
+		HasReleaseMergeRequest: hasReleaseMergeRequest,
+		HasReleaseDockerImages: hasReleaseDockerImages,
 	}
 }
 
@@ -175,6 +185,7 @@ func (c *Client) projectReport(assignmentCfg *config.AssignmentConfig, project *
 	if assignmentCfg.Release != nil {
 		release = &report.Release{}
 		if assignmentCfg.Release.MergeRequest != nil {
+			release.MergeRequest = &report.MergeRequest{}
 			for _, mr := range mergeRequests {
 				if mr.SourceBranch == assignmentCfg.Release.MergeRequest.SourceBranch &&
 					mr.TargetBranch == assignmentCfg.Release.MergeRequest.TargetBranch {
@@ -204,12 +215,47 @@ func (c *Client) projectReport(assignmentCfg *config.AssignmentConfig, project *
 					}
 
 					release.MergeRequest = &report.MergeRequest{
+						Found:          true,
 						WebURL:         mr.WebURL,
 						PipelineStatus: pipelineStatus,
 					}
 					break
 				}
 			}
+		}
+		if assignmentCfg.Release.DockerImages != nil {
+			t := true
+			opts := &gitlab.ListRegistryRepositoriesOptions{
+				Tags:      &t,
+				TagsCount: &t,
+			}
+			dockerImages := &report.DockerImages{
+				Status: "unknown",
+				Images: []*report.DockerImage{},
+			}
+			registries, _, err := c.ContainerRegistry.ListProjectRegistryRepositories(project.ID, opts)
+			if err != nil {
+				dockerImages.Status = ""
+			} else {
+				dockerImageSlice := make([]*report.DockerImage, 0, len(assignmentCfg.Release.DockerImages))
+				for _, dockerImageName := range assignmentCfg.Release.DockerImages {
+					for _, registryRepo := range registries {
+						if dockerImageName == registryRepo.Name {
+							dockerImageSlice = append(dockerImageSlice, &report.DockerImage{
+								Wanted: dockerImageName,
+								Image:  &registryRepo.Location,
+							})
+						}
+					}
+				}
+				dockerImages.Images = dockerImageSlice
+				if len(dockerImageSlice) == len(assignmentCfg.Release.DockerImages) {
+					dockerImages.Status = "all available"
+				} else {
+					dockerImages.Status = fmt.Sprintf("%d of %d available", len(dockerImageSlice), len(assignmentCfg.Release.DockerImages))
+				}
+			}
+			release.DockerImages = dockerImages
 		}
 	}
 

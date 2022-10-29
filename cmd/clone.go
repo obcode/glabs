@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/logrusorgru/aurora/v3"
+	"github.com/logrusorgru/aurora/v4"
 	"github.com/obcode/glabs/config"
 	"github.com/obcode/glabs/git"
 	"github.com/spf13/cobra"

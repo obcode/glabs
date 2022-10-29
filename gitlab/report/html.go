@@ -26,6 +26,12 @@ var HTMLTemplate = `
 			<th>Last Commit</th>
 			<th>Open Issues</th>
 			<th>Open Merge Requests</th>
+			{{if .HasReleaseMergeRequest -}}
+				<th>Release.MergeRequest</th>
+			{{- end}}
+			{{if .HasReleaseDockerImages -}}
+				<th>Release.DockerImages</th>
+			{{- end}}
 		</tr>
 		</thead> 
 		<tbody>
@@ -58,6 +64,26 @@ var HTMLTemplate = `
 				<a href="{{ .WebURL }}/-/merge_requests">{{ .OpenMergeRequestsCount }} open merge requests</a>
 				{{- end}}
 			</td>
+			{{if .Release -}}
+				{{if .Release.MergeRequest -}}
+					{{if .Release.MergeRequest.Found -}}
+						<td>
+							<a href="{{ .Release.MergeRequest.WebURL }}">
+								merge request ({{ .Release.MergeRequest.PipelineStatus}})
+							</a>
+						</td>
+					{{- else}}
+						<td></td>
+					{{- end}}
+				{{- end}}
+				{{if .Release.DockerImages -}}
+					<td>
+					<a href="{{ .WebURL }}/container_registry">
+						{{ .Release.DockerImages.Status }}
+					</a>
+					</td>
+				{{- end}}
+			{{- end}}
 			</tr>
 			{{end}}
 		</tbody>

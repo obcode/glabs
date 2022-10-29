@@ -22,6 +22,7 @@ type AssignmentConfig struct {
 	Groups            []*Group
 	Startercode       *Startercode
 	Clone             *Clone
+	Release           *Release
 	Seeder            *Seeder
 }
 
@@ -55,6 +56,17 @@ type Clone struct {
 	LocalPath string
 	Branch    string
 	Force     bool
+}
+
+type Release struct {
+	MergeRequest *MergeRequest
+	DockerImages []string
+}
+
+type MergeRequest struct {
+	SourceBranch string
+	TargetBranch string
+	HasPipeline  bool
 }
 
 type Group struct {

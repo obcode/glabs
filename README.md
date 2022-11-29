@@ -165,6 +165,7 @@ Available Commands:
   delete      Delete repositories.
   generate    Generate repositories.
   help        Help about any command
+  protect     Protect branch for exisiting repositories.
   report      generate activity report
   setaccess   Set access level for exisiting repositories.
   show        Show config of an assignment

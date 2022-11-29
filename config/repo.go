@@ -69,6 +69,13 @@ func (cfg *AssignmentConfig) SetBranch(branch string) {
 	cfg.Clone.Branch = branch
 }
 
+func (cfg *AssignmentConfig) SetProtectToBranch(branch string) {
+	if branch != "" {
+		cfg.Startercode.ToBranch = branch
+	}
+	cfg.Startercode.ProtectToBranch = true
+}
+
 func (cfg *AssignmentConfig) SetLocalpath(localpath string) {
 	cfg.Clone.LocalPath = localpath
 }

@@ -34,12 +34,18 @@ func startercode(assignmentKey string) *Startercode {
 		devBranch = dB
 	}
 
+	additionalBranches := []string{}
+	if addB := viper.GetStringSlice(assignmentKey + ".startercode.additionalBranches"); len(addB) > 0 {
+		additionalBranches = addB
+	}
+
 	return &Startercode{
-		URL:             url,
-		FromBranch:      fromBranch,
-		ToBranch:        toBranch,
-		DevBranch:       devBranch,
-		ProtectToBranch: viper.GetBool(assignmentKey + ".startercode.protectToBranch"),
+		URL:                url,
+		FromBranch:         fromBranch,
+		ToBranch:           toBranch,
+		DevBranch:          devBranch,
+		AdditionalBranches: additionalBranches,
+		ProtectToBranch:    viper.GetBool(assignmentKey + ".startercode.protectToBranch"),
 	}
 }
 

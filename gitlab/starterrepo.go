@@ -25,8 +25,11 @@ func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *g.St
 		return fmt.Errorf("cannot create remote: %w", err)
 	}
 
-	refSpec := config.RefSpec("refs/heads/" + assignmentCfg.Startercode.FromBranch +
-		":refs/heads/" + assignmentCfg.Startercode.ToBranch)
+	refSpec := config.RefSpec(
+		fmt.Sprintf("+refs/heads/%s:refs/heads/%s",
+			assignmentCfg.Startercode.FromBranch,
+			assignmentCfg.Startercode.ToBranch),
+	)
 
 	log.Debug().
 		Str("refSpec", string(refSpec)).
@@ -64,6 +67,41 @@ func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *g.St
 				Str("name", project.Name).
 				Msg("cannot protect to branch")
 		}
+	}
+
+	for _, additionalBranch := range assignmentCfg.Startercode.AdditionalBranches {
+		log.Debug().Str("branch", additionalBranch).Msg("pushing additional branch")
+
+		// worktree, err := from.Repo.Worktree()
+		// if err != nil {
+		// 	log.Debug().Err(err).
+		// 		Str("branch", additionalBranch).
+		// 		Str("name", project.Name).Str("url", project.SSHURLToRepo).
+		// 		Msg("cannot get worktree")
+		// 	return fmt.Errorf("cannot get worktree: %w", err)
+		// }
+
+		// worktree.Checkout(&git.CheckoutOptions{
+		// 	Branch: plumbing.ReferenceName(additionalBranch),
+		// })
+
+		refSpec := config.RefSpec(fmt.Sprintf("+refs/remotes/origin/%s:refs/heads/%s", additionalBranch, additionalBranch))
+
+		pushOpts := &git.PushOptions{
+			RemoteName: remote.Config().Name,
+			RefSpecs:   []config.RefSpec{refSpec},
+			Auth:       from.Auth,
+		}
+		err = from.Repo.Push(pushOpts)
+		if err != nil {
+			log.Debug().Err(err).
+				Str("branch", additionalBranch).
+				Str("refspec", refSpec.String()).
+				Str("name", project.Name).Str("url", project.SSHURLToRepo).
+				Msg("cannot push to remote")
+			return fmt.Errorf("cannot push to remote: %w", err)
+		}
+
 	}
 
 	return nil

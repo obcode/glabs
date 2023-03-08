@@ -16,15 +16,17 @@ func (cfg *AssignmentConfig) Show() {
 	startercode := aurora.Sprintf(aurora.Red("not defined"))
 	if cfg.Startercode != nil {
 		startercode = aurora.Sprintf(aurora.Cyan(`
-  URL:              %s
-  FromBranch:       %s
-  ToBranch:         %s
-  DevBranch:        %s
-  ProtectToBranch:  %t`),
+  URL:                %s
+  FromBranch:         %s
+  ToBranch:           %s
+  DevBranch:          %s
+  AdditionalBranches: %s
+  ProtectToBranch:    %t`),
 			aurora.Yellow(cfg.Startercode.URL),
 			aurora.Yellow(cfg.Startercode.FromBranch),
 			aurora.Yellow(cfg.Startercode.ToBranch),
 			aurora.Yellow(cfg.Startercode.DevBranch),
+			aurora.Yellow(cfg.Startercode.AdditionalBranches),
 			aurora.Yellow(cfg.Startercode.ProtectToBranch),
 		)
 	}

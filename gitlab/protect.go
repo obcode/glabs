@@ -7,13 +7,12 @@ import (
 
 	"github.com/logrusorgru/aurora"
 	"github.com/obcode/glabs/config"
-	cfg "github.com/obcode/glabs/config"
 	"github.com/rs/zerolog/log"
 	"github.com/theckman/yacspin"
 	"github.com/xanzy/go-gitlab"
 )
 
-func (c *Client) ProtectToBranch(assignmentCfg *cfg.AssignmentConfig) {
+func (c *Client) ProtectToBranch(assignmentCfg *config.AssignmentConfig) {
 	assignmentGitLabGroupID, err := c.getGroupID(assignmentCfg)
 	if err != nil {
 		fmt.Printf("error: GitLab group for assignment does not exist, please create the group %s\n", assignmentCfg.URL)
@@ -31,7 +30,7 @@ func (c *Client) ProtectToBranch(assignmentCfg *cfg.AssignmentConfig) {
 	}
 }
 
-func (c *Client) protectBranch(assignmentCfg *cfg.AssignmentConfig, project *gitlab.Project, spin bool) error {
+func (c *Client) protectBranch(assignmentCfg *config.AssignmentConfig, project *gitlab.Project, spin bool) error {
 	if assignmentCfg.Startercode.ProtectToBranch {
 		// var cfg yacspin.Config
 		var spinner *yacspin.Spinner

@@ -12,15 +12,16 @@ import (
 func (c *Client) generateProject(assignmentCfg *config.AssignmentConfig, name string, inID int) (*gitlab.Project, bool, error) {
 	generated := false
 	p := &gitlab.CreateProjectOptions{
-		Name:                     gitlab.String(name),
-		Description:              gitlab.String(assignmentCfg.Description),
-		NamespaceID:              gitlab.Int(inID),
-		MergeRequestsAccessLevel: gitlab.AccessControl("enabled"),
-		IssuesAccessLevel:        gitlab.AccessControl("enabled"),
-		BuildsAccessLevel:        gitlab.AccessControl("enabled"),
-		JobsEnabled:              gitlab.Bool(true),
-		Visibility:               gitlab.Visibility(gitlab.PrivateVisibility),
-		ContainerRegistryEnabled: gitlab.Bool(assignmentCfg.ContainerRegistry),
+		Name:                                  gitlab.String(name),
+		Description:                           gitlab.String(assignmentCfg.Description),
+		NamespaceID:                           gitlab.Int(inID),
+		MergeRequestsAccessLevel:              gitlab.AccessControl("enabled"),
+		IssuesAccessLevel:                     gitlab.AccessControl("enabled"),
+		BuildsAccessLevel:                     gitlab.AccessControl("enabled"),
+		JobsEnabled:                           gitlab.Bool(true),
+		Visibility:                            gitlab.Visibility(gitlab.PrivateVisibility),
+		ContainerRegistryEnabled:              gitlab.Bool(assignmentCfg.ContainerRegistry),
+		OnlyAllowMergeIfAllStatusChecksPassed: gitlab.Bool(false),
 	}
 
 	project, _, err := c.Projects.CreateProject(p)

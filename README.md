@@ -85,6 +85,8 @@ Contents:
         name: <name of the author used for commit>
         email: <email of the author used for commit>
         toBranch: <branch to commit to> # default main
+        additionalBranches: # push more than one branch to new repos
+          <array of branch names>
         signKey: <plaintext private key for signing commits> # Optional key for signing the commit. If the key is encrypted the password will be requested on running the tool.
         protectToBranch:  <false|true> # whether only maintainer can push, default false
       clone:
@@ -127,6 +129,10 @@ algdati:
       url: git@gitlab.lrz.de:algdati/startercode/startercodeBlatt1.git
       fromBranch: ws20
       protectToBranch: true
+      additionalBranches:
+        - ss20
+        - 22ss
+        - main
     # accesslevel: developer # default
     clone:
       localpath: /tmp

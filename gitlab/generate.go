@@ -159,7 +159,7 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 func (c *Client) generatePerStudent(assignmentCfg *config.AssignmentConfig, assignmentGroupID int,
 	starterrepo *git.Starterrepo) {
 	if len(assignmentCfg.Students) == 0 {
-		fmt.Println("no students in config for assignment found")
+		log.Info().Str("group", assignmentCfg.Course).Msg("no students found")
 		return
 	}
 

@@ -175,6 +175,7 @@ Available Commands:
   report      generate activity report
   setaccess   Set access level for exisiting repositories.
   show        Show config of an assignment
+  update      Update repositories with code.
   version     Print the version number of Glabs
 
 Flags:

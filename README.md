@@ -2,6 +2,18 @@
 
 ### Manage GitLab for student labs from the command line
 
+- [glabs - GitLab-Labs](#glabs---gitlab-labs)
+    - [Manage GitLab for student labs from the command line](#manage-gitlab-for-student-labs-from-the-command-line)
+  - [Configfiles](#configfiles)
+    - [Main config file](#main-config-file)
+    - [Course config file](#course-config-file)
+  - [Usage](#usage)
+  - [Generating Reports of Assignments](#generating-reports-of-assignments)
+  - [Cloning Repos](#cloning-repos)
+  - [Seeding using a custom tool](#seeding-using-a-custom-tool)
+    - [Example using `seeder` Option](#example-using-seeder-option)
+  - [Using starter code as a template](#using-starter-code-as-a-template)
+
 ## Configfiles
 
 ### Main config file

@@ -78,6 +78,11 @@ func mkStudents(studs []string) []*Student {
 	for _, stud := range studs {
 		rawStud := stud
 		student := &Student{Raw: rawStud}
+
+		if strings.HasPrefix(stud, "-") {
+			log.Warn().Str("student in config", stud).Msg("student identifier starts with '-', did you miss the space after hyphen?")
+		}
+
 		// E-Mail?
 		if ev.NewSyntaxValidator().Validate(ev.NewInput(evmail.FromString(stud))).IsValid() {
 			log.Debug().Str("student in config", stud).Msg("is valid email")

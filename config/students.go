@@ -66,7 +66,7 @@ func students(per Per, course, assignment string, onlyForStudentsOrGroups ...str
 		studs = onlyForStudents
 	}
 
-	log.Debug().Interface("students", students).Msg("found students")
+	log.Debug().Interface("students", studs).Msg("found students")
 	sort.Strings(studs)
 	students := mkStudents(studs)
 	return students

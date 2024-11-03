@@ -26,7 +26,7 @@ var updateCmd = &cobra.Command{
 		assignmentConfig.Show()
 		fmt.Println(aurora.Red("Heads up! Use only with untouched projects."))
 		fmt.Println(aurora.Magenta("Config okay? Press 'Enter' to continue or 'Ctrl-C' to stop ..."))
-		fmt.Scanln()
+		fmt.Scanln() //nolint:errcheck
 		c := gitlab.NewClient()
 		c.Update(assignmentConfig)
 	},

@@ -23,7 +23,7 @@ You can specify students or groups in order to delete only for these.`,
 		assignmentConfig := config.GetAssignmentConfig(args[0], args[1], args[2:]...)
 		assignmentConfig.Show()
 		fmt.Println(aurora.Magenta("Do you really want to delete the repos? Press 'Enter' to continue or 'Ctrl-C' to stop ..."))
-		fmt.Scanln()
+		fmt.Scanln() //nolint:errcheck
 		c := gitlab.NewClient()
 		c.Delete(assignmentConfig)
 	},

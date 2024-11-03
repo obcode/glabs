@@ -29,7 +29,7 @@ var (
 			}
 			assignmentConfig.Show()
 			fmt.Println(aurora.Magenta("Config okay? Press 'Enter' to continue or 'Ctrl-C' to stop ..."))
-			fmt.Scanln()
+			fmt.Scanln() //nolint:errcheck
 
 			git.Clone(assignmentConfig)
 		},

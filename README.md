@@ -10,6 +10,7 @@
   - [Usage](#usage)
   - [Generating Reports of Assignments](#generating-reports-of-assignments)
   - [Cloning Repos](#cloning-repos)
+  - [Getting URLs](#getting-urls)
   - [Seeding using a custom tool](#seeding-using-a-custom-tool)
     - [Example using `seeder` Option](#example-using-seeder-option)
   - [Using starter code as a template](#using-starter-code-as-a-template)
@@ -180,6 +181,7 @@ Usage:
 Available Commands:
   check       check course config
   clone       Clone repositories.
+  completion  Generate the autocompletion script for the specified shell
   delete      Delete repositories.
   generate    Generate repositories.
   help        Help about any command
@@ -188,6 +190,7 @@ Available Commands:
   setaccess   Set access level for exisiting repositories.
   show        Show config of an assignment
   update      Update repositories with code.
+  urls        get urls for repositories
   version     Print the version number of Glabs
 
 Flags:
@@ -262,6 +265,29 @@ glabs clone algdati blatt3 "grp0[35]" -fs | xargs code
 ```
 
 clones the two repositories for `grp03` and `grp05` and opens them in VS Code.
+
+## Getting URLs
+
+```
+get urls for repositories for each student or group in course for assignment.
+                You can specify students or groups in order to get an url only for these.
+
+Usage:
+  glabs urls course assignment [groups...|students...] [flags]
+
+Flags:
+  -h, --help   help for urls
+
+Global Flags:
+      --config string   config file (default is $HOME/.glabs.yml)
+  -v, --verbose         verbose output
+```
+
+This is useful for opening the webpages using a pipe, e.g.,
+
+```
+glabs urls algdati blatt3 grp15 | xargs open
+```
 
 ## Seeding using a custom tool
 

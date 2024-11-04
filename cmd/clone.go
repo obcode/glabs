@@ -27,16 +27,19 @@ var (
 			if Force {
 				assignmentConfig.SetForce()
 			}
-			assignmentConfig.Show()
-			fmt.Println(aurora.Magenta("Config okay? Press 'Enter' to continue or 'Ctrl-C' to stop ..."))
-			fmt.Scanln() //nolint:errcheck
+			if !Suppress {
+				assignmentConfig.Show()
+				fmt.Println(aurora.Magenta("Config okay? Press 'Enter' to continue or 'Ctrl-C' to stop ..."))
+				fmt.Scanln() //nolint:errcheck
+			}
 
-			git.Clone(assignmentConfig)
+			git.Clone(assignmentConfig, Suppress)
 		},
 	}
 	Localpath string
 	Branch    string
 	Force     bool
+	Suppress  bool
 )
 
 func init() {
@@ -44,4 +47,5 @@ func init() {
 	cloneCmd.Flags().StringVarP(&Localpath, "path", "p", "", "clone in this directory")
 	cloneCmd.Flags().StringVarP(&Branch, "branch", "b", "", "checkout branch after cloning")
 	cloneCmd.Flags().BoolVarP(&Force, "force", "f", false, "remove directory if it already exists")
+	cloneCmd.Flags().BoolVarP(&Suppress, "suppress", "s", false, "suppress config output for piping to other commands")
 }

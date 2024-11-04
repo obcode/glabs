@@ -242,8 +242,10 @@ Usage:
 
 Flags:
   -b, --branch string   checkout branch after cloning
+  -f, --force           remove directory if it already exists
   -h, --help            help for clone
   -p, --path string     clone in this directory
+  -s, --suppress        suppress config output for piping to other commands
 
 Global Flags:
       --config string   config file (default is $HOME/.glabs.yml)
@@ -251,6 +253,15 @@ Global Flags:
 ```
 
 Command line options (`-b` and `-p`) override the config file settings.
+
+With `-s` it is possible to suppress all output but the local path for use in
+a pipe. For example
+
+```
+glabs clone algdati blatt3 "grp0[35]" -fs | xargs code
+```
+
+clones the two repositories for `grp03` and `grp05` and opens them in VS Code.
 
 ## Seeding using a custom tool
 

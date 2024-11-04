@@ -1,6 +1,6 @@
 module github.com/obcode/glabs
 
-go 1.20
+go 1.22
 
 require (
 	github.com/ProtonMail/go-crypto v0.0.0-20230828082145-3c4c8a2d2371

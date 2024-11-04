@@ -1,6 +1,7 @@
 package config
 
 import (
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -58,8 +59,8 @@ func students(per Per, course, assignment string, onlyForStudentsOrGroups ...str
 		onlyForStudents := make([]string, 0, len(onlyForStudentsOrGroups))
 		for _, onlyStudent := range onlyForStudentsOrGroups {
 			for _, student := range studs {
-				if onlyStudent == student {
-					onlyForStudents = append(onlyForStudents, onlyStudent)
+				if ok, err := regexp.MatchString(onlyStudent, student); ok && err == nil {
+					onlyForStudents = append(onlyForStudents, student)
 				}
 			}
 		}
@@ -123,7 +124,7 @@ func groups(per Per, course, assignment string, onlyForStudentsOrGroups ...strin
 		onlyTheseGroups := make(map[string][]string)
 		for _, onlyGroup := range onlyForStudentsOrGroups {
 			for groupname, students := range groupsMap {
-				if onlyGroup == groupname {
+				if ok, err := regexp.MatchString(onlyGroup, groupname); ok && err == nil {
 					onlyTheseGroups[groupname] = students
 				}
 			}

@@ -299,7 +299,7 @@ What you can do is the following:
 2. Create a new branch. Example:
 
     ```
-    $ git checkout -B ws20
+    $ git checkout -B ws24
     ```
 
 3. Commit the whole tree with `commit-tree`. Be sure to remember the the

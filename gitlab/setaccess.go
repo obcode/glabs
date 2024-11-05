@@ -141,7 +141,7 @@ func (c *Client) setaccess(assignmentCfg *config.AssignmentConfig,
 func (c *Client) inviteByEmail(cfg *config.AssignmentConfig, projectID int, email string) (string, error) {
 	m := &gitlab.InvitesOptions{
 		Email:       &email,
-		AccessLevel: gitlab.AccessLevel(gitlab.AccessLevelValue(cfg.AccessLevel)),
+		AccessLevel: gitlab.Ptr(gitlab.AccessLevelValue(cfg.AccessLevel)),
 	}
 	resp, _, err := c.Invites.ProjectInvites(projectID, m)
 	if err != nil {

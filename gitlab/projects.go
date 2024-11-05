@@ -12,16 +12,16 @@ import (
 func (c *Client) generateProject(assignmentCfg *config.AssignmentConfig, name string, inID int) (*gitlab.Project, bool, error) {
 	generated := false
 	p := &gitlab.CreateProjectOptions{
-		Name:                                  gitlab.String(name),
-		Description:                           gitlab.String(assignmentCfg.Description),
-		NamespaceID:                           gitlab.Int(inID),
-		MergeRequestsAccessLevel:              gitlab.AccessControl("enabled"),
-		IssuesAccessLevel:                     gitlab.AccessControl("enabled"),
-		BuildsAccessLevel:                     gitlab.AccessControl("enabled"),
-		JobsEnabled:                           gitlab.Bool(true),
-		Visibility:                            gitlab.Visibility(gitlab.PrivateVisibility),
-		ContainerRegistryEnabled:              gitlab.Bool(assignmentCfg.ContainerRegistry),
-		OnlyAllowMergeIfAllStatusChecksPassed: gitlab.Bool(false),
+		Name:                                  gitlab.Ptr(name),
+		Description:                           gitlab.Ptr(assignmentCfg.Description),
+		NamespaceID:                           gitlab.Ptr(inID),
+		MergeRequestsAccessLevel:              gitlab.Ptr(gitlab.EnabledAccessControl),
+		IssuesAccessLevel:                     gitlab.Ptr(gitlab.EnabledAccessControl),
+		BuildsAccessLevel:                     gitlab.Ptr(gitlab.EnabledAccessControl),
+		JobsEnabled:                           gitlab.Ptr(true),
+		Visibility:                            gitlab.Ptr(gitlab.PrivateVisibility),
+		ContainerRegistryEnabled:              gitlab.Ptr(assignmentCfg.ContainerRegistry),
+		OnlyAllowMergeIfAllStatusChecksPassed: gitlab.Ptr(false),
 	}
 
 	project, _, err := c.Projects.CreateProject(p)
@@ -49,8 +49,8 @@ func (c *Client) generateProject(assignmentCfg *config.AssignmentConfig, name st
 
 func (c *Client) getProjectByName(fullpathprojectname string) (*gitlab.Project, error) {
 	opt := &gitlab.ListProjectsOptions{
-		Search:           gitlab.String(fullpathprojectname),
-		SearchNamespaces: gitlab.Bool(true),
+		Search:           gitlab.Ptr(fullpathprojectname),
+		SearchNamespaces: gitlab.Ptr(true),
 	}
 	projects, _, err := c.Projects.ListProjects(opt)
 	if err != nil {

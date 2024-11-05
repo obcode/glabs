@@ -115,8 +115,8 @@ func (c *Client) devBranch(assignmentCfg *cfg.AssignmentConfig, project *gitlab.
 		Msg("switching to development branch")
 
 	opts := &gitlab.CreateBranchOptions{
-		Branch: gitlab.String(assignmentCfg.Startercode.DevBranch),
-		Ref:    gitlab.String(assignmentCfg.Startercode.ToBranch),
+		Branch: gitlab.Ptr(assignmentCfg.Startercode.DevBranch),
+		Ref:    gitlab.Ptr(assignmentCfg.Startercode.ToBranch),
 	}
 
 	_, _, err := c.Branches.CreateBranch(project.ID, opts)
@@ -130,7 +130,7 @@ func (c *Client) devBranch(assignmentCfg *cfg.AssignmentConfig, project *gitlab.
 	}
 
 	projectOpts := &gitlab.EditProjectOptions{
-		DefaultBranch: gitlab.String(assignmentCfg.Startercode.DevBranch),
+		DefaultBranch: gitlab.Ptr(assignmentCfg.Startercode.DevBranch),
 	}
 
 	_, _, err = c.Projects.EditProject(project.ID, projectOpts)

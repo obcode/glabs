@@ -26,7 +26,7 @@ func (c *Client) getUser(student *config.Student) (*gitlab.User, error) {
 		}
 
 		options = &gitlab.ListUsersOptions{
-			Search: gitlab.String(searchPattern),
+			Search: gitlab.Ptr(searchPattern),
 		}
 
 		users, _, err := c.Users.ListUsers(options)
@@ -69,7 +69,7 @@ func (c *Client) addMember(assignmentConfig *config.AssignmentConfig, projectID,
 
 		if member.AccessLevel != gitlab.AccessLevelValue(assignmentConfig.AccessLevel) {
 			e := &gitlab.EditProjectMemberOptions{
-				AccessLevel: gitlab.AccessLevel(gitlab.AccessLevelValue(assignmentConfig.AccessLevel)),
+				AccessLevel: gitlab.Ptr(gitlab.AccessLevelValue(assignmentConfig.AccessLevel)),
 			}
 			_, _, err := c.ProjectMembers.EditProjectMember(projectID, userID, e)
 			if err != nil {
@@ -83,8 +83,8 @@ func (c *Client) addMember(assignmentConfig *config.AssignmentConfig, projectID,
 	}
 
 	m := &gitlab.AddProjectMemberOptions{
-		UserID:      gitlab.Int(userID),
-		AccessLevel: gitlab.AccessLevel(gitlab.AccessLevelValue(assignmentConfig.AccessLevel)),
+		UserID:      gitlab.Ptr(userID),
+		AccessLevel: gitlab.Ptr(gitlab.AccessLevelValue(assignmentConfig.AccessLevel)),
 	}
 	member, _, err := c.ProjectMembers.AddProjectMember(projectID, m)
 	if err != nil {

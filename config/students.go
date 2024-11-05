@@ -1,13 +1,12 @@
 package config
 
 import (
+	"net/mail"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/go-email-validator/go-email-validator/pkg/ev"
-	"github.com/go-email-validator/go-email-validator/pkg/ev/evmail"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
@@ -85,7 +84,7 @@ func mkStudents(studs []string) []*Student {
 		}
 
 		// E-Mail?
-		if ev.NewSyntaxValidator().Validate(ev.NewInput(evmail.FromString(stud))).IsValid() {
+		if _, err := mail.ParseAddress(stud); err == nil {
 			log.Debug().Str("student in config", stud).Msg("is valid email")
 			student.Email = &rawStud
 		} else {

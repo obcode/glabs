@@ -13,7 +13,7 @@ import (
 )
 
 func (c *Client) ProtectToBranch(assignmentCfg *config.AssignmentConfig) {
-	assignmentGitLabGroupID, err := c.getGroupID(assignmentCfg)
+	_, err := c.getGroupID(assignmentCfg)
 	if err != nil {
 		fmt.Printf("error: GitLab group for assignment does not exist, please create the group %s\n", assignmentCfg.URL)
 		os.Exit(1)
@@ -21,9 +21,9 @@ func (c *Client) ProtectToBranch(assignmentCfg *config.AssignmentConfig) {
 
 	switch per := assignmentCfg.Per; per {
 	case config.PerGroup:
-		c.protectToBranchPerGroup(assignmentCfg, assignmentGitLabGroupID)
+		c.protectToBranchPerGroup(assignmentCfg)
 	case config.PerStudent:
-		c.protectToBranchPerStudent(assignmentCfg, assignmentGitLabGroupID)
+		c.protectToBranchPerStudent(assignmentCfg)
 	default:
 		fmt.Printf("it is only possible to protect the branch for students oder groups, not for %v", per)
 		os.Exit(1)
@@ -111,7 +111,7 @@ func (c *Client) protectBranch(assignmentCfg *config.AssignmentConfig, project *
 	return nil
 }
 
-func (c *Client) protectToBranchPerStudent(assignmentCfg *config.AssignmentConfig, assignmentGroupID int) {
+func (c *Client) protectToBranchPerStudent(assignmentCfg *config.AssignmentConfig) {
 	if len(assignmentCfg.Students) == 0 {
 		fmt.Println("no students in config for assignment found")
 		return
@@ -134,7 +134,7 @@ func (c *Client) protectToBranchPerStudent(assignmentCfg *config.AssignmentConfi
 	}
 }
 
-func (c *Client) protectToBranchPerGroup(assignmentCfg *config.AssignmentConfig, assignmentGroupID int) {
+func (c *Client) protectToBranchPerGroup(assignmentCfg *config.AssignmentConfig) {
 	if len(assignmentCfg.Groups) == 0 {
 		log.Info().Str("group", assignmentCfg.Course).Msg("no groups found")
 		return

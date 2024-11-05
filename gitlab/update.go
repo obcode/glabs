@@ -14,7 +14,7 @@ import (
 )
 
 func (c *Client) Update(assignmentCfg *config.AssignmentConfig) {
-	assignmentGitLabGroupID, err := c.getGroupID(assignmentCfg)
+	_, err := c.getGroupID(assignmentCfg)
 	if err != nil {
 		fmt.Printf("error: GitLab group for assignment does not exist, please create the group %s\n", assignmentCfg.URL)
 		os.Exit(1)
@@ -33,9 +33,9 @@ func (c *Client) Update(assignmentCfg *config.AssignmentConfig) {
 
 	switch per := assignmentCfg.Per; per {
 	case config.PerGroup:
-		c.updatePerGroup(assignmentCfg, assignmentGitLabGroupID, starterrepo)
+		c.updatePerGroup(assignmentCfg, starterrepo)
 	case config.PerStudent:
-		c.updatePerStudent(assignmentCfg, assignmentGitLabGroupID, starterrepo)
+		c.updatePerStudent(assignmentCfg, starterrepo)
 	default:
 		fmt.Printf("it is only possible to update for students oder groups, not for %v", per)
 		os.Exit(1)
@@ -89,8 +89,7 @@ func (c *Client) update(assignmentCfg *config.AssignmentConfig, project *gitlab.
 	}
 }
 
-func (c *Client) updatePerStudent(assignmentCfg *config.AssignmentConfig, assignmentGroupID int,
-	starterrepo *git.Starterrepo) {
+func (c *Client) updatePerStudent(assignmentCfg *config.AssignmentConfig, starterrepo *git.Starterrepo) {
 	if len(assignmentCfg.Students) == 0 {
 		log.Info().Str("group", assignmentCfg.Course).Msg("no students found")
 		return
@@ -111,8 +110,7 @@ func (c *Client) updatePerStudent(assignmentCfg *config.AssignmentConfig, assign
 	}
 }
 
-func (c *Client) updatePerGroup(assignmentCfg *config.AssignmentConfig, assignmentGroupID int,
-	starterrepo *git.Starterrepo) {
+func (c *Client) updatePerGroup(assignmentCfg *config.AssignmentConfig, starterrepo *git.Starterrepo) {
 	if len(assignmentCfg.Groups) == 0 {
 		log.Info().Str("group", assignmentCfg.Course).Msg("no groups found")
 		return

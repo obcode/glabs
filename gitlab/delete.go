@@ -35,7 +35,7 @@ func (c *Client) deletePerStudent(assignmentCfg *config.AssignmentConfig, assign
 
 	for _, student := range assignmentCfg.Students {
 		name := assignmentCfg.Name + "-" + assignmentCfg.RepoSuffix(student)
-		c.delete(assignmentCfg, assignmentGroupID, name)
+		c.delete(assignmentGroupID, name)
 	}
 }
 
@@ -46,11 +46,11 @@ func (c *Client) deletePerGroup(assignmentCfg *config.AssignmentConfig, assignme
 	}
 
 	for _, grp := range assignmentCfg.Groups {
-		c.delete(assignmentCfg, assignmentGroupID, assignmentCfg.Name+"-"+grp.Name)
+		c.delete(assignmentGroupID, assignmentCfg.Name+"-"+grp.Name)
 	}
 }
 
-func (c *Client) delete(cfg *config.AssignmentConfig, gid int, name string) {
+func (c *Client) delete(gid int, name string) {
 	projects, _, err := c.Search.ProjectsByGroup(gid, name, &gitlab.SearchOptions{})
 	if err != nil {
 		log.Error().Str("project", name).Msg("searching for projects failed")
@@ -62,7 +62,7 @@ func (c *Client) delete(cfg *config.AssignmentConfig, gid int, name string) {
 	for _, project := range projects {
 		if project.Name == name {
 			log.Info().Str("project", project.Name).Msg("deleting project")
-			_, err = c.Projects.DeleteProject(project.ID)
+			_, err = c.Projects.DeleteProject(project.ID, &gitlab.DeleteProjectOptions{})
 			if err != nil {
 				log.Error().Str("project", name).Msg("deleting project failed")
 				return

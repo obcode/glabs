@@ -81,7 +81,7 @@ func (c *Client) runSeeder(assignmentCfg *cfg.AssignmentConfig, project *gitlab.
 
 	if assignmentCfg.Seeder.ProtectToBranch {
 		opts := &gitlab.ProtectRepositoryBranchesOptions{
-			Name: gitlab.String(assignmentCfg.Seeder.ToBranch),
+			Name: gitlab.Ptr(assignmentCfg.Seeder.ToBranch),
 		}
 
 		_, _, err = c.ProtectedBranches.ProtectRepositoryBranches(project.ID, opts)

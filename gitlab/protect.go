@@ -76,10 +76,10 @@ func (c *Client) protectBranch(assignmentCfg *config.AssignmentConfig, project *
 		}
 
 		opts := &gitlab.ProtectRepositoryBranchesOptions{
-			Name:                 gitlab.String(assignmentCfg.Startercode.ToBranch),
-			PushAccessLevel:      gitlab.AccessLevel(gitlab.MaintainerPermissions),
-			MergeAccessLevel:     gitlab.AccessLevel(gitlab.MaintainerPermissions),
-			UnprotectAccessLevel: gitlab.AccessLevel(gitlab.MaintainerPermissions),
+			Name:                 gitlab.Ptr(assignmentCfg.Startercode.ToBranch),
+			PushAccessLevel:      gitlab.Ptr(gitlab.MaintainerPermissions),
+			MergeAccessLevel:     gitlab.Ptr(gitlab.MaintainerPermissions),
+			UnprotectAccessLevel: gitlab.Ptr(gitlab.MaintainerPermissions),
 		}
 
 		_, _, err = c.ProtectedBranches.ProtectRepositoryBranches(project.ID, opts)

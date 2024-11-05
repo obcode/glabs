@@ -13,7 +13,7 @@ import (
 )
 
 func (c *Client) Setaccess(assignmentCfg *config.AssignmentConfig) {
-	assignmentGitLabGroupID, err := c.getGroupID(assignmentCfg)
+	_, err := c.getGroupID(assignmentCfg)
 	if err != nil {
 		fmt.Printf("error: GitLab group for assignment does not exist, please create the group %s\n", assignmentCfg.URL)
 		os.Exit(1)
@@ -21,9 +21,9 @@ func (c *Client) Setaccess(assignmentCfg *config.AssignmentConfig) {
 
 	switch per := assignmentCfg.Per; per {
 	case config.PerGroup:
-		c.setaccessPerGroup(assignmentCfg, assignmentGitLabGroupID)
+		c.setaccessPerGroup(assignmentCfg)
 	case config.PerStudent:
-		c.setaccessPerStudent(assignmentCfg, assignmentGitLabGroupID)
+		c.setaccessPerStudent(assignmentCfg)
 	default:
 		fmt.Printf("it is only possible to set access levels for students oder groups, not for %v", per)
 		os.Exit(1)
@@ -153,7 +153,7 @@ func (c *Client) inviteByEmail(cfg *config.AssignmentConfig, projectID int, emai
 	return fmt.Sprintf("successfully invited user %s", email), nil
 }
 
-func (c *Client) setaccessPerStudent(assignmentCfg *config.AssignmentConfig, assignmentGroupID int) {
+func (c *Client) setaccessPerStudent(assignmentCfg *config.AssignmentConfig) {
 	if len(assignmentCfg.Students) == 0 {
 		fmt.Println("no students in config for assignment found")
 		return
@@ -174,7 +174,7 @@ func (c *Client) setaccessPerStudent(assignmentCfg *config.AssignmentConfig, ass
 	}
 }
 
-func (c *Client) setaccessPerGroup(assignmentCfg *config.AssignmentConfig, assignmentGroupID int) {
+func (c *Client) setaccessPerGroup(assignmentCfg *config.AssignmentConfig) {
 	if len(assignmentCfg.Groups) == 0 {
 		log.Info().Str("group", assignmentCfg.Course).Msg("no groups found")
 		return

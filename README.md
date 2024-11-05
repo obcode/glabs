@@ -289,6 +289,8 @@ This is useful for opening the webpages using a pipe, e.g.,
 glabs urls algdati blatt3 grp15 | xargs open
 ```
 
+`urls` without groups or students prints the assignment url.
+
 ## Seeding using a custom tool
 
 Instead of providing each student/group the same repository using the startercode option it is possible to run a tool to seed each repository individually.

@@ -63,9 +63,10 @@ func clone(localpath, branch, cloneurl string, auth ssh.AuthMethod, force bool, 
 	}
 
 	var spinner *yacspin.Spinner
+	var err error
 
 	if !noSpinner {
-		spinner, err := yacspin.New(cfg)
+		spinner, err = yacspin.New(cfg)
 		if err != nil {
 			log.Debug().Err(err).Msg("cannot create spinner")
 		}
@@ -97,7 +98,7 @@ func clone(localpath, branch, cloneurl string, auth ssh.AuthMethod, force bool, 
 		}
 	}
 
-	_, err := git.PlainClone(localpath, false, &git.CloneOptions{
+	_, err = git.PlainClone(localpath, false, &git.CloneOptions{
 		Auth:          auth,
 		URL:           cloneurl,
 		ReferenceName: plumbing.ReferenceName("refs/heads/" + branch),

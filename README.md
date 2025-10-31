@@ -362,3 +362,30 @@ What you can do is the following:
     ```
 
 6. Use `fromBranch` in your assignment config.
+
+If you are doing this more often, you want to add a git alias like
+
+```git
+[alias]
+    new-semester = "!f() { \
+        BRANCH=${1:-ws24}; \
+        MSG=${2:-Initial}; \
+        if git show-ref --verify --quiet refs/heads/$BRANCH; then \
+            echo \"Error: Branch '$BRANCH' already exists. Please delete it first or choose another name.\"; \
+            return 1; \
+        fi; \
+        CURRENT=$(git branch --show-current) && \
+        git checkout -b $BRANCH && \
+        COMMIT=$(git commit-tree HEAD^{tree} -m \"$MSG\") && \
+        git reset $COMMIT && \
+        git push origin $BRANCH && \
+        git checkout $CURRENT && \
+        echo \"Branch '$BRANCH' created and pushed. Returned to '$CURRENT'\"; \
+    }; f"
+```
+
+and use it like so
+
+```sh
+git new-semester ws24 "Initial"
+```

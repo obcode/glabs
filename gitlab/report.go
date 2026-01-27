@@ -29,12 +29,12 @@ func (c *Client) Report(assignmentCfg *config.AssignmentConfig, templateFile *st
 	}
 
 	if output != nil {
-		os.Remove(*output)
+		os.Remove(*output) //nolint
 		f, err := os.Create(*output)
 		if err != nil {
 			panic(err)
 		}
-		defer f.Close()
+		defer f.Close() //nolint
 		err = tmpl.Execute(f, report)
 		if err != nil {
 			panic(err)
@@ -65,12 +65,12 @@ func (c *Client) ReportHTML(assignmentCfg *config.AssignmentConfig, templateFile
 	}
 
 	if output != nil {
-		os.Remove(*output)
+		os.Remove(*output) //nolint
 		f, err := os.Create(*output)
 		if err != nil {
 			panic(err)
 		}
-		defer f.Close()
+		defer f.Close() //nolint
 		err = tmpl.Execute(f, report)
 		if err != nil {
 			panic(err)

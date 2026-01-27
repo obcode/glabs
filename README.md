@@ -179,6 +179,7 @@ Usage:
   glabs [command]
 
 Available Commands:
+  archive     Archive or unarchive repositories.
   check       check course config
   clone       Clone repositories.
   completion  Generate the autocompletion script for the specified shell

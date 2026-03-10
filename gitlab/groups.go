@@ -6,51 +6,78 @@ import (
 
 	"github.com/obcode/glabs/config"
 	"github.com/rs/zerolog/log"
+	"github.com/xanzy/go-gitlab"
 )
 
-func (c *Client) getGroupID(assignmentCfg *config.AssignmentConfig) (int, error) {
-	pathParts := strings.Split(assignmentCfg.Path, "/")
-	groups, _, err := c.Groups.SearchGroup(pathParts[len(pathParts)-1])
+func (c *Client) getGroupIDByFullPath(fullPath string) (int, error) {
+	pathParts := strings.Split(fullPath, "/")
+	searchTerm := pathParts[len(pathParts)-1]
 
+	groups, _, err := c.Groups.SearchGroup(searchTerm)
 	if err != nil {
 		log.Error().Err(err).
-			Str("course", assignmentCfg.Course).
-			Str("assignmentpath", assignmentCfg.Path).
-			Msg("error while searching id of assignmentPath")
+			Str("grouppath", fullPath).
+			Msg("error while searching id of group path")
 		return 0, err
 	}
 
-	if len(groups) == 0 {
-		log.Debug().Str("group", assignmentCfg.Course).
-			Str("assignmentpath", assignmentCfg.Path).
-			Msg("no group found")
-		return 0, fmt.Errorf("no gitlab group found for assignmentpath %s", assignmentCfg.Path)
-	}
-
-	log.Debug().Str("assignmentpath", assignmentCfg.Path).Msg("searching id of gitlab group")
-
-	// semesterpathID := 0
-	assignmentGroupID := 0
-
 	for _, group := range groups {
-		// if group.Path == semesterpath {
-		// 	log.Debug().Str("group.Path", group.Path).Msg("found semester group")
-		// 	semesterpathID = group.ID
-		// }
-		if group.FullPath == assignmentCfg.Path {
-			log.Debug().Str("group.FullPath", group.FullPath).Msg("found assignment group")
-			assignmentGroupID = group.ID
+		if group.FullPath == fullPath {
+			return group.ID, nil
 		}
 	}
 
-	if assignmentGroupID == 0 {
-		log.Info().Msg("creating assignment group")
-		log.Error().
+	return 0, fmt.Errorf("no gitlab group found for path %s", fullPath)
+}
+
+func (c *Client) getGroupID(assignmentCfg *config.AssignmentConfig) (int, error) {
+	assignmentGroupID, err := c.getGroupIDByFullPath(assignmentCfg.Path)
+	if err != nil {
+		log.Debug().Err(err).
 			Str("course", assignmentCfg.Course).
 			Str("assignmentpath", assignmentCfg.Path).
-			Msg("please go to the gitlab website and create the subgroup with the assignment path")
-		return 0, fmt.Errorf("please go to the gitlab website and create the subgroup with the assignment path")
+			Msg("error while searching id of assignment path")
+		return 0, err
 	}
 
 	return assignmentGroupID, nil
+}
+
+func (c *Client) createGroup(assignmentCfg *config.AssignmentConfig) (int, error) {
+	pathParts := strings.Split(assignmentCfg.Path, "/")
+	path := pathParts[len(pathParts)-1]
+	name := pathParts[len(pathParts)-1]
+
+	var parentID *int
+	if len(pathParts) > 1 {
+		parentPath := strings.Join(pathParts[:len(pathParts)-1], "/")
+		resolvedParentID, err := c.getGroupIDByFullPath(parentPath)
+		if err != nil {
+			log.Error().Err(err).
+				Str("course", assignmentCfg.Course).
+				Str("parentpath", parentPath).
+				Msg("cannot resolve parent group for assignment")
+			return 0, err
+		}
+		parentID = &resolvedParentID
+	}
+
+	fmt.Printf("GitLab group for assignment does not exist, creating group %s at %s\n", name, assignmentCfg.Path)
+
+	visibility := gitlab.InternalVisibility
+	options := &gitlab.CreateGroupOptions{
+		Name:       &name,
+		Path:       &path,
+		Visibility: &visibility,
+		ParentID:   parentID,
+	}
+
+	g, _, err := c.Groups.CreateGroup(options)
+	if err != nil {
+		log.Error().Err(err).
+			Str("name", name).
+			Str("path", path).
+			Msg("cannot create group")
+	}
+	return g.ID, nil
 }

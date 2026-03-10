@@ -15,8 +15,16 @@ import (
 func (c *Client) Generate(assignmentCfg *config.AssignmentConfig) {
 	assignmentGitLabGroupID, err := c.getGroupID(assignmentCfg)
 	if err != nil {
-		fmt.Printf("error: GitLab group for assignment does not exist, please create the group %s\n", assignmentCfg.URL)
-		os.Exit(1)
+		// try to create group if it does not exist, otherwise exit with error
+		assignmentGitLabGroupID, err = c.createGroup(assignmentCfg)
+		if err != nil {
+			log.Error().Err(err).
+				Str("course", assignmentCfg.Course).
+				Str("assignmentpath", assignmentCfg.Path).
+				Msg("error while creating group for assignment")
+			fmt.Printf("error: cannot create GitLab group for assignment, please create the group %s\n", assignmentCfg.URL)
+			os.Exit(1)
+		}
 	}
 
 	var starterrepo *git.Starterrepo

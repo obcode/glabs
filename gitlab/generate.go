@@ -161,6 +161,53 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 			}
 		}
 	}
+
+	// Replicate issues from startercode repo if configured
+	if generated && assignmentCfg.Startercode != nil && assignmentCfg.Startercode.ReplicateIssue {
+		starterProject, starterProjectErr := c.getStartercodeProject(assignmentCfg)
+
+		for _, issueNumber := range assignmentCfg.Startercode.IssueNumbers {
+			cfg.Suffix = aurora.Sprintf(
+				aurora.Cyan(" ↪ replicating issue #%d from startercode"),
+				aurora.Yellow(issueNumber),
+			)
+			spinner, err := yacspin.New(cfg)
+			if err != nil {
+				log.Debug().Err(err).Msg("cannot create spinner")
+			}
+			err = spinner.Start()
+			if err != nil {
+				log.Debug().Err(err).Msg("cannot start spinner")
+			}
+
+			if starterProjectErr != nil {
+				spinner.StopFailMessage(fmt.Sprintf("problem: %v", starterProjectErr))
+
+				err := spinner.StopFail()
+				if err != nil {
+					log.Debug().Err(err).Msg("cannot stop spinner")
+				}
+				continue
+			}
+
+			err = c.replicateIssue(starterProject, project, issueNumber)
+			if err != nil {
+				spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
+
+				err := spinner.StopFail()
+				if err != nil {
+					log.Debug().Err(err).Msg("cannot stop spinner")
+				}
+				continue
+			}
+
+			err = spinner.Stop()
+			if err != nil {
+				log.Debug().Err(err).Msg("cannot stop spinner")
+			}
+		}
+	}
+
 	c.setaccess(assignmentCfg, project, members, &cfg)
 }
 

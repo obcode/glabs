@@ -13,6 +13,7 @@
   - [Getting URLs](#getting-urls)
   - [Seeding using a custom tool](#seeding-using-a-custom-tool)
     - [Example using `seeder` Option](#example-using-seeder-option)
+  - [Replicating assignment issues](#replicating-assignment-issues)
   - [Using starter code as a template](#using-starter-code-as-a-template)
 
 ## Configfiles
@@ -328,6 +329,38 @@ algdati:
     clone:
       localpath: /tmp
 ```
+
+## Replicating assignment issues
+
+You can optionally replicate one or multiple issues from the startercode repository
+into each newly generated student/group project.
+
+Behavior:
+
+1. Only runs if `startercode.replicateIssue: true` is set.
+2. Only runs for newly generated projects (not for already existing repositories).
+3. Copies only issue title and description.
+4. If `startercode.issueNumbers` is not set, default is `[1]`.
+
+Configuration example:
+
+```.yaml
+mpd:
+  coursepath: mpd/semester
+  semesterpath: ob-26ss
+
+  blatt01:
+    assignmentpath: blatt-01
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:mpd/startercode/blatt-01.git
+      fromBranch: template
+      replicateIssue: true
+      issueNumbers: [1, 3, 4, 7]
+```
+
+With this config, issues `#1`, `#3`, `#4`, and `#7` are read from the startercode
+repository and created in every newly generated assignment repository.
 
 ## Using starter code as a template
 

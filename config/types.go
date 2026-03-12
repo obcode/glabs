@@ -51,6 +51,8 @@ type Startercode struct {
 	DevBranch          string
 	AdditionalBranches []string
 	ProtectToBranch    bool
+	ReplicateIssue     bool
+	IssueNumbers       []int
 }
 
 type Clone struct {

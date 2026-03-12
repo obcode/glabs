@@ -39,6 +39,16 @@ func startercode(assignmentKey string) *Startercode {
 		additionalBranches = addB
 	}
 
+	replicateIssue := viper.GetBool(assignmentKey + ".startercode.replicateIssue")
+
+	var issueNumbers []int
+	if replicateIssue {
+		issueNumbers = []int{1}
+		if issueNums := viper.GetIntSlice(assignmentKey + ".startercode.issueNumbers"); len(issueNums) > 0 {
+			issueNumbers = issueNums
+		}
+	}
+
 	return &Startercode{
 		URL:                url,
 		FromBranch:         fromBranch,
@@ -46,6 +56,8 @@ func startercode(assignmentKey string) *Startercode {
 		DevBranch:          devBranch,
 		AdditionalBranches: additionalBranches,
 		ProtectToBranch:    viper.GetBool(assignmentKey + ".startercode.protectToBranch"),
+		ReplicateIssue:     replicateIssue,
+		IssueNumbers:       issueNumbers,
 	}
 }
 

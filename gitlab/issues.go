@@ -10,39 +10,6 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-// replicateIssuesFromStartercode loads issues from the startercode repo and creates them in the target project
-func (c *Client) replicateIssuesFromStartercode(assignmentCfg *config.AssignmentConfig, targetProject *gitlab.Project) error {
-	if assignmentCfg.Startercode == nil || !assignmentCfg.Startercode.ReplicateIssue {
-		return nil
-	}
-
-	starterProject, err := c.getStartercodeProject(assignmentCfg)
-	if err != nil {
-		return fmt.Errorf("could not find startercode project for issue replication: %w", err)
-	}
-
-	if len(assignmentCfg.Startercode.IssueNumbers) == 0 {
-		return fmt.Errorf("no issue numbers configured for issue replication")
-	}
-
-	var replicationErr error
-	for _, issueNumber := range assignmentCfg.Startercode.IssueNumbers {
-		err = c.replicateIssue(starterProject, targetProject, issueNumber)
-		if err != nil {
-			log.Warn().Err(err).Int("issueNumber", issueNumber).Msg("could not replicate issue")
-			if replicationErr == nil {
-				replicationErr = err
-			}
-		}
-	}
-
-	if replicationErr != nil {
-		return fmt.Errorf("issue replication failed: %w", replicationErr)
-	}
-
-	return nil
-}
-
 // getStartercodeProject extracts the project path from the startercode URL and returns the GitLab project
 func (c *Client) getStartercodeProject(assignmentCfg *config.AssignmentConfig) (*gitlab.Project, error) {
 	// Parse project path from URL

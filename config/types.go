@@ -10,20 +10,21 @@ type Student struct {
 }
 
 type AssignmentConfig struct {
-	Course            string
-	Name              string
-	Path              string
-	URL               string
-	Per               Per
-	Description       string
-	ContainerRegistry bool
-	AccessLevel       AccessLevel
-	Students          []*Student
-	Groups            []*Group
-	Startercode       *Startercode
-	Clone             *Clone
-	Release           *Release
-	Seeder            *Seeder
+	Course                string
+	Name                  string
+	UseCoursenameAsPrefix bool
+	Path                  string
+	URL                   string
+	Per                   Per
+	Description           string
+	ContainerRegistry     bool
+	AccessLevel           AccessLevel
+	Students              []*Student
+	Groups                []*Group
+	Startercode           *Startercode
+	Clone                 *Clone
+	Release               *Release
+	Seeder                *Seeder
 }
 
 type Per string

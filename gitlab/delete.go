@@ -34,8 +34,7 @@ func (c *Client) deletePerStudent(assignmentCfg *config.AssignmentConfig, assign
 	}
 
 	for _, student := range assignmentCfg.Students {
-		name := assignmentCfg.Name + "-" + assignmentCfg.RepoSuffix(student)
-		c.delete(assignmentGroupID, name)
+		c.delete(assignmentGroupID, assignmentCfg.RepoNameForStudent(student))
 	}
 }
 
@@ -46,7 +45,7 @@ func (c *Client) deletePerGroup(assignmentCfg *config.AssignmentConfig, assignme
 	}
 
 	for _, grp := range assignmentCfg.Groups {
-		c.delete(assignmentGroupID, assignmentCfg.Name+"-"+grp.Name)
+		c.delete(assignmentGroupID, assignmentCfg.RepoNameForGroup(grp))
 	}
 }
 

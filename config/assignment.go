@@ -48,20 +48,21 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 	}
 
 	assignmentConfig := &AssignmentConfig{
-		Course:            course,
-		Name:              assignment,
-		Path:              path,
-		URL:               url,
-		Per:               per,
-		Description:       description(assignmentKey),
-		ContainerRegistry: containerRegistry,
-		AccessLevel:       accessLevel(assignmentKey),
-		Students:          students(per, course, assignment, onlyForStudentsOrGroups...),
-		Groups:            groups(per, course, assignment, onlyForStudentsOrGroups...),
-		Startercode:       startercode(assignmentKey),
-		Clone:             clone(assignmentKey),
-		Release:           release,
-		Seeder:            seeder(assignmentKey),
+		Course:                course,
+		Name:                  assignment,
+		UseCoursenameAsPrefix: viper.GetBool(course + ".useCoursenameAsPrefix"),
+		Path:                  path,
+		URL:                   url,
+		Per:                   per,
+		Description:           description(assignmentKey),
+		ContainerRegistry:     containerRegistry,
+		AccessLevel:           accessLevel(assignmentKey),
+		Students:              students(per, course, assignment, onlyForStudentsOrGroups...),
+		Groups:                groups(per, course, assignment, onlyForStudentsOrGroups...),
+		Startercode:           startercode(assignmentKey),
+		Clone:                 clone(assignmentKey),
+		Release:               release,
+		Seeder:                seeder(assignmentKey),
 	}
 
 	return assignmentConfig
@@ -81,6 +82,26 @@ func (cfg *AssignmentConfig) RepoSuffix(student *Student) string {
 	}
 
 	return ""
+}
+
+func (cfg *AssignmentConfig) RepoBaseName() string {
+	if cfg.UseCoursenameAsPrefix {
+		return fmt.Sprintf("%s-%s", cfg.Course, cfg.Name)
+	}
+
+	return cfg.Name
+}
+
+func (cfg *AssignmentConfig) RepoNameWithSuffix(suffix string) string {
+	return fmt.Sprintf("%s-%s", cfg.RepoBaseName(), suffix)
+}
+
+func (cfg *AssignmentConfig) RepoNameForStudent(student *Student) string {
+	return cfg.RepoNameWithSuffix(cfg.RepoSuffix(student))
+}
+
+func (cfg *AssignmentConfig) RepoNameForGroup(group *Group) string {
+	return cfg.RepoNameWithSuffix(group.Name)
 }
 
 func assignmentPath(course, assignment string) string {

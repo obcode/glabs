@@ -38,11 +38,11 @@ func Clone(cfg *config.AssignmentConfig, noSpinner bool) {
 func cloneurl(cfg *config.AssignmentConfig, suffix string) string {
 	return fmt.Sprintf("%s/%s-%s",
 		strings.Replace(strings.Replace(cfg.URL, "https://", "git@", 1), "/", ":", 1),
-		cfg.Name, suffix)
+		cfg.RepoBaseName(), suffix)
 }
 
 func localpath(cfg *config.AssignmentConfig, suffix string) string {
-	return fmt.Sprintf("%s/%s-%s", cfg.Clone.LocalPath, cfg.Name, suffix)
+	return fmt.Sprintf("%s/%s", cfg.Clone.LocalPath, cfg.RepoNameWithSuffix(suffix))
 }
 
 func clone(localpath, branch, cloneurl string, auth ssh.AuthMethod, force bool, noSpinner bool) {

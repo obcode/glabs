@@ -67,6 +67,7 @@ Contents:
     coursepath: <base path of course in gitlab>
     # if you want to generate directly in coursepath, do not define semesterpath
     semesterpath: <gitlab subgroup of coursepath used for this semester>
+  useCoursenameAsPrefix: <false|true> # if true, repos start with <baseNameOfCourse>-<assignment>, default false
     students: # needs only to defined if generating per student
       <array of student specifier>
     groups: # if students are allowed to work in groups
@@ -118,12 +119,22 @@ Contents:
       groups: <add or redefine groups>
 ```
 
+Naming behavior:
+
+- `useCoursenameAsPrefix: false` (default)
+  - student repo: `<assignment>-<student>` (example: `blatt1-max_mustermann_at_hm.edu`)
+  - group repo: `<assignment>-<group>` (example: `blatt1-grp01`)
+- `useCoursenameAsPrefix: true`
+  - student repo: `<baseNameOfCourse>-<assignment>-<student>` (example: `algdati-blatt1-max_mustermann_at_hm.edu`)
+  - group repo: `<baseNameOfCourse>-<assignment>-<group>` (example: `algdati-blatt1-grp01`)
+
 Example:
 
 ```.yaml
 algdati:
   coursepath: algdati
   semesterpath: semester/ob-20ws
+  useCoursenameAsPrefix: true
   students:
     - 12334         # GitLab ID
     - ob@glabs.io   # email address

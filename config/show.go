@@ -135,6 +135,7 @@ func (cfg *AssignmentConfig) Show() {
 	fmt.Print(aurora.Sprintf(aurora.Cyan(`
 Course:             %s
 Assignment:         %s
+Coursename-Prefix:  %t
 Per:                %s
 Base-URL:           %s
 Description:	    %s
@@ -148,6 +149,7 @@ Release:            %s
 `),
 		aurora.Yellow(cfg.Course),
 		aurora.Yellow(cfg.Name),
+		aurora.Yellow(cfg.UseCoursenameAsPrefix),
 		aurora.Yellow(cfg.Per),
 		aurora.Yellow(cfg.URL),
 		aurora.Yellow(cfg.Description),

@@ -219,7 +219,7 @@ func (c *Client) generatePerStudent(assignmentCfg *config.AssignmentConfig, assi
 	}
 
 	for _, student := range assignmentCfg.Students {
-		name := assignmentCfg.Name + "-" + assignmentCfg.RepoSuffix(student)
+		name := assignmentCfg.RepoNameForStudent(student)
 		c.generate(assignmentCfg, assignmentGroupID, name, []*config.Student{student}, starterrepo)
 	}
 }
@@ -232,6 +232,6 @@ func (c *Client) generatePerGroup(assignmentCfg *config.AssignmentConfig, assign
 	}
 
 	for _, grp := range assignmentCfg.Groups {
-		c.generate(assignmentCfg, assignmentGroupID, assignmentCfg.Name+"-"+grp.Name, grp.Members, starterrepo)
+		c.generate(assignmentCfg, assignmentGroupID, assignmentCfg.RepoNameForGroup(grp), grp.Members, starterrepo)
 	}
 }

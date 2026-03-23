@@ -160,8 +160,7 @@ func (c *Client) setaccessPerStudent(assignmentCfg *config.AssignmentConfig) {
 	}
 
 	for _, student := range assignmentCfg.Students {
-		name := assignmentCfg.Name + "-" + assignmentCfg.RepoSuffix(student)
-		projectname := fmt.Sprintf("%s/%s", assignmentCfg.Path, name)
+		projectname := fmt.Sprintf("%s/%s", assignmentCfg.Path, assignmentCfg.RepoNameForStudent(student))
 		project, _, err := c.Projects.GetProject(
 			projectname,
 			&gitlab.GetProjectOptions{},
@@ -181,7 +180,7 @@ func (c *Client) setaccessPerGroup(assignmentCfg *config.AssignmentConfig) {
 	}
 
 	for _, grp := range assignmentCfg.Groups {
-		projectname := fmt.Sprintf("%s/%s-%s", assignmentCfg.Path, assignmentCfg.Name, grp.Name)
+		projectname := fmt.Sprintf("%s/%s", assignmentCfg.Path, assignmentCfg.RepoNameForGroup(grp))
 		project, _, err := c.Projects.GetProject(
 			projectname,
 			&gitlab.GetProjectOptions{},

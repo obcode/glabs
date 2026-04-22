@@ -50,14 +50,15 @@ func startercode(assignmentKey string) *Startercode {
 	}
 
 	return &Startercode{
-		URL:                url,
-		FromBranch:         fromBranch,
-		ToBranch:           toBranch,
-		DevBranch:          devBranch,
-		AdditionalBranches: additionalBranches,
-		ProtectToBranch:    viper.GetBool(assignmentKey + ".startercode.protectToBranch"),
-		ReplicateIssue:     replicateIssue,
-		IssueNumbers:       issueNumbers,
+		URL:                       url,
+		FromBranch:                fromBranch,
+		ToBranch:                  toBranch,
+		DevBranch:                 devBranch,
+		AdditionalBranches:        additionalBranches,
+		ProtectToBranch:           viper.GetBool(assignmentKey + ".startercode.protectToBranch"),
+		ProtectDevBranchMergeOnly: viper.GetBool(assignmentKey + ".startercode.protectDevBranchMergeOnly"),
+		ReplicateIssue:            replicateIssue,
+		IssueNumbers:              issueNumbers,
 	}
 }
 

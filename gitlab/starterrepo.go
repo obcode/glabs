@@ -61,7 +61,7 @@ func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *g.St
 		}
 	}
 
-	if assignmentCfg.Startercode.ProtectToBranch {
+	if assignmentCfg.Startercode.ProtectToBranch || assignmentCfg.Startercode.ProtectDevBranchMergeOnly {
 		if err := c.protectBranch(assignmentCfg, project, false); err != nil {
 			log.Debug().Err(err).
 				Str("name", project.Name).

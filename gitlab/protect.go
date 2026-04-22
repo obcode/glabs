@@ -31,7 +31,7 @@ func (c *Client) ProtectToBranch(assignmentCfg *config.AssignmentConfig) {
 }
 
 func (c *Client) protectBranch(assignmentCfg *config.AssignmentConfig, project *gitlab.Project, spin bool) error {
-	if assignmentCfg.Startercode.ProtectToBranch {
+	if assignmentCfg.Startercode.ProtectToBranch || assignmentCfg.Startercode.ProtectDevBranchMergeOnly {
 		// var cfg yacspin.Config
 		var spinner *yacspin.Spinner
 		if spin {
@@ -66,46 +66,102 @@ func (c *Client) protectBranch(assignmentCfg *config.AssignmentConfig, project *
 			Str("branch", assignmentCfg.Startercode.ToBranch).
 			Msg("protecting branch")
 
-		_, err := c.ProtectedBranches.UnprotectRepositoryBranches(project.ID, assignmentCfg.Startercode.ToBranch)
-		if err != nil {
-			log.Debug().Err(err).
-				Str("name", project.Name).
-				Str("toURL", project.SSHURLToRepo).
-				Str("branch", assignmentCfg.Startercode.ToBranch).
-				Msg("cannot unprotect branch, but that is okay")
-		}
-
-		opts := &gitlab.ProtectRepositoryBranchesOptions{
-			Name:                 gitlab.Ptr(assignmentCfg.Startercode.ToBranch),
-			PushAccessLevel:      gitlab.Ptr(gitlab.MaintainerPermissions),
-			MergeAccessLevel:     gitlab.Ptr(gitlab.MaintainerPermissions),
-			UnprotectAccessLevel: gitlab.Ptr(gitlab.MaintainerPermissions),
-		}
-
-		_, _, err = c.ProtectedBranches.ProtectRepositoryBranches(project.ID, opts)
-		if err != nil {
-			log.Debug().Err(err).
-				Str("name", project.Name).
-				Str("toURL", project.SSHURLToRepo).
-				Str("branch", assignmentCfg.Startercode.ToBranch).
-				Msg("error while protecting branch")
-
-			if spin {
-				err := spinner.StopFail()
+		if assignmentCfg.Startercode.ProtectDevBranchMergeOnly &&
+			assignmentCfg.Startercode.DevBranch == assignmentCfg.Startercode.ToBranch {
+			err := c.protectSingleBranch(
+				project,
+				assignmentCfg.Startercode.ToBranch,
+				gitlab.NoPermissions,
+				gitlab.DeveloperPermissions,
+			)
+			if err != nil {
+				if spin {
+					err := spinner.StopFail()
+					if err != nil {
+						log.Debug().Err(err).Msg("cannot stop spinner")
+					}
+				}
+				return err
+			}
+		} else {
+			if assignmentCfg.Startercode.ProtectToBranch {
+				err := c.protectSingleBranch(
+					project,
+					assignmentCfg.Startercode.ToBranch,
+					gitlab.MaintainerPermissions,
+					gitlab.MaintainerPermissions,
+				)
 				if err != nil {
-					log.Debug().Err(err).Msg("cannot stop spinner")
+					if spin {
+						err := spinner.StopFail()
+						if err != nil {
+							log.Debug().Err(err).Msg("cannot stop spinner")
+						}
+					}
+					return err
 				}
 			}
-			return fmt.Errorf("error while trying to protect branch: %w", err)
+
+			if assignmentCfg.Startercode.ProtectDevBranchMergeOnly {
+				err := c.protectSingleBranch(
+					project,
+					assignmentCfg.Startercode.DevBranch,
+					gitlab.NoPermissions,
+					gitlab.DeveloperPermissions,
+				)
+				if err != nil {
+					if spin {
+						err := spinner.StopFail()
+						if err != nil {
+							log.Debug().Err(err).Msg("cannot stop spinner")
+						}
+					}
+					return err
+				}
+			}
 		}
 
 		if spin {
 			spinner.StopMessage(aurora.Sprintf(aurora.Green("ok")))
-			err = spinner.Stop()
-			if err != nil {
+			if err := spinner.Stop(); err != nil {
 				log.Debug().Err(err).Msg("cannot stop spinner")
 			}
 		}
+	}
+
+	return nil
+}
+
+func (c *Client) protectSingleBranch(
+	project *gitlab.Project,
+	branch string,
+	pushAccessLevel gitlab.AccessLevelValue,
+	mergeAccessLevel gitlab.AccessLevelValue,
+) error {
+	_, err := c.ProtectedBranches.UnprotectRepositoryBranches(project.ID, branch)
+	if err != nil {
+		log.Debug().Err(err).
+			Str("name", project.Name).
+			Str("toURL", project.SSHURLToRepo).
+			Str("branch", branch).
+			Msg("cannot unprotect branch, but that is okay")
+	}
+
+	opts := &gitlab.ProtectRepositoryBranchesOptions{
+		Name:                 gitlab.Ptr(branch),
+		PushAccessLevel:      gitlab.Ptr(pushAccessLevel),
+		MergeAccessLevel:     gitlab.Ptr(mergeAccessLevel),
+		UnprotectAccessLevel: gitlab.Ptr(gitlab.MaintainerPermissions),
+	}
+
+	_, _, err = c.ProtectedBranches.ProtectRepositoryBranches(project.ID, opts)
+	if err != nil {
+		log.Debug().Err(err).
+			Str("name", project.Name).
+			Str("toURL", project.SSHURLToRepo).
+			Str("branch", branch).
+			Msg("error while protecting branch")
+		return fmt.Errorf("error while trying to protect branch %s: %w", branch, err)
 	}
 
 	return nil

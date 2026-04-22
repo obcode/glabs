@@ -21,20 +21,22 @@ func (cfg *AssignmentConfig) Show() {
 		}
 
 		startercode = aurora.Sprintf(aurora.Cyan(`
-  URL:                %s
-  FromBranch:         %s
-  ToBranch:           %s
-  DevBranch:          %s
-  AdditionalBranches: %s
-  ProtectToBranch:    %t
-  ReplicateIssue:     %t
-  IssueNumbers:       %s`),
+  URL:                       %s
+  FromBranch:                %s
+  ToBranch:                  %s
+  DevBranch:                 %s
+  AdditionalBranches:        %s
+  ProtectToBranch:           %t
+  ProtectDevBranchMergeOnly: %t
+  ReplicateIssue:            %t
+  IssueNumbers:              %s`),
 			aurora.Yellow(cfg.Startercode.URL),
 			aurora.Yellow(cfg.Startercode.FromBranch),
 			aurora.Yellow(cfg.Startercode.ToBranch),
 			aurora.Yellow(cfg.Startercode.DevBranch),
 			aurora.Yellow(cfg.Startercode.AdditionalBranches),
 			aurora.Yellow(cfg.Startercode.ProtectToBranch),
+			aurora.Yellow(cfg.Startercode.ProtectDevBranchMergeOnly),
 			aurora.Yellow(cfg.Startercode.ReplicateIssue),
 			issueNumbers,
 		)

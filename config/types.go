@@ -46,14 +46,15 @@ type Seeder struct {
 }
 
 type Startercode struct {
-	URL                string
-	FromBranch         string
-	ToBranch           string
-	DevBranch          string
-	AdditionalBranches []string
-	ProtectToBranch    bool
-	ReplicateIssue     bool
-	IssueNumbers       []int
+	URL                       string
+	FromBranch                string
+	ToBranch                  string
+	DevBranch                 string
+	AdditionalBranches        []string
+	ProtectToBranch           bool
+	ProtectDevBranchMergeOnly bool
+	ReplicateIssue            bool
+	IssueNumbers              []int
 }
 
 type Clone struct {

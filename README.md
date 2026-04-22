@@ -89,6 +89,7 @@ Contents:
         toBranch: <branchName in generated repo> # default main
         devBranch: <branchName used as default branch> # default toBranch
         protectToBranch: <false|true> # whether only maintainer can push, default false
+        protectDevBranchMergeOnly: <false|true> # whether push to devBranch is blocked but merge is allowed for developers, default false
       # accesslevel should be guest, developer, reporter, maintainer
       # if not defined accesslevel is developer
       accesslevel: <accesslevel for students>

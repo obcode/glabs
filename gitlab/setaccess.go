@@ -2,7 +2,6 @@ package gitlab
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/logrusorgru/aurora"
@@ -16,7 +15,7 @@ func (c *Client) Setaccess(assignmentCfg *config.AssignmentConfig) {
 	_, err := c.getGroupID(assignmentCfg)
 	if err != nil {
 		fmt.Printf("error: GitLab group for assignment does not exist, please create the group %s\n", assignmentCfg.URL)
-		os.Exit(1)
+		exitFunc(1)
 	}
 
 	switch per := assignmentCfg.Per; per {
@@ -26,7 +25,7 @@ func (c *Client) Setaccess(assignmentCfg *config.AssignmentConfig) {
 		c.setaccessPerStudent(assignmentCfg)
 	default:
 		fmt.Printf("it is only possible to set access levels for students oder groups, not for %v", per)
-		os.Exit(1)
+		exitFunc(1)
 	}
 }
 

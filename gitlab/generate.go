@@ -2,7 +2,6 @@ package gitlab
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/logrusorgru/aurora"
@@ -23,7 +22,7 @@ func (c *Client) Generate(assignmentCfg *config.AssignmentConfig) {
 				Str("assignmentpath", assignmentCfg.Path).
 				Msg("error while creating group for assignment")
 			fmt.Printf("error: cannot create GitLab group for assignment, please create the group %s\n", assignmentCfg.URL)
-			os.Exit(1)
+			exitFunc(1)
 		}
 	}
 
@@ -34,7 +33,7 @@ func (c *Client) Generate(assignmentCfg *config.AssignmentConfig) {
 
 		if err != nil {
 			fmt.Println(err)
-			os.Exit(1)
+			exitFunc(1)
 		}
 	}
 
@@ -45,7 +44,7 @@ func (c *Client) Generate(assignmentCfg *config.AssignmentConfig) {
 		c.generatePerStudent(assignmentCfg, assignmentGitLabGroupID, starterrepo)
 	default:
 		fmt.Printf("it is only possible to generate for students oder groups, not for %v", per)
-		os.Exit(1)
+		exitFunc(1)
 	}
 }
 

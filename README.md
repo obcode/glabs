@@ -92,6 +92,25 @@ glabs report <course> <assignment> [--html|--json]
 
 Issues and pull requests are welcome.
 
+## Testing
+
+Default unit and contract tests:
+
+```sh
+go test ./...
+```
+
+Integration tests with GitLab Testcontainers (opt-in):
+
+```sh
+GLABS_RUN_GITLAB_TC=1 go test -tags=integration ./gitlab -run TestIntegration_GitLab_GroupAndProjectLifecycle -count=1
+```
+
+Notes:
+
+- Integration tests are intentionally opt-in because starting GitLab in a container is resource intensive.
+- In CI, run integration tests in a dedicated job.
+
 ## License
 
 MIT, see [LICENSE](LICENSE).

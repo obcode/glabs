@@ -73,6 +73,14 @@ func createRootToken(ctx context.Context, t *testing.T, c testcontainers.Contain
 		t.Fatalf("could not parse token from gitlab-rails output: %q", string(outputBytes))
 	}
 
+	// Docker exec returns a multiplexed stream with binary headers; strip any non-printable bytes.
+	lastLine = strings.Map(func(r rune) rune {
+		if r >= 32 && r < 127 {
+			return r
+		}
+		return -1
+	}, lastLine)
+
 	return lastLine
 }
 

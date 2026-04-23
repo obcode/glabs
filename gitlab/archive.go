@@ -108,9 +108,14 @@ func (c *Client) archive(assignmentCfg *config.AssignmentConfig, project *gitlab
 	}
 
 	log.Debug().
+		Str("branch", func() string {
+			if assignmentCfg.Startercode != nil {
+				return assignmentCfg.Startercode.ToBranch
+			}
+			return ""
+		}()).
 		Str("name", project.Name).
 		Str("toURL", project.SSHURLToRepo).
-		Str("branch", assignmentCfg.Startercode.ToBranch).
 		Msg("protecting branch")
 
 	var err error

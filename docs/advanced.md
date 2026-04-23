@@ -17,9 +17,12 @@ mpd:
       url: git@gitlab.lrz.de:mpd/starter.git
       fromBranch: template
       toBranch: main
-      devBranch: develop
-      protectToBranch: true        # main is locked
-      protectDevBranchMergeOnly: false
+
+    branches:
+      - name: main
+        protect: true              # main is locked
+      - name: develop
+        default: true
 
     release:
       mergeRequest:

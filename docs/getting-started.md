@@ -85,11 +85,12 @@ mpd:
 | Assignment | `mergeRequest.statusChecksMustSucceed` | `false` |
 | Startercode | `fromBranch` | `main` |
 | Startercode | `toBranch` | `main` |
-| Startercode | `devBranch` | value of `toBranch` |
-| Startercode | `protectToBranch` | `false` |
-| Startercode | `protectDevBranchMergeOnly` | `false` |
-| Startercode | `replicateIssue` | `false` |
-| Startercode | `issueNumbers` | `[1]` when `replicateIssue: true` |
+| Startercode | `additionalBranches` | `[]` |
+| Branches | first `branches[].default` | `true` on first branch |
+| Branches | `branches[].protect` | `false` |
+| Branches | `branches[].mergeOnly` | `false` |
+| Issues | `issues.replicateFromStartercode` | `false` |
+| Issues | `issues.issueNumbers` | `[1]` when replication is enabled |
 | Seeder | `toBranch` | `main` |
 | Seeder | `protectToBranch` | `false` |
 | Clone | `localpath` | `.` |
@@ -114,6 +115,7 @@ glabs urls mpd blatt01
 ## Next steps
 
 - Read full config keys in [configuration.md](configuration.md)
+- If you use legacy startercode branch/issue keys, migrate with [migration.md](migration.md)
 - Follow common workflows in [workflows.md](workflows.md)
 - See all commands in [commands.md](commands.md)
 - If something fails, check [troubleshooting.md](troubleshooting.md)

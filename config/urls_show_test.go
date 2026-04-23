@@ -98,26 +98,55 @@ func TestShow_ContainerRegistryEnabled(t *testing.T) {
 func TestShow_WithStartercode_NoIssues(t *testing.T) {
 	cfg := &AssignmentConfig{
 		Startercode: &Startercode{
-			URL:            "https://gitlab.example.org/starter",
-			FromBranch:     "main",
-			ToBranch:       "main",
-			ReplicateIssue: false,
+			URL:        "https://gitlab.example.org/starter",
+			FromBranch: "main",
+			ToBranch:   "main",
 		},
 	}
 	cfg.Show()
 }
 
+func TestShow_WithStartercode_AdditionalBranches(t *testing.T) {
+	cfg := &AssignmentConfig{
+		Startercode: &Startercode{
+			URL:                "https://gitlab.example.org/starter",
+			FromBranch:         "main",
+			ToBranch:           "main",
+			AdditionalBranches: []string{"solution", "startercode"},
+		},
+	}
+	out := captureStdout(t, func() { cfg.Show() })
+	if !strings.Contains(out, "AdditionalBranches") || !strings.Contains(out, "solution") {
+		t.Fatalf("Show() output does not contain startercode additional branches: %q", out)
+	}
+}
+
 func TestShow_WithStartercode_WithIssues(t *testing.T) {
 	cfg := &AssignmentConfig{
 		Startercode: &Startercode{
-			URL:            "https://gitlab.example.org/starter",
-			FromBranch:     "main",
-			ToBranch:       "main",
-			ReplicateIssue: true,
-			IssueNumbers:   []int{1, 2, 3},
+			URL:        "https://gitlab.example.org/starter",
+			FromBranch: "main",
+			ToBranch:   "main",
+		},
+		Issues: &IssueReplication{
+			ReplicateFromStartercode: true,
+			IssueNumbers:             []int{1, 2, 3},
 		},
 	}
 	cfg.Show()
+}
+
+func TestShow_WithBranches(t *testing.T) {
+	cfg := &AssignmentConfig{
+		Branches: []BranchRule{{Name: "main", Protect: true, Default: true}, {Name: "develop", MergeOnly: true}},
+	}
+	out := captureStdout(t, func() { cfg.Show() })
+	if !strings.Contains(out, "Branches:") || !strings.Contains(out, "develop") {
+		t.Fatalf("Show() output does not contain branches block: %q", out)
+	}
+	if !strings.Contains(out, "mergeOnly") || !strings.Contains(out, "default") {
+		t.Fatalf("Show() output does not contain compact branch flags: %q", out)
+	}
 }
 
 func TestShow_WithSeeder(t *testing.T) {
@@ -278,5 +307,31 @@ func TestShow_WithMergeChecks(t *testing.T) {
 	}
 	if !strings.Contains(out, "StatusChecksMustSucceed:") {
 		t.Fatalf("Show() output does not contain StatusChecksMustSucceed key: %q", out)
+	}
+}
+
+func TestShow_NoFmtArtifacts(t *testing.T) {
+	cfg := &AssignmentConfig{
+		Course:                "mpd",
+		Name:                  "blatt01",
+		UseCoursenameAsPrefix: true,
+		Per:                   PerStudent,
+		MergeRequest: &MergeRequest{
+			PipelineMustSucceed:           true,
+			SkippedPipelinesAreSuccessful: true,
+			AllThreadsMustBeResolved:      true,
+			StatusChecksMustSucceed:       true,
+		},
+		Branches: []BranchRule{{Name: "main", MergeOnly: true, Default: true}},
+		Issues: &IssueReplication{
+			ReplicateFromStartercode: true,
+			IssueNumbers:             []int{1},
+		},
+		Clone: &Clone{LocalPath: ".", Branch: "main", Force: false},
+	}
+
+	out := captureStdout(t, func() { cfg.Show() })
+	if strings.Contains(out, "%!") {
+		t.Fatalf("Show() output contains fmt artifacts: %q", out)
 	}
 }

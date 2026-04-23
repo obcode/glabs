@@ -11,20 +11,13 @@ func TestStartercodeDefaultsAndReplication(t *testing.T) {
 	resetViper(t)
 	viper.Set("course.a1.startercode", map[string]string{"url": "git@example.org:starter.git"})
 	viper.Set("course.a1.startercode.url", "git@example.org:starter.git")
-	viper.Set("course.a1.startercode.replicateIssue", true)
 
 	s := startercode("course.a1")
 	if s == nil {
 		t.Fatal("startercode should not be nil")
 	}
-	if s.FromBranch != "main" || s.ToBranch != "main" || s.DevBranch != "main" {
+	if s.FromBranch != "main" || s.ToBranch != "main" {
 		t.Fatalf("unexpected startercode defaults: %#v", s)
-	}
-	if !s.ReplicateIssue {
-		t.Fatal("ReplicateIssue should be true")
-	}
-	if !reflect.DeepEqual(s.IssueNumbers, []int{1}) {
-		t.Fatalf("IssueNumbers = %#v, want [1]", s.IssueNumbers)
 	}
 }
 
@@ -34,34 +27,93 @@ func TestStartercodeOverrides(t *testing.T) {
 	viper.Set("course.a1.startercode.url", "git@example.org:starter.git")
 	viper.Set("course.a1.startercode.fromBranch", "template")
 	viper.Set("course.a1.startercode.toBranch", "submission")
-	viper.Set("course.a1.startercode.devBranch", "develop")
 	viper.Set("course.a1.startercode.additionalBranches", []string{"release", "demo"})
-	viper.Set("course.a1.startercode.replicateIssue", true)
-	viper.Set("course.a1.startercode.issueNumbers", []int{4, 7})
-	viper.Set("course.a1.startercode.protectToBranch", true)
-	viper.Set("course.a1.startercode.protectDevBranchMergeOnly", true)
 
 	s := startercode("course.a1")
-	if s.FromBranch != "template" || s.ToBranch != "submission" || s.DevBranch != "develop" {
+	if s.FromBranch != "template" || s.ToBranch != "submission" {
 		t.Fatalf("startercode branches = %#v", s)
 	}
 	if !reflect.DeepEqual(s.AdditionalBranches, []string{"release", "demo"}) {
-		t.Fatalf("additional branches = %#v", s.AdditionalBranches)
+		t.Fatalf("startercode additional branches = %#v", s.AdditionalBranches)
 	}
-	if !reflect.DeepEqual(s.IssueNumbers, []int{4, 7}) {
-		t.Fatalf("IssueNumbers = %#v", s.IssueNumbers)
+}
+
+func TestBranches_DefaultsAndLegacyFallback(t *testing.T) {
+	resetViper(t)
+	viper.Set("course.a1.startercode", map[string]string{"url": "git@example.org:starter.git"})
+	viper.Set("course.a1.startercode.url", "git@example.org:starter.git")
+	viper.Set("course.a1.startercode.toBranch", "main")
+	viper.Set("course.a1.startercode.devBranch", "develop")
+	viper.Set("course.a1.startercode.additionalBranches", []string{"release"})
+	viper.Set("course.a1.startercode.protectToBranch", true)
+	viper.Set("course.a1.startercode.protectDevBranchMergeOnly", true)
+
+	b := branches("course.a1", startercode("course.a1"))
+	if len(b) != 3 {
+		t.Fatalf("len(branches) = %d, want 3", len(b))
 	}
-	if !s.ProtectToBranch || !s.ProtectDevBranchMergeOnly {
-		t.Fatalf("protect flags = %#v", s)
+	if b[0].Name != "main" {
+		t.Fatalf("first branch = %#v", b[0])
+	}
+	if !b[0].Protect {
+		t.Fatalf("main branch should be protected: %#v", b[0])
+	}
+	if b[1].Name != "develop" || !b[1].Default || !b[1].MergeOnly {
+		t.Fatalf("develop branch = %#v", b[1])
+	}
+}
+
+func TestBranches_ExplicitConfig(t *testing.T) {
+	resetViper(t)
+	viper.Set("course.a1.branches", []map[string]any{
+		{"name": "main", "protect": true},
+		{"name": "dev", "default": true, "mergeOnly": true},
+	})
+
+	b := branches("course.a1", nil)
+	if len(b) != 2 {
+		t.Fatalf("len(branches) = %d, want 2", len(b))
+	}
+	if b[0].Name != "main" || !b[0].Protect {
+		t.Fatalf("main branch = %#v", b[0])
+	}
+	if b[1].Name != "dev" || !b[1].Default || !b[1].MergeOnly {
+		t.Fatalf("dev branch = %#v", b[1])
+	}
+}
+
+func TestIssues_DefaultsAndLegacyFallback(t *testing.T) {
+	resetViper(t)
+	viper.Set("course.a1.startercode.replicateIssue", true)
+
+	i := issues("course.a1")
+	if i == nil || !i.ReplicateFromStartercode {
+		t.Fatalf("issues = %#v", i)
+	}
+	if !reflect.DeepEqual(i.IssueNumbers, []int{1}) {
+		t.Fatalf("IssueNumbers = %#v, want [1]", i.IssueNumbers)
+	}
+
+	viper.Set("course.a1.issues.replicateFromStartercode", true)
+	viper.Set("course.a1.issues.issueNumbers", []int{4, 7})
+	i = issues("course.a1")
+	if !reflect.DeepEqual(i.IssueNumbers, []int{4, 7}) {
+		t.Fatalf("IssueNumbers = %#v", i.IssueNumbers)
 	}
 }
 
 func TestCloneDefaultsAndOverrides(t *testing.T) {
 	resetViper(t)
 
-	c := clone("course.a1")
-	if c.LocalPath != "." || c.Branch != "main" || c.Force {
+	c := clone("course.a1", "develop")
+	if c.LocalPath != "." || c.Branch != "develop" || c.Force {
 		t.Fatalf("clone defaults = %#v", c)
+	}
+
+	resetViper(t)
+	c = clone("course.a1", "develop")
+	if c.Branch != "develop" {
+		t.Fatalf("clone default branch = %q, want %q", c.Branch, "develop")
 	}
 
 	viper.Set("course.a1.clone", map[string]string{"localpath": "/tmp/repos", "branch": "dev"})
@@ -69,7 +121,7 @@ func TestCloneDefaultsAndOverrides(t *testing.T) {
 	viper.Set("course.a1.clone.branch", "dev")
 	viper.Set("course.a1.clone.force", true)
 
-	c = clone("course.a1")
+	c = clone("course.a1", "develop")
 	if c.LocalPath != "/tmp/repos" || c.Branch != "dev" || !c.Force {
 		t.Fatalf("clone overrides = %#v", c)
 	}

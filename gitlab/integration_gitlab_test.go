@@ -264,10 +264,7 @@ func TestIntegration_GitLab_Operations(t *testing.T) {
 	t.Run("ProtectToBranch", func(t *testing.T) {
 		// withReadme=true so the project has a 'main' branch immediately
 		cfg := createGroupAndProject(t, "protect-a1", "student1", true)
-		cfg.Startercode = &config.Startercode{
-			ToBranch:        "main",
-			ProtectToBranch: true,
-		}
+		cfg.Branches = []config.BranchRule{{Name: "main", Protect: true, Default: true}}
 
 		client.ProtectToBranch(cfg)
 

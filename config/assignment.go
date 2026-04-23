@@ -47,6 +47,10 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 		containerRegistry = true
 	}
 
+	starter := startercode(assignmentKey)
+	branchRules := branches(assignmentKey, starter)
+	defaultCloneBranch := defaultBranch(branchRules, "main")
+
 	assignmentConfig := &AssignmentConfig{
 		Course:                course,
 		Name:                  assignment,
@@ -58,10 +62,12 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 		ContainerRegistry:     containerRegistry,
 		AccessLevel:           accessLevel(assignmentKey),
 		MergeRequest:          mergeRequest(assignmentKey),
+		Branches:              branchRules,
+		Issues:                issues(assignmentKey),
 		Students:              students(per, course, assignment, onlyForStudentsOrGroups...),
 		Groups:                groups(per, course, assignment, onlyForStudentsOrGroups...),
-		Startercode:           startercode(assignmentKey),
-		Clone:                 clone(assignmentKey),
+		Startercode:           starter,
+		Clone:                 clone(assignmentKey, defaultCloneBranch),
 		Release:               release,
 		Seeder:                seeder(assignmentKey),
 	}

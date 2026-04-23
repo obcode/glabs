@@ -20,13 +20,10 @@ func TestProtectToBranch_GroupNotFound_Exits(t *testing.T) {
 	})
 
 	cfg := &config.AssignmentConfig{
-		Course: "mpd",
-		Path:   "mpd/ss26/blatt-01",
-		Per:    config.PerStudent,
-		Startercode: &config.Startercode{
-			ToBranch:        "main",
-			ProtectToBranch: true,
-		},
+		Course:   "mpd",
+		Path:     "mpd/ss26/blatt-01",
+		Per:      config.PerStudent,
+		Branches: []config.BranchRule{{Name: "main", Protect: true}},
 	}
 	assertExitCode(t, 1, func() { client.ProtectToBranch(cfg) })
 }
@@ -43,13 +40,10 @@ func TestProtectToBranch_InvalidPer_Exits(t *testing.T) {
 	})
 
 	cfg := &config.AssignmentConfig{
-		Course: "mpd",
-		Path:   "mpd/ss26/blatt-01",
-		Per:    config.PerFailed,
-		Startercode: &config.Startercode{
-			ToBranch:        "main",
-			ProtectToBranch: true,
-		},
+		Course:   "mpd",
+		Path:     "mpd/ss26/blatt-01",
+		Per:      config.PerFailed,
+		Branches: []config.BranchRule{{Name: "main", Protect: true}},
 	}
 	assertExitCode(t, 1, func() { client.ProtectToBranch(cfg) })
 }
@@ -67,10 +61,7 @@ func TestProtectToBranchPerStudent_NoStudents(t *testing.T) {
 		Path:     "mpd/ss26/blatt-01",
 		Per:      config.PerStudent,
 		Students: []*config.Student{},
-		Startercode: &config.Startercode{
-			ToBranch:        "main",
-			ProtectToBranch: true,
-		},
+		Branches: []config.BranchRule{{Name: "main", Protect: true}},
 	}
 	client.protectToBranchPerStudent(cfg)
 }
@@ -89,10 +80,7 @@ func TestProtectToBranchPerStudent_GetProjectFails(t *testing.T) {
 		Per:                   config.PerStudent,
 		UseCoursenameAsPrefix: true,
 		Students:              []*config.Student{{Username: &username, Raw: "alice"}},
-		Startercode: &config.Startercode{
-			ToBranch:        "main",
-			ProtectToBranch: true,
-		},
+		Branches:              []config.BranchRule{{Name: "main", Protect: true}},
 	}
 	// GetProject fails → prints error and returns
 	client.protectToBranchPerStudent(cfg)
@@ -105,8 +93,8 @@ func TestProtectToBranchPerStudent_Success(t *testing.T) {
 		switch {
 		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "mpd-blatt01-alice"):
 			_, _ = w.Write([]byte(pj))
-		case r.Method == http.MethodDelete && strings.Contains(r.URL.Path, "protected_branches"):
-			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "protected_branches"):
+			w.WriteHeader(http.StatusNotFound)
 		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "protected_branches"):
 			_, _ = w.Write([]byte(`{"id":1,"name":"main"}`))
 		default:
@@ -122,10 +110,7 @@ func TestProtectToBranchPerStudent_Success(t *testing.T) {
 		Per:                   config.PerStudent,
 		UseCoursenameAsPrefix: true,
 		Students:              []*config.Student{{Username: &username, Raw: "alice"}},
-		Startercode: &config.Startercode{
-			ToBranch:        "main",
-			ProtectToBranch: true,
-		},
+		Branches:              []config.BranchRule{{Name: "main", Protect: true}},
 	}
 	client.protectToBranchPerStudent(cfg)
 }
@@ -138,15 +123,12 @@ func TestProtectToBranchPerGroup_NoGroups(t *testing.T) {
 	})
 
 	cfg := &config.AssignmentConfig{
-		Course: "mpd",
-		Name:   "blatt01",
-		Path:   "mpd/ss26/blatt-01",
-		Per:    config.PerGroup,
-		Groups: []*config.Group{},
-		Startercode: &config.Startercode{
-			ToBranch:        "main",
-			ProtectToBranch: true,
-		},
+		Course:   "mpd",
+		Name:     "blatt01",
+		Path:     "mpd/ss26/blatt-01",
+		Per:      config.PerGroup,
+		Groups:   []*config.Group{},
+		Branches: []config.BranchRule{{Name: "main", Protect: true}},
 	}
 	client.protectToBranchPerGroup(cfg)
 }
@@ -158,8 +140,8 @@ func TestProtectToBranchPerGroup_Success(t *testing.T) {
 		switch {
 		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "mpd-blatt01-team1"):
 			_, _ = w.Write([]byte(pj))
-		case r.Method == http.MethodDelete && strings.Contains(r.URL.Path, "protected_branches"):
-			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "protected_branches"):
+			w.WriteHeader(http.StatusNotFound)
 		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "protected_branches"):
 			_, _ = w.Write([]byte(`{"id":1,"name":"main"}`))
 		default:
@@ -177,10 +159,7 @@ func TestProtectToBranchPerGroup_Success(t *testing.T) {
 		Groups: []*config.Group{
 			{Name: "team1", Members: []*config.Student{{Username: &alice, Raw: "alice"}}},
 		},
-		Startercode: &config.Startercode{
-			ToBranch:        "main",
-			ProtectToBranch: true,
-		},
+		Branches: []config.BranchRule{{Name: "main", Protect: true}},
 	}
 	client.protectToBranchPerGroup(cfg)
 }
@@ -188,7 +167,7 @@ func TestProtectToBranchPerGroup_Success(t *testing.T) {
 // ---- protectBranch ----------------------------------------------------------
 
 func TestProtectBranch_NoFlags_IsNoOp(t *testing.T) {
-	// Neither ProtectToBranch nor ProtectDevBranchMergeOnly → nothing happens
+	// No protected branches configured -> nothing happens
 	called := false
 	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
 		called = true
@@ -196,11 +175,7 @@ func TestProtectBranch_NoFlags_IsNoOp(t *testing.T) {
 	})
 
 	cfg := &config.AssignmentConfig{
-		Startercode: &config.Startercode{
-			ToBranch:                  "main",
-			ProtectToBranch:           false,
-			ProtectDevBranchMergeOnly: false,
-		},
+		Branches: []config.BranchRule{{Name: "main", Protect: false, MergeOnly: false}},
 	}
 	project := &gitlabapi.Project{ID: 1, Name: "myrepo"}
 	err := client.protectBranch(cfg, project, false)
@@ -215,8 +190,8 @@ func TestProtectBranch_NoFlags_IsNoOp(t *testing.T) {
 func TestProtectBranch_ProtectToBranch_Success(t *testing.T) {
 	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodDelete && strings.Contains(r.URL.Path, "protected_branches"):
-			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "protected_branches"):
+			w.WriteHeader(http.StatusNotFound)
 		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "protected_branches"):
 			_, _ = w.Write([]byte(`{"id":1,"name":"main"}`))
 		default:
@@ -225,11 +200,7 @@ func TestProtectBranch_ProtectToBranch_Success(t *testing.T) {
 	})
 
 	cfg := &config.AssignmentConfig{
-		Startercode: &config.Startercode{
-			ToBranch:        "main",
-			DevBranch:       "develop",
-			ProtectToBranch: true,
-		},
+		Branches: []config.BranchRule{{Name: "main", Protect: true}, {Name: "develop"}},
 	}
 	project := &gitlabapi.Project{ID: 1, Name: "myrepo"}
 	err := client.protectBranch(cfg, project, false)
@@ -241,8 +212,8 @@ func TestProtectBranch_ProtectToBranch_Success(t *testing.T) {
 func TestProtectBranch_ProtectDevBranchMergeOnly_Success(t *testing.T) {
 	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodDelete && strings.Contains(r.URL.Path, "protected_branches"):
-			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "protected_branches"):
+			w.WriteHeader(http.StatusNotFound)
 		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "protected_branches"):
 			_, _ = w.Write([]byte(`{"id":1,"name":"develop"}`))
 		default:
@@ -251,11 +222,7 @@ func TestProtectBranch_ProtectDevBranchMergeOnly_Success(t *testing.T) {
 	})
 
 	cfg := &config.AssignmentConfig{
-		Startercode: &config.Startercode{
-			ToBranch:                  "main",
-			DevBranch:                 "develop",
-			ProtectDevBranchMergeOnly: true,
-		},
+		Branches: []config.BranchRule{{Name: "main"}, {Name: "develop", MergeOnly: true}},
 	}
 	project := &gitlabapi.Project{ID: 1, Name: "myrepo"}
 	err := client.protectBranch(cfg, project, false)
@@ -265,11 +232,11 @@ func TestProtectBranch_ProtectDevBranchMergeOnly_Success(t *testing.T) {
 }
 
 func TestProtectBranch_BothSameBranch_Success(t *testing.T) {
-	// ProtectDevBranchMergeOnly=true AND DevBranch==ToBranch → single protectSingleBranch call
+	// If one branch is both protected and merge-only, merge-only semantics win.
 	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodDelete && strings.Contains(r.URL.Path, "protected_branches"):
-			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "protected_branches"):
+			w.WriteHeader(http.StatusNotFound)
 		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "protected_branches"):
 			_, _ = w.Write([]byte(`{"id":1,"name":"main"}`))
 		default:
@@ -278,12 +245,7 @@ func TestProtectBranch_BothSameBranch_Success(t *testing.T) {
 	})
 
 	cfg := &config.AssignmentConfig{
-		Startercode: &config.Startercode{
-			ToBranch:                  "main",
-			DevBranch:                 "main", // same as ToBranch
-			ProtectToBranch:           true,
-			ProtectDevBranchMergeOnly: true,
-		},
+		Branches: []config.BranchRule{{Name: "main", Protect: true, MergeOnly: true}},
 	}
 	project := &gitlabapi.Project{ID: 1, Name: "myrepo"}
 	err := client.protectBranch(cfg, project, false)
@@ -297,9 +259,9 @@ func TestProtectBranch_BothSameBranch_Success(t *testing.T) {
 func TestProtectSingleBranch_Success(t *testing.T) {
 	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodDelete && strings.Contains(r.URL.Path, "protected_branches"):
-			w.WriteHeader(http.StatusNoContent)
-		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "protected_branches"):
+		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "protected_branches"):
+			_, _ = w.Write([]byte(`{"id":1,"name":"main","push_access_levels":[{"id":10,"access_level":40}],"merge_access_levels":[{"id":11,"access_level":40}],"unprotect_access_levels":[{"id":12,"access_level":40}]}`))
+		case r.Method == http.MethodPatch && strings.Contains(r.URL.Path, "protected_branches"):
 			_, _ = w.Write([]byte(`{"id":1,"name":"main"}`))
 		default:
 			w.WriteHeader(http.StatusNotFound)
@@ -313,12 +275,12 @@ func TestProtectSingleBranch_Success(t *testing.T) {
 	}
 }
 
-func TestProtectSingleBranch_UnprotectFails_ProtectStillCalled(t *testing.T) {
-	// Unprotect returns 404 (branch not yet protected) → protectSingleBranch continues
+func TestProtectSingleBranch_GetNotFound_ProtectStillCalled(t *testing.T) {
+	// Get returns 404 (branch not yet protected) -> protectSingleBranch creates the rule.
 	protectCalled := false
 	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodDelete && strings.Contains(r.URL.Path, "protected_branches"):
+		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "protected_branches"):
 			w.WriteHeader(http.StatusNotFound) // not protected yet
 		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "protected_branches"):
 			protectCalled = true
@@ -341,8 +303,8 @@ func TestProtectSingleBranch_UnprotectFails_ProtectStillCalled(t *testing.T) {
 func TestProtectSingleBranch_ProtectFails_ReturnsError(t *testing.T) {
 	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodDelete && strings.Contains(r.URL.Path, "protected_branches"):
-			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "protected_branches"):
+			w.WriteHeader(http.StatusNotFound)
 		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "protected_branches"):
 			w.WriteHeader(http.StatusForbidden)
 			_, _ = w.Write([]byte(`{"message":"403 Forbidden"}`))

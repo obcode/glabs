@@ -37,7 +37,6 @@ func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *g.St
 		Str("toURL", project.SSHURLToRepo).
 		Str("fromBranch", assignmentCfg.Startercode.FromBranch).
 		Str("toBranch", assignmentCfg.Startercode.ToBranch).
-		Str("devBranch", assignmentCfg.Startercode.DevBranch).
 		Msg("pushing starter code")
 
 	pushOpts := &git.PushOptions{
@@ -53,39 +52,19 @@ func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *g.St
 		return fmt.Errorf("cannot push to remote: %w", err)
 	}
 
-	if assignmentCfg.Startercode.DevBranch != assignmentCfg.Startercode.ToBranch {
-		if err := c.devBranch(assignmentCfg, project); err != nil {
-			log.Debug().Err(err).
-				Str("name", project.Name).
-				Msg("cannot set dev branch")
-		}
-	}
-
-	if assignmentCfg.Startercode.ProtectToBranch || assignmentCfg.Startercode.ProtectDevBranchMergeOnly {
-		if err := c.protectBranch(assignmentCfg, project, false); err != nil {
-			log.Debug().Err(err).
-				Str("name", project.Name).
-				Msg("cannot protect to branch")
-		}
-	}
-
 	for _, additionalBranch := range assignmentCfg.Startercode.AdditionalBranches {
-		log.Debug().Str("branch", additionalBranch).Msg("pushing additional branch")
-
-		// worktree, err := from.Repo.Worktree()
-		// if err != nil {
-		// 	log.Debug().Err(err).
-		// 		Str("branch", additionalBranch).
-		// 		Str("name", project.Name).Str("url", project.SSHURLToRepo).
-		// 		Msg("cannot get worktree")
-		// 	return fmt.Errorf("cannot get worktree: %w", err)
-		// }
-
-		// worktree.Checkout(&git.CheckoutOptions{
-		// 	Branch: plumbing.ReferenceName(additionalBranch),
-		// })
+		if additionalBranch == "" {
+			continue
+		}
 
 		refSpec := config.RefSpec(fmt.Sprintf("+refs/remotes/origin/%s:refs/heads/%s", additionalBranch, additionalBranch))
+
+		log.Debug().
+			Str("refSpec", string(refSpec)).
+			Str("name", project.Name).
+			Str("toURL", project.SSHURLToRepo).
+			Str("branch", additionalBranch).
+			Msg("pushing additional startercode branch")
 
 		pushOpts := &git.PushOptions{
 			RemoteName: remote.Config().Name,
@@ -94,53 +73,14 @@ func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *g.St
 		}
 		err = from.Repo.Push(pushOpts)
 		if err != nil {
-			log.Debug().Err(err).
+			log.Warn().Err(err).
 				Str("branch", additionalBranch).
-				Str("refspec", refSpec.String()).
-				Str("name", project.Name).Str("url", project.SSHURLToRepo).
-				Msg("cannot push to remote")
-			return fmt.Errorf("cannot push to remote: %w", err)
+				Str("refSpec", refSpec.String()).
+				Str("name", project.Name).
+				Str("url", project.SSHURLToRepo).
+				Msg("cannot push additional branch to remote, continuing with other setup steps")
+			continue
 		}
-
-	}
-
-	return nil
-}
-
-func (c *Client) devBranch(assignmentCfg *cfg.AssignmentConfig, project *gitlab.Project) error {
-	log.Debug().
-		Str("name", project.Name).
-		Str("toURL", project.SSHURLToRepo).
-		Str("branch", assignmentCfg.Startercode.DevBranch).
-		Msg("switching to development branch")
-
-	opts := &gitlab.CreateBranchOptions{
-		Branch: gitlab.Ptr(assignmentCfg.Startercode.DevBranch),
-		Ref:    gitlab.Ptr(assignmentCfg.Startercode.ToBranch),
-	}
-
-	_, _, err := c.Branches.CreateBranch(project.ID, opts)
-	if err != nil {
-		log.Debug().Err(err).
-			Str("name", project.Name).
-			Str("toURL", project.SSHURLToRepo).
-			Str("branch", assignmentCfg.Startercode.DevBranch).
-			Msg("error creating development branch")
-		return fmt.Errorf("error while trying to create development branch: %w", err)
-	}
-
-	projectOpts := &gitlab.EditProjectOptions{
-		DefaultBranch: gitlab.Ptr(assignmentCfg.Startercode.DevBranch),
-	}
-
-	_, _, err = c.Projects.EditProject(project.ID, projectOpts)
-	if err != nil {
-		log.Debug().Err(err).
-			Str("name", project.Name).
-			Str("toURL", project.SSHURLToRepo).
-			Str("branch", assignmentCfg.Startercode.DevBranch).
-			Msg("error switching default to development branch")
-		return fmt.Errorf("error while switching default to development branch: %w", err)
 	}
 
 	return nil

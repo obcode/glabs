@@ -90,13 +90,11 @@ func TestProtectToBranch_UsesExitSeamForInvalidPer(t *testing.T) {
 	})
 
 	cfg := &config.AssignmentConfig{
-		Course: "mpd",
-		Path:   "mpd/ss26/blatt-01",
-		URL:    "https://gitlab.example.org/mpd/ss26/blatt-01",
-		Per:    config.PerFailed,
-		Startercode: &config.Startercode{
-			ToBranch: "main",
-		},
+		Course:   "mpd",
+		Path:     "mpd/ss26/blatt-01",
+		URL:      "https://gitlab.example.org/mpd/ss26/blatt-01",
+		Per:      config.PerFailed,
+		Branches: []config.BranchRule{{Name: "main", Protect: true}},
 	}
 
 	assertExitCode(t, 1, func() {

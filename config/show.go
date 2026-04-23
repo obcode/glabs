@@ -8,9 +8,27 @@ import (
 )
 
 func (cfg *AssignmentConfig) Show() {
-	containerRegistry := aurora.Red("disabled")
-	if cfg.ContainerRegistry {
-		containerRegistry = aurora.Green("enabled")
+	var out strings.Builder
+
+	const (
+		topLabelWidth     = 19
+		sectionLabelWidth = 28
+	)
+
+	writeTopField := func(label string, value any) {
+		fmt.Fprintf(&out, "%-*v %v\n", topLabelWidth, aurora.Cyan(label+":"), aurora.Yellow(value))
+	}
+
+	writeSectionHeader := func(name string) {
+		fmt.Fprintf(&out, "%s\n", aurora.Cyan(name+":"))
+	}
+
+	writeSectionField := func(label string, value any) {
+		fmt.Fprintf(&out, "  %-*v %v\n", sectionLabelWidth, aurora.Cyan(label+":"), aurora.Yellow(value))
+	}
+
+	writeSectionNotDefined := func() {
+		fmt.Fprintf(&out, "  %s\n", aurora.Red("not defined"))
 	}
 
 	mergeMethod := MergeCommit
@@ -27,178 +45,130 @@ func (cfg *AssignmentConfig) Show() {
 		allThreadsMustBeResolved = cfg.MergeRequest.AllThreadsMustBeResolved
 		statusChecksMustSucceed = cfg.MergeRequest.StatusChecksMustSucceed
 	}
-	mergeRequestCfg := aurora.Sprintf(aurora.Cyan(`
-  %s                   %s
-  %s                  %s
-  %s           %t
-  %s %t
-  %s      %t
-  %s       %t`),
-		aurora.Cyan("MergeMethod:"),
-		aurora.Yellow(mergeMethod),
-		aurora.Cyan("SquashOption:"),
-		aurora.Yellow(squashOption),
-		aurora.Cyan("PipelineMustSucceed:"),
-		aurora.Yellow(pipelineMustSucceed),
-		aurora.Cyan("SkippedPipelinesAreSuccessful:"),
-		aurora.Yellow(skippedPipelinesAreSuccessful),
-		aurora.Cyan("AllThreadsMustBeResolved:"),
-		aurora.Yellow(allThreadsMustBeResolved),
-		aurora.Cyan("StatusChecksMustSucceed:"),
-		aurora.Yellow(statusChecksMustSucceed),
-	)
 
-	startercode := aurora.Sprintf(aurora.Red("not defined"))
-	if cfg.Startercode != nil {
-		issueNumbers := aurora.Sprintf(aurora.Red("not defined"))
-		if cfg.Startercode.ReplicateIssue {
-			issueNumbers = aurora.Sprintf(aurora.Yellow(cfg.Startercode.IssueNumbers))
-		}
+	containerRegistry := aurora.Red("disabled")
+	if cfg.ContainerRegistry {
+		containerRegistry = aurora.Green("enabled")
+	}
 
-		startercode = aurora.Sprintf(aurora.Cyan(`
-  URL:                       %s
-  FromBranch:                %s
-  ToBranch:                  %s
-  DevBranch:                 %s
-  AdditionalBranches:        %s
-  ProtectToBranch:           %t
-  ProtectDevBranchMergeOnly: %t
-  ReplicateIssue:            %t
-  IssueNumbers:              %s`),
-			aurora.Yellow(cfg.Startercode.URL),
-			aurora.Yellow(cfg.Startercode.FromBranch),
-			aurora.Yellow(cfg.Startercode.ToBranch),
-			aurora.Yellow(cfg.Startercode.DevBranch),
-			aurora.Yellow(cfg.Startercode.AdditionalBranches),
-			aurora.Yellow(cfg.Startercode.ProtectToBranch),
-			aurora.Yellow(cfg.Startercode.ProtectDevBranchMergeOnly),
-			aurora.Yellow(cfg.Startercode.ReplicateIssue),
-			issueNumbers,
-		)
+	writeTopField("Course", cfg.Course)
+	writeTopField("Assignment", cfg.Name)
+	writeTopField("Coursename-Prefix", cfg.UseCoursenameAsPrefix)
+	writeTopField("Per", cfg.Per)
+	writeTopField("Base-URL", cfg.URL)
+	writeTopField("Description", cfg.Description)
+	writeTopField("AccessLevel", cfg.AccessLevel.String())
+	writeTopField("Container-Registry", containerRegistry)
+
+	writeSectionHeader("MergeRequest")
+	writeSectionField("MergeMethod", mergeMethod)
+	writeSectionField("SquashOption", squashOption)
+	writeSectionField("PipelineMustSucceed", pipelineMustSucceed)
+	writeSectionField("SkippedPipelinesAreSuccessful", skippedPipelinesAreSuccessful)
+	writeSectionField("AllThreadsMustBeResolved", allThreadsMustBeResolved)
+	writeSectionField("StatusChecksMustSucceed", statusChecksMustSucceed)
+
+	writeSectionHeader("Startercode")
+	if cfg.Startercode == nil {
+		writeSectionNotDefined()
+	} else {
+		writeSectionField("URL", cfg.Startercode.URL)
+		writeSectionField("FromBranch", cfg.Startercode.FromBranch)
+		writeSectionField("ToBranch", cfg.Startercode.ToBranch)
+		writeSectionField("AdditionalBranches", cfg.Startercode.AdditionalBranches)
 	}
-	seeding := aurora.Sprintf(aurora.Red("not defined"))
-	if cfg.Seeder != nil {
-		seeding = aurora.Sprintf(aurora.Cyan(`
-  Command:          %s
-  Args:             %v
-  Author:           %s
-  EMail:            %s
-  ToBranch:         %s
-  ProtectToBranch:  %t`),
-			aurora.Yellow(cfg.Seeder.Command),
-			aurora.Yellow(cfg.Seeder.Args),
-			aurora.Yellow(cfg.Seeder.Name),
-			aurora.Yellow(cfg.Seeder.EMail),
-			aurora.Yellow(cfg.Seeder.ToBranch),
-			aurora.Yellow(cfg.Seeder.ProtectToBranch),
-		)
-	}
-	clone := aurora.Sprintf(aurora.Red("        not defined"))
-	if cfg.Clone != nil {
-		clone = aurora.Sprintf(aurora.Cyan(`Clone:
-  Localpath:        %s
-  Branch:           %s
-  Force:            %t`),
-			aurora.Yellow(cfg.Clone.LocalPath),
-			aurora.Yellow(cfg.Clone.Branch),
-			aurora.Yellow(cfg.Clone.Force),
-		)
-	}
-	release := aurora.Sprintf(aurora.Red("not defined"))
-	if cfg.Release != nil {
-		releaseMergeRequest := aurora.Sprintf(aurora.Red("not defined"))
-		if cfg.Release.MergeRequest != nil {
-			releaseMergeRequest = aurora.Sprintf(`
-    %s   %s
-    %s   %s
-    %s       %t`,
-				aurora.Cyan("SourceBranch:"),
-				aurora.Yellow(cfg.Release.MergeRequest.SourceBranch),
-				aurora.Cyan("TargetBranch:"),
-				aurora.Yellow(cfg.Release.MergeRequest.TargetBranch),
-				aurora.Cyan("Pipeline:"),
-				aurora.Yellow(cfg.Release.MergeRequest.HasPipeline),
+
+	writeSectionHeader("Branches")
+	if len(cfg.Branches) == 0 {
+		writeSectionNotDefined()
+	} else {
+		for _, branch := range cfg.Branches {
+			fmt.Fprintf(
+				&out,
+				"  - %-20v (%v=%-5v, %v=%-5v, %v=%-5v)\n",
+				aurora.Yellow(branch.Name),
+				aurora.Cyan("protect"), aurora.Yellow(branch.Protect),
+				aurora.Cyan("mergeOnly"), aurora.Yellow(branch.MergeOnly),
+				aurora.Cyan("default"), aurora.Yellow(branch.Default),
 			)
 		}
-		dockerImages := aurora.Sprintf(aurora.Red("not defined"))
-		if cfg.Release.DockerImages != nil {
-			var images strings.Builder
-			images.WriteString(aurora.Sprintf(aurora.Cyan("\n")))
-			for _, image := range cfg.Release.DockerImages {
-				images.WriteString(aurora.Sprintf(aurora.Cyan("    - ")))
-				images.WriteString(aurora.Sprintf(aurora.Yellow(image)))
-				images.WriteString("\n")
-			}
-			dockerImages = images.String()
-		}
-		release = aurora.Sprintf(aurora.Cyan(`
-  %s     %s
-  %s     %s`),
-			aurora.Cyan("MergeRequest:"),
-			releaseMergeRequest,
-			aurora.Cyan("DockerImages:"),
-			dockerImages,
-		)
 	}
 
-	var per strings.Builder
+	writeSectionHeader("Issues")
+	if cfg.Issues == nil {
+		writeSectionNotDefined()
+	} else {
+		writeSectionField("ReplicateFromStartercode", cfg.Issues.ReplicateFromStartercode)
+		if cfg.Issues.ReplicateFromStartercode {
+			writeSectionField("IssueNumbers", cfg.Issues.IssueNumbers)
+		} else {
+			writeSectionField("IssueNumbers", "not used")
+		}
+	}
+
+	writeSectionHeader("Seeding")
+	if cfg.Seeder == nil {
+		writeSectionNotDefined()
+	} else {
+		writeSectionField("Command", cfg.Seeder.Command)
+		writeSectionField("Args", cfg.Seeder.Args)
+		writeSectionField("Author", cfg.Seeder.Name)
+		writeSectionField("EMail", cfg.Seeder.EMail)
+		writeSectionField("ToBranch", cfg.Seeder.ToBranch)
+		writeSectionField("ProtectToBranch", cfg.Seeder.ProtectToBranch)
+	}
+
+	writeSectionHeader("Release")
+	if cfg.Release == nil {
+		writeSectionNotDefined()
+	} else {
+		if cfg.Release.MergeRequest == nil {
+			writeSectionField("MergeRequest", "not defined")
+		} else {
+			writeSectionField("MergeRequest.SourceBranch", cfg.Release.MergeRequest.SourceBranch)
+			writeSectionField("MergeRequest.TargetBranch", cfg.Release.MergeRequest.TargetBranch)
+			writeSectionField("MergeRequest.Pipeline", cfg.Release.MergeRequest.HasPipeline)
+		}
+		if len(cfg.Release.DockerImages) == 0 {
+			writeSectionField("DockerImages", "not defined")
+		} else {
+			writeSectionField("DockerImages", cfg.Release.DockerImages)
+		}
+	}
+
+	writeSectionHeader("Clone")
+	if cfg.Clone == nil {
+		writeSectionNotDefined()
+	} else {
+		writeSectionField("Localpath", cfg.Clone.LocalPath)
+		writeSectionField("Branch", cfg.Clone.Branch)
+		writeSectionField("Force", cfg.Clone.Force)
+	}
+
 	switch cfg.Per {
 	case PerStudent:
-		per.WriteString(aurora.Sprintf(aurora.Cyan("Students:\n")))
-		for _, s := range cfg.Students {
-			per.WriteString(aurora.Sprintf(aurora.Cyan("  - ")))
-			per.WriteString(aurora.Sprintf(aurora.Yellow(s.Raw)))
-			per.WriteString("\n")
+		writeSectionHeader("Students")
+		if len(cfg.Students) == 0 {
+			writeSectionNotDefined()
+		} else {
+			for _, s := range cfg.Students {
+				fmt.Fprintf(&out, "  - %s\n", aurora.Yellow(s.Raw))
+			}
 		}
 	case PerGroup:
-		per.WriteString(aurora.Sprintf(aurora.Cyan("Groups:\n")))
-		for _, grp := range cfg.Groups {
-			per.WriteString(aurora.Sprintf(aurora.Cyan("  - ")))
-			per.WriteString(aurora.Sprintf(aurora.Yellow(grp.Name)))
-			per.WriteString(aurora.Sprintf(aurora.Cyan(": ")))
-			for i, m := range grp.Members {
-				per.WriteString(aurora.Sprintf(aurora.Green(m.Raw)))
-				if i == len(grp.Members)-1 {
-					per.WriteString("\n")
-				} else {
-					per.WriteString(aurora.Sprintf(aurora.Cyan(", ")))
+		writeSectionHeader("Groups")
+		if len(cfg.Groups) == 0 {
+			writeSectionNotDefined()
+		} else {
+			for _, grp := range cfg.Groups {
+				members := make([]string, 0, len(grp.Members))
+				for _, m := range grp.Members {
+					members = append(members, m.Raw)
 				}
+				fmt.Fprintf(&out, "  - %s: %s\n", aurora.Yellow(grp.Name), aurora.Green(strings.Join(members, ", ")))
 			}
 		}
 	}
 
-	groupsOrStudents := per.String()
-
-	fmt.Print(aurora.Sprintf(aurora.Cyan(`
-Course:             %s
-Assignment:         %s
-Coursename-Prefix:  %t
-Per:                %s
-Base-URL:           %s
-Description:	    %s
-AccessLevel:        %s
-MergeRequest:       %s
-%s %s
-Startercode:        %s
-Seeding:            %s
-Release:            %s
-%s
-%s
-`),
-		aurora.Yellow(cfg.Course),
-		aurora.Yellow(cfg.Name),
-		aurora.Yellow(cfg.UseCoursenameAsPrefix),
-		aurora.Yellow(cfg.Per),
-		aurora.Yellow(cfg.URL),
-		aurora.Yellow(cfg.Description),
-		aurora.Yellow(cfg.AccessLevel.String()),
-		mergeRequestCfg,
-		aurora.Cyan("Container-Registry:"),
-		containerRegistry,
-		aurora.Yellow(startercode),
-		aurora.Yellow(seeding),
-		aurora.Yellow(release),
-		aurora.Yellow(clone),
-		aurora.Yellow(groupsOrStudents),
-	))
+	fmt.Println(out.String())
 }

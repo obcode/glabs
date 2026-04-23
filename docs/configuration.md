@@ -7,6 +7,8 @@ glabs uses two configuration layers:
 
 Configuration is merged from top to bottom: main config → course config → assignment overrides → defaults.
 
+If you are migrating from the previous startercode structure, use [migration.md](migration.md).
+
 ## Main config
 
 Default file: ~/.glabs with any Viper-supported extension (for example .yaml, .yml, .json)
@@ -178,14 +180,7 @@ startercode:
   url: git@gitlab.example.org:mpd/startercode/blatt-01.git
   fromBranch: template       # Clone this branch
   toBranch: main             # Into this branch
-  devBranch: develop         # Development branch (if different)
-  additionalBranches: []     # Create additional branches
-
-  protectToBranch: true
-  protectDevBranchMergeOnly: false
-
-  replicateIssue: true
-  issueNumbers: [1, 3]
+  additionalBranches: []     # Push starter/<branch> to repo/<branch>
 ```
 
 ### Startercode keys
@@ -195,27 +190,72 @@ startercode:
 | `url` | SSH URL of starter repo | — | Required if startercode block exists |
 | `fromBranch` | Source branch in starter | `main` | Must exist in starter repo |
 | `toBranch` | Target branch in new repos | `main` | Usually production branch |
-| `devBranch` | Development branch | value of `toBranch` | For student work |
-| `additionalBranches` | Extra branches to create | `[]` | Names only, empty branches |
-| `protectToBranch` | Protect `toBranch` | `false` | Maintainer-only push/merge |
-| `protectDevBranchMergeOnly` | Merge-only for dev branch | `false` | Devs can merge but not push |
-| `replicateIssue` | Copy issues from starter | `false` | For assignment requirements |
-| `issueNumbers` | Which issues to copy | `[1]` | Only if `replicateIssue: true` |
+| `additionalBranches` | Additional branches mirrored from starter repo | `[]` | Each `x` maps `starter/x -> repo/x` |
+
+Important behavior:
+
+- Only branches listed in `startercode.additionalBranches` are mirrored from starter with branch-specific content.
+- All other generated branches are created from the state of `startercode.toBranch`.
+- This means that branches from the `branches:` block that are not in `additionalBranches` start identical to `toBranch`.
+
+## Branch options
+
+Define branch creation, protection and default branch independently from startercode:
+
+```yaml
+branches:
+  - name: main
+    protect: true
+    default: false
+
+  - name: develop
+    mergeOnly: true
+    default: true
+```
+
+### Branch keys
+
+| Key | Purpose | Default | Notes |
+|---|---|---|---|
+| `name` | Branch name | — | Required |
+| `protect` | Maintainer-only push/merge | `false` | Same semantics as classic protected branch |
+| `mergeOnly` | Developers may merge but cannot push | `false` | Sets push=`No one`, merge=`Developers` |
+| `default` | Set as project default branch | `false` | If none is set, first branch becomes default |
 
 ### Branch protection notes
 
-- **`protectToBranch: true`**: Only Maintainers can push/merge to `toBranch`
-- **`protectDevBranchMergeOnly: true`**: Developers can merge but not push to `devBranch`
-- If `devBranch == toBranch` and both flags enabled: merge-only rule applies to that branch
+- `mergeOnly: true` takes precedence over `protect: true` for that branch
+- Branches are created for generated projects based on this list
+- Branch creation base is `startercode.toBranch` (or `seeder.toBranch` when seeder is used)
+- If a branch name is also listed in `startercode.additionalBranches`, the mirrored starter branch content is used for that branch
+- `glabs protect` applies these branch rules to existing repositories
 
-**Example: Merge-only dev branch**
+## Issue replication options
+
+Configure issue replication separately from startercode:
 
 ```yaml
-startercode:
-  fromBranch: template
-  toBranch: main
-  devBranch: main
-  protectDevBranchMergeOnly: true
+issues:
+  replicateFromStartercode: true
+  issueNumbers: [1, 3]
+```
+
+### Issue keys
+
+| Key | Purpose | Default | Notes |
+|---|---|---|---|
+| `replicateFromStartercode` | Copy issues from starter project | `false` | Requires `startercode` |
+| `issueNumbers` | Which issue numbers to copy | `[1]` | Used only when replication is enabled |
+
+**Example: Merge-only development branch**
+
+```yaml
+branches:
+  - name: main
+    protect: true
+  - name: develop
+    mergeOnly: true
+    default: true
 ```
 
 Result in GitLab UI:
@@ -411,10 +451,16 @@ mpd:
       url: git@gitlab.lrz.de:teaching/2024ss/mpd/starter-blatt01.git
       fromBranch: template
       toBranch: main
-      devBranch: develop
-      protectToBranch: false
-      protectDevBranchMergeOnly: true
-      replicateIssue: true
+
+    branches:
+      - name: main
+        protect: true
+      - name: develop
+        mergeOnly: true
+        default: true
+
+    issues:
+      replicateFromStartercode: true
       issueNumbers: [1]
 
   blatt02:

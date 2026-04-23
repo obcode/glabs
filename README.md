@@ -103,13 +103,21 @@ go test ./...
 Integration tests with GitLab Testcontainers (opt-in):
 
 ```sh
-GLABS_RUN_GITLAB_TC=1 go test -tags=integration ./gitlab -run TestIntegration_GitLab_GroupAndProjectLifecycle -count=1
+# Group/project lifecycle (createGroup, generateProject, …)
+GLABS_RUN_GITLAB_TC=1 go test -tags=integration -v -count=1 ./gitlab/... -run TestIntegration_GitLab_GroupAndProjectLifecycle
+
+# Archive, Delete, ProtectToBranch, Setaccess end-to-end
+GLABS_RUN_GITLAB_TC=1 go test -tags=integration -v -count=1 ./gitlab/... -run TestIntegration_GitLab_Operations
+
+# Run all integration tests at once
+GLABS_RUN_GITLAB_TC=1 go test -tags=integration -v -count=1 ./gitlab/...
 ```
 
 Notes:
 
-- Integration tests are intentionally opt-in because starting GitLab in a container is resource intensive.
-- In CI, run integration tests in a dedicated job.
+- Integration tests are intentionally opt-in because starting GitLab CE in a container takes 5–25 minutes.
+- Set `GLABS_RUN_GITLAB_TC=1` to enable them; without it the tests are skipped automatically.
+- In CI, trigger them via the `run_integration` workflow dispatch input (dedicated `test-integration` job).
 
 ## License
 

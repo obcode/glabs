@@ -17,7 +17,7 @@ func NewClient() *Client {
 		gitlab.WithBaseURL(viper.GetString("gitlab.host")))
 
 	if err != nil {
-		panic("cannot create a gitlab client")
+		panicFunc("cannot create a gitlab client")
 	}
 
 	return &Client{client}

@@ -25,24 +25,24 @@ func (c *Client) Report(assignmentCfg *config.AssignmentConfig, templateFile *st
 	}
 
 	if err != nil {
-		panic(err)
+		panicFunc(err)
 	}
 
 	if output != nil {
 		os.Remove(*output) //nolint
 		f, err := os.Create(*output)
 		if err != nil {
-			panic(err)
+			panicFunc(err)
 		}
 		defer f.Close() //nolint
 		err = tmpl.Execute(f, report)
 		if err != nil {
-			panic(err)
+			panicFunc(err)
 		}
 	} else {
 		err = tmpl.Execute(os.Stdout, report)
 		if err != nil {
-			panic(err)
+			panicFunc(err)
 		}
 	}
 
@@ -61,24 +61,24 @@ func (c *Client) ReportHTML(assignmentCfg *config.AssignmentConfig, templateFile
 		tmpl, err = htmlTemplate.New("html").Parse(r.HTMLTemplate)
 	}
 	if err != nil {
-		panic(err)
+		panicFunc(err)
 	}
 
 	if output != nil {
 		os.Remove(*output) //nolint
 		f, err := os.Create(*output)
 		if err != nil {
-			panic(err)
+			panicFunc(err)
 		}
 		defer f.Close() //nolint
 		err = tmpl.Execute(f, report)
 		if err != nil {
-			panic(err)
+			panicFunc(err)
 		}
 	} else {
 		err = tmpl.Execute(os.Stdout, report)
 		if err != nil {
-			panic(err)
+			panicFunc(err)
 		}
 	}
 }
@@ -88,13 +88,13 @@ func (c *Client) ReportJSON(assignmentCfg *config.AssignmentConfig, output *stri
 
 	json, err := json.MarshalIndent(report, "", "  ")
 	if err != nil {
-		panic(err)
+		panicFunc(err)
 	}
 
 	if output != nil {
 		err := os.WriteFile(*output, json, 0644)
 		if err != nil {
-			panic(err)
+			panicFunc(err)
 		}
 	} else {
 		fmt.Println(string(json))

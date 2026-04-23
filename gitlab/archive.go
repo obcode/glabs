@@ -2,7 +2,6 @@ package gitlab
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/logrusorgru/aurora"
@@ -16,7 +15,7 @@ func (c *Client) Archive(assignmentCfg *config.AssignmentConfig, unarchive bool)
 	_, err := c.getGroupID(assignmentCfg)
 	if err != nil {
 		fmt.Printf("error: GitLab group for assignment does not exist, please create the group %s\n", assignmentCfg.URL)
-		os.Exit(1)
+		exitFunc(1)
 	}
 
 	switch per := assignmentCfg.Per; per {
@@ -26,7 +25,7 @@ func (c *Client) Archive(assignmentCfg *config.AssignmentConfig, unarchive bool)
 		c.archivePerStudent(assignmentCfg, unarchive)
 	default:
 		fmt.Printf("it is only possible to set access levels for students oder groups, not for %v", per)
-		os.Exit(1)
+		exitFunc(1)
 	}
 }
 
@@ -109,9 +108,14 @@ func (c *Client) archive(assignmentCfg *config.AssignmentConfig, project *gitlab
 	}
 
 	log.Debug().
+		Str("branch", func() string {
+			if assignmentCfg.Startercode != nil {
+				return assignmentCfg.Startercode.ToBranch
+			}
+			return ""
+		}()).
 		Str("name", project.Name).
 		Str("toURL", project.SSHURLToRepo).
-		Str("branch", assignmentCfg.Startercode.ToBranch).
 		Msg("protecting branch")
 
 	var err error

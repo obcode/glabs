@@ -80,6 +80,8 @@ func (c *Client) report(assignmentCfg *config.AssignmentConfig) *report.Reports 
 					PerPage: 0,
 				},
 			}
+		} else {
+			break
 		}
 
 	}

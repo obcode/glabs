@@ -159,7 +159,7 @@ func TestReport_HappyPath_WithRelease(t *testing.T) {
 		Path:   "mpd/ss26/blatt-01",
 		URL:    "https://gitlab.example.org/mpd/ss26/blatt-01",
 		Release: &config.Release{
-			MergeRequest: &config.MergeRequest{SourceBranch: "develop", TargetBranch: "main"},
+			MergeRequest: &config.ReleaseMergeRequest{SourceBranch: "develop", TargetBranch: "main"},
 			DockerImages: []string{"myimage:latest"},
 		},
 	}

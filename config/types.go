@@ -19,6 +19,7 @@ type AssignmentConfig struct {
 	Description           string
 	ContainerRegistry     bool
 	AccessLevel           AccessLevel
+	MergeRequest          *MergeRequest
 	Students              []*Student
 	Groups                []*Group
 	Startercode           *Startercode
@@ -64,11 +65,15 @@ type Clone struct {
 }
 
 type Release struct {
-	MergeRequest *MergeRequest
+	MergeRequest *ReleaseMergeRequest
 	DockerImages []string
 }
 
 type MergeRequest struct {
+	MergeMethod MergeMethod
+}
+
+type ReleaseMergeRequest struct {
 	SourceBranch string
 	TargetBranch string
 	HasPipeline  bool
@@ -86,4 +91,17 @@ const (
 	Reporter   AccessLevel = 20
 	Developer  AccessLevel = 30
 	Maintainer AccessLevel = 40
+)
+
+// MergeMethod represents the merge strategy for GitLab projects.
+// Values correspond to glabs config format, not the GitLab API directly.
+type MergeMethod string
+
+const (
+	// MergeCommit creates a merge commit for every merge (GitLab default).
+	MergeCommit MergeMethod = "merge"
+	// SemiLinearHistory requires linear history: rebase before creating merge commit.
+	SemiLinearHistory MergeMethod = "semi_linear"
+	// FastForward only allows fast-forward merges; no merge commits.
+	FastForward MergeMethod = "ff"
 )

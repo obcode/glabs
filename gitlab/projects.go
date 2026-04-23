@@ -11,6 +11,25 @@ import (
 
 func (c *Client) generateProject(assignmentCfg *config.AssignmentConfig, name string, inID int64) (*gitlab.Project, bool, error) {
 	generated := false
+
+	// Merge method should already be defaulted by config parsing.
+	// Keep this fallback for safety when AssignmentConfig is constructed manually.
+	mergeMethod := config.MergeCommit
+	if assignmentCfg.MergeRequest != nil {
+		mergeMethod = assignmentCfg.MergeRequest.MergeMethod
+	}
+
+	// Convert glabs MergeMethod to GitLab API MergeMethodValue
+	var gitlabMergeMethod gitlab.MergeMethodValue
+	switch mergeMethod {
+	case config.SemiLinearHistory:
+		gitlabMergeMethod = gitlab.RebaseMerge
+	case config.FastForward:
+		gitlabMergeMethod = gitlab.FastForwardMerge
+	default:
+		gitlabMergeMethod = gitlab.NoFastForwardMerge
+	}
+
 	p := &gitlab.CreateProjectOptions{
 		Name:                                  gitlab.Ptr(name),
 		Description:                           gitlab.Ptr(assignmentCfg.Description),
@@ -22,6 +41,7 @@ func (c *Client) generateProject(assignmentCfg *config.AssignmentConfig, name st
 		Visibility:                            gitlab.Ptr(gitlab.PrivateVisibility),
 		ContainerRegistryEnabled:              gitlab.Ptr(assignmentCfg.ContainerRegistry),
 		OnlyAllowMergeIfAllStatusChecksPassed: gitlab.Ptr(false),
+		MergeMethod:                           gitlab.Ptr(gitlabMergeMethod),
 	}
 
 	project, _, err := c.Projects.CreateProject(p)

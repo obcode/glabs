@@ -78,7 +78,7 @@ func TestProjectReport_AggregatesReleaseAndCommitData(t *testing.T) {
 
 	assignmentCfg := &config.AssignmentConfig{
 		Release: &config.Release{
-			MergeRequest: &config.MergeRequest{
+			MergeRequest: &config.ReleaseMergeRequest{
 				SourceBranch: "develop",
 				TargetBranch: "main",
 				HasPipeline:  true,

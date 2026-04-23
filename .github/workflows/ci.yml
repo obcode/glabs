@@ -12,25 +12,29 @@ jobs:
         name: lint
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v2
-            - name: golangci-lint
-              uses: golangci/golangci-lint-action@v2
+            - uses: actions/checkout@v4
+            - name: Set up Go from go.mod
+              uses: actions/setup-go@v5
               with:
-                  version: latest
-                  args: --timeout=10m
+                  go-version-file: go.mod
+            - name: Install golangci-lint
+              run: |
+                  go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+                  echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+            - name: Run golangci-lint
+              run: golangci-lint run --timeout=10m
+
     test:
         name: test
         runs-on: ubuntu-latest
         steps:
-            - name: Set up Go 1.23
-              uses: actions/setup-go@v1
+            - name: Set up Go from go.mod
+              uses: actions/setup-go@v5
               with:
-                  go-version: 1.23
+                  go-version-file: go.mod
               id: go
-
             - name: Check out code into the Go module directory
-              uses: actions/checkout@v1
-
+              uses: actions/checkout@v4
             - name: Get dependencies
               run: |
                   go get -v -t -d ./...
@@ -38,20 +42,20 @@ jobs:
                       curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
                       dep ensure
                   fi
-
             - name: Test
               run: |
                   go test -v ./...
+
     release:
         runs-on: ubuntu-latest
         needs:
             - golangci
             - test
         steps:
-            - uses: actions/checkout@master
+            - uses: actions/checkout@v4
               with:
                   persist-credentials: false
-            - uses: go-semantic-release/action@v1
+            - uses: go-semantic-release/action@v1.0.0
               with:
                   changelog-generator-opt: "emojis=true"
                   allow-initial-development-versions: true

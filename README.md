@@ -116,7 +116,9 @@ GLABS_RUN_GITLAB_TC=1 go test -tags=integration -v -count=1 ./gitlab/... -run '^
 Notes:
 
 - Integration tests are intentionally opt-in because starting GitLab CE in a container takes 5–25 minutes.
+- `GLABS_RUN_GITLAB_TC` means: run GitLab Testcontainer tests.
 - Set `GLABS_RUN_GITLAB_TC=1` to enable them; without it the tests are skipped automatically.
+- Example: `GLABS_RUN_GITLAB_TC=0` (or variable unset) keeps integration tests disabled.
 - In CI, trigger them via the `run_integration` workflow dispatch input (dedicated `test-integration` job).
 
 ## License

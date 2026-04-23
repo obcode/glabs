@@ -85,11 +85,13 @@ func (cfg *AssignmentConfig) Show() {
 		for _, branch := range cfg.Branches {
 			fmt.Fprintf(
 				&out,
-				"  - %-20v (%v=%-5v, %v=%-5v, %v=%-5v)\n",
+				"  - %-20v (%v=%-5v, %v=%-5v, %v=%-5v, %v=%-5v, %v=%-5v)\n",
 				aurora.Yellow(branch.Name),
 				aurora.Cyan("protect"), aurora.Yellow(branch.Protect),
 				aurora.Cyan("mergeOnly"), aurora.Yellow(branch.MergeOnly),
 				aurora.Cyan("default"), aurora.Yellow(branch.Default),
+				aurora.Cyan("allowForcePush"), aurora.Yellow(branch.AllowForcePush),
+				aurora.Cyan("codeOwnerApprovalRequired"), aurora.Yellow(branch.CodeOwnerApprovalRequired),
 			)
 		}
 	}

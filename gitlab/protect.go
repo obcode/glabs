@@ -78,7 +78,7 @@ func (c *Client) protectBranch(assignmentCfg *config.AssignmentConfig, project *
 				mergeLevel = gitlab.DeveloperPermissions
 			}
 
-			err := c.protectSingleBranch(project, branch.Name, pushLevel, mergeLevel)
+			err := c.protectSingleBranch(project, branch, pushLevel, mergeLevel)
 			if err != nil {
 				if spin {
 					err := spinner.StopFail()
@@ -113,26 +113,28 @@ func hasProtectedBranches(branches []config.BranchRule) bool {
 
 func (c *Client) protectSingleBranch(
 	project *gitlab.Project,
-	branch string,
+	branch config.BranchRule,
 	pushAccessLevel gitlab.AccessLevelValue,
 	mergeAccessLevel gitlab.AccessLevelValue,
 ) error {
-	existing, _, err := c.ProtectedBranches.GetProtectedBranch(project.ID, branch)
+	existing, _, err := c.ProtectedBranches.GetProtectedBranch(project.ID, branch.Name)
 	if err == nil {
 		updateOpts := &gitlab.UpdateProtectedBranchOptions{
-			AllowedToPush:      replaceBranchPermissions(existing.PushAccessLevels, pushAccessLevel),
-			AllowedToMerge:     replaceBranchPermissions(existing.MergeAccessLevels, mergeAccessLevel),
-			AllowedToUnprotect: replaceBranchPermissions(existing.UnprotectAccessLevels, gitlab.MaintainerPermissions),
+			AllowedToPush:             replaceBranchPermissions(existing.PushAccessLevels, pushAccessLevel),
+			AllowedToMerge:            replaceBranchPermissions(existing.MergeAccessLevels, mergeAccessLevel),
+			AllowedToUnprotect:        replaceBranchPermissions(existing.UnprotectAccessLevels, gitlab.MaintainerPermissions),
+			AllowForcePush:            gitlab.Ptr(branch.AllowForcePush),
+			CodeOwnerApprovalRequired: gitlab.Ptr(branch.CodeOwnerApprovalRequired),
 		}
 
-		_, _, err = c.ProtectedBranches.UpdateProtectedBranch(project.ID, branch, updateOpts)
+		_, _, err = c.ProtectedBranches.UpdateProtectedBranch(project.ID, branch.Name, updateOpts)
 		if err != nil {
 			log.Debug().Err(err).
 				Str("name", project.Name).
 				Str("toURL", project.SSHURLToRepo).
-				Str("branch", branch).
+				Str("branch", branch.Name).
 				Msg("cannot update protected branch")
-			return fmt.Errorf("error while trying to update protected branch %s: %w", branch, err)
+			return fmt.Errorf("error while trying to update protected branch %s: %w", branch.Name, err)
 		}
 
 		return nil
@@ -142,16 +144,18 @@ func (c *Client) protectSingleBranch(
 		log.Debug().Err(err).
 			Str("name", project.Name).
 			Str("toURL", project.SSHURLToRepo).
-			Str("branch", branch).
+			Str("branch", branch.Name).
 			Msg("cannot read protected branch")
-		return fmt.Errorf("error while trying to read protected branch %s: %w", branch, err)
+		return fmt.Errorf("error while trying to read protected branch %s: %w", branch.Name, err)
 	}
 
 	opts := &gitlab.ProtectRepositoryBranchesOptions{
-		Name:                 gitlab.Ptr(branch),
-		PushAccessLevel:      gitlab.Ptr(pushAccessLevel),
-		MergeAccessLevel:     gitlab.Ptr(mergeAccessLevel),
-		UnprotectAccessLevel: gitlab.Ptr(gitlab.MaintainerPermissions),
+		Name:                      gitlab.Ptr(branch.Name),
+		PushAccessLevel:           gitlab.Ptr(pushAccessLevel),
+		MergeAccessLevel:          gitlab.Ptr(mergeAccessLevel),
+		UnprotectAccessLevel:      gitlab.Ptr(gitlab.MaintainerPermissions),
+		AllowForcePush:            gitlab.Ptr(branch.AllowForcePush),
+		CodeOwnerApprovalRequired: gitlab.Ptr(branch.CodeOwnerApprovalRequired),
 	}
 
 	_, _, err = c.ProtectedBranches.ProtectRepositoryBranches(project.ID, opts)
@@ -159,9 +163,9 @@ func (c *Client) protectSingleBranch(
 		log.Debug().Err(err).
 			Str("name", project.Name).
 			Str("toURL", project.SSHURLToRepo).
-			Str("branch", branch).
+			Str("branch", branch.Name).
 			Msg("error while protecting branch")
-		return fmt.Errorf("error while trying to protect branch %s: %w", branch, err)
+		return fmt.Errorf("error while trying to protect branch %s: %w", branch.Name, err)
 	}
 
 	return nil

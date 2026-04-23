@@ -66,19 +66,52 @@ func TestBranches_DefaultsAndLegacyFallback(t *testing.T) {
 func TestBranches_ExplicitConfig(t *testing.T) {
 	resetViper(t)
 	viper.Set("course.a1.branches", []map[string]any{
-		{"name": "main", "protect": true},
-		{"name": "dev", "default": true, "mergeOnly": true},
+		{"name": "main", "protect": true, "allowForcePush": true},
+		{"name": "dev", "default": true, "mergeOnly": true, "codeOwnerApprovalRequired": true},
 	})
 
 	b := branches("course.a1", nil)
 	if len(b) != 2 {
 		t.Fatalf("len(branches) = %d, want 2", len(b))
 	}
-	if b[0].Name != "main" || !b[0].Protect {
+	if b[0].Name != "main" || !b[0].Protect || !b[0].AllowForcePush {
 		t.Fatalf("main branch = %#v", b[0])
 	}
-	if b[1].Name != "dev" || !b[1].Default || !b[1].MergeOnly {
+	if b[1].Name != "dev" || !b[1].Default || !b[1].MergeOnly || !b[1].CodeOwnerApprovalRequired {
 		t.Fatalf("dev branch = %#v", b[1])
+	}
+}
+
+func TestBranches_MergesAdditionalBranchFlags(t *testing.T) {
+	resetViper(t)
+	viper.Set("course.a1.branches", []map[string]any{
+		{"name": "main", "protect": true},
+		{"name": "main", "allowForcePush": true},
+		{"name": "main", "codeOwnerApprovalRequired": true},
+	})
+
+	b := branches("course.a1", nil)
+	if len(b) != 1 {
+		t.Fatalf("len(branches) = %d, want 1", len(b))
+	}
+	if !b[0].Protect || !b[0].AllowForcePush || !b[0].CodeOwnerApprovalRequired {
+		t.Fatalf("merged branch = %#v", b[0])
+	}
+}
+
+func TestBranches_LegacySnakeCaseAdditionalBranchFlags(t *testing.T) {
+	resetViper(t)
+	viper.Set("course.a1.branches", []map[string]any{
+		{"name": "main", "protect": true, "allow_force_push": true},
+		{"name": "main", "code_owner_approval_required": true},
+	})
+
+	b := branches("course.a1", nil)
+	if len(b) != 1 {
+		t.Fatalf("len(branches) = %d, want 1", len(b))
+	}
+	if !b[0].Protect || !b[0].AllowForcePush || !b[0].CodeOwnerApprovalRequired {
+		t.Fatalf("legacy snake case branch = %#v", b[0])
 	}
 }
 

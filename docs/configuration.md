@@ -206,10 +206,12 @@ Define branch creation, protection and default branch independently from starter
 branches:
   - name: main
     protect: true
+    allowForcePush: false
     default: false
 
   - name: develop
     mergeOnly: true
+    codeOwnerApprovalRequired: true
     default: true
 ```
 
@@ -221,6 +223,8 @@ branches:
 | `protect` | Maintainer-only push/merge | `false` | Same semantics as classic protected branch |
 | `mergeOnly` | Developers may merge but cannot push | `false` | Sets push=`No one`, merge=`Developers` |
 | `default` | Set as project default branch | `false` | If none is set, first branch becomes default |
+| `allowForcePush` | Allow force-push on protected branch | `false` | Passed through to GitLab protected branch settings |
+| `codeOwnerApprovalRequired` | Require Code Owner approval | `false` | Passed through to GitLab protected branch settings |
 
 ### Branch protection notes
 

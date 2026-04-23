@@ -56,10 +56,12 @@ type Startercode struct {
 }
 
 type BranchRule struct {
-	Name      string `mapstructure:"name"`
-	Protect   bool   `mapstructure:"protect"`
-	MergeOnly bool   `mapstructure:"mergeOnly"`
-	Default   bool   `mapstructure:"default"`
+	Name                      string `mapstructure:"name"`
+	Protect                   bool   `mapstructure:"protect"`
+	MergeOnly                 bool   `mapstructure:"mergeOnly"`
+	Default                   bool   `mapstructure:"default"`
+	AllowForcePush            bool   `mapstructure:"allowForcePush"`
+	CodeOwnerApprovalRequired bool   `mapstructure:"codeOwnerApprovalRequired"`
 }
 
 type IssueReplication struct {

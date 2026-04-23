@@ -3,6 +3,14 @@ on:
     push:
         branches:
             - "**"
+    pull_request:
+    workflow_dispatch:
+        inputs:
+            run_integration:
+                description: "Run integration tests with GitLab Testcontainers"
+                required: false
+                default: false
+                type: boolean
 
 permissions:
     contents: write
@@ -24,8 +32,8 @@ jobs:
             - name: Run golangci-lint
               run: golangci-lint run --timeout=10m
 
-    test:
-        name: test
+        test-fast:
+                name: test (fast)
         runs-on: ubuntu-latest
         steps:
             - name: Check out code into the Go module directory
@@ -35,22 +43,39 @@ jobs:
               with:
                   go-version-file: go.mod
               id: go
-            - name: Get dependencies
-              run: |
-                  go get -v -t -d ./...
-                  if [ -f Gopkg.toml ]; then
-                      curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-                      dep ensure
-                  fi
-            - name: Test
+                        - name: Download dependencies
+                            run: go mod download
+                        - name: Run fast tests
               run: |
                   go test -v ./...
+
+        test-integration:
+                name: test (integration)
+                runs-on: ubuntu-latest
+                timeout-minutes: 90
+                if: >-
+                        github.ref == 'refs/heads/main' ||
+                (github.event_name == 'workflow_dispatch' && github.event.inputs.run_integration == 'true')
+                steps:
+                        - name: Check out code into the Go module directory
+                            uses: actions/checkout@v4
+                        - name: Set up Go from go.mod
+                            uses: actions/setup-go@v5
+                            with:
+                                    go-version-file: go.mod
+                        - name: Download dependencies
+                            run: go mod download
+                        - name: Run integration tests
+                            env:
+                                    GLABS_RUN_GITLAB_TC: "1"
+                            run: |
+                                    go test -tags=integration ./gitlab -run TestIntegration_GitLab_GroupAndProjectLifecycle -count=1 -v
 
     release:
         runs-on: ubuntu-latest
         needs:
             - golangci
-            - test
+            - test-fast
         steps:
             - uses: actions/checkout@v4
               with:

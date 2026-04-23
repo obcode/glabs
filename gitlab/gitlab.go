@@ -13,7 +13,7 @@ type Client struct {
 func NewClient() *Client {
 	log.Debug().Str("gitlab.host", viper.GetString("gitlab.host")).Msg("connecting to gitlab server")
 
-	client, err := gitlab.NewClient(viper.GetString("gitlab.token"),
+	client, err := gitlab.NewClient(viper.GetString("gitlab.token"), //nolint:staticcheck
 		gitlab.WithBaseURL(viper.GetString("gitlab.host")))
 
 	if err != nil {

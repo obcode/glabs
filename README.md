@@ -1,362 +1,54 @@
-# glabs - GitLab-Labs
+# glabs
 
-### Manage GitLab for student labs from the command line
+Command line tool to manage GitLab repositories for student assignments.
 
-- [glabs - GitLab-Labs](#glabs---gitlab-labs)
-    - [Manage GitLab for student labs from the command line](#manage-gitlab-for-student-labs-from-the-command-line)
-  - [Configfiles](#configfiles)
-    - [Main config file](#main-config-file)
-    - [Course config file](#course-config-file)
-  - [Usage](#usage)
-  - [Generating Reports of Assignments](#generating-reports-of-assignments)
-  - [Cloning Repos](#cloning-repos)
-  - [Getting URLs](#getting-urls)
-  - [Seeding using a custom tool](#seeding-using-a-custom-tool)
-    - [Example using `seeder` Option](#example-using-seeder-option)
-  - [Replicating assignment issues](#replicating-assignment-issues)
-  - [Using starter code as a template](#using-starter-code-as-a-template)
+This README is the quick entry point. The full user handbook lives in the docs folder.
 
-## Configfiles
+## Why glabs
 
-### Main config file
+- Create assignment repositories for students or groups
+- Seed repositories from starter code or custom seeding tools
+- Protect branches and set access rules at scale
+- Generate URLs, clone repos, and build reports
 
-Default: `$HOME/.glabs.yml` or whatever format [viper](https://github.com/spf13/viper) can handle.
+## Installation
 
-Contents:
+### Build from source
 
-```.yaml
-gitlab:
-  host: <URL of GitLab host>
-  token: <personal access token>
-sshprivatekey: <optional path to an unencrypted ssh private key; uses ssh-agent otherwise>
-coursesfilepath: <path where config files for courses are>
-courses:
-  - <basenames of coursesfiles>
+Prerequisite: Go 1.24+
+
+```sh
+go install github.com/obcode/glabs@latest
 ```
 
-Example:
+### Build from local checkout
 
-```.yaml
+```sh
+go install .
+```
+
+## Quickstart
+
+### 1) Create main config in your home directory
+
+File: ~/.glabs.yaml
+
+```yaml
 gitlab:
-  host: https://gitlab.mydomain.nz
-  token: abced871263876132jkd
-coursesfilepath: $HOME/HM/labs/20WS
+  host: https://gitlab.example.org
+  token: <personal-access-token>
+
+coursesfilepath: /absolute/path/to/course-configs
 courses:
-  - algdati
+  - mpd
   - vss
 ```
 
-Placeholders like `$HOME` are not substituted but taken verbatim. It is therefore best to specify absolute paths.
+### 2) Create one course file
 
-### Course config file
+Example: /absolute/path/to/course-configs/mpd.yaml
 
-Each course file must be named like the entries in the main config file, e.g., `algdatii.yml` and `vss.yml` in the above example.
-
-Students can be specified by the following:
-
--   the GitLab user ID (if it is an int)
--   an email address (if it is valid)
-
-**Please do no longer specify students by their GitLab username.**
-
-Contents:
-
-```.yaml
-<baseNameOfCourse>:
-    # can contain slashes for gitlab subgroups
-    coursepath: <base path of course in gitlab>
-    # if you want to generate directly in coursepath, do not define semesterpath
-    semesterpath: <gitlab subgroup of coursepath used for this semester>
-  useCoursenameAsPrefix: <false|true> # if true, repos start with <baseNameOfCourse>-<assignment>, default false
-    students: # needs only to defined if generating per student
-      <array of student specifier>
-    groups: # if students are allowed to work in groups
-      <name of fst group>:
-        <array of student in group>
-      <name of snd group>:
-        <array of student in group>
-      ...
-    <name of assignment>:
-      assignmentpath: <gitlab subgroup of semesterpath (or coursepath, if semesterpath is empty)
-                       used for assignment>
-      # also optional
-      description: <project description> # optional
-      per: <student|group> # generate per student (default) or per group
-      containerRegistry: <false|true> # enable container registry, default false
-      startercode:
-        url: <url to repo> # only via SSH atm
-        fromBranch: <branchName in startercode> # default main
-        toBranch: <branchName in generated repo> # default main
-        devBranch: <branchName used as default branch> # default toBranch
-        protectToBranch: <false|true> # whether only maintainer can push, default false
-        protectDevBranchMergeOnly: <false|true> # whether push to devBranch is blocked but merge is allowed for developers, default false
-      # accesslevel should be guest, developer, reporter, maintainer
-      # if not defined accesslevel is developer
-      accesslevel: <accesslevel for students>
-      # It is possible to seed repositories using a custom tool instead of using a startercode.
-      seeder:
-        cmd: <path to seeding tool> # e.g. python
-        args:
-          - <list of arguments passed. %s gets replaced by the path of the repository>
-        name: <name of the author used for commit>
-        email: <email of the author used for commit>
-        toBranch: <branch to commit to> # default main
-        additionalBranches: # push more than one branch to new repos
-          <array of branch names>
-        signKey: <plaintext private key for signing commits> # Optional key for signing the commit. If the key is encrypted the password will be requested on running the tool.
-        protectToBranch:  <false|true> # whether only maintainer can push, default false
-      clone:
-        localpath: <local base path for repositories to clone in> # default "."
-        branch: <checkout branch> # default main
-        force: <false|true> # remove directory if it exists. default false
-      release: # to be included in the report
-        mergeRequest: # define if it is necessary to release with a merge request
-          source: <source branch> # default `develop`
-          target: <target branch> # default `main`
-          pipeline: <false|true> # default false
-        dockerImages: # define if it is necessary to release docker images
-          <array of docker image names>
-      students: <add students to global student list, which might be empty>
-      groups: <add or redefine groups>
-```
-
-Naming behavior:
-
-- `useCoursenameAsPrefix: false` (default)
-  - student repo: `<assignment>-<student>` (example: `blatt1-max_mustermann_at_hm.edu`)
-  - group repo: `<assignment>-<group>` (example: `blatt1-grp01`)
-- `useCoursenameAsPrefix: true`
-  - student repo: `<baseNameOfCourse>-<assignment>-<student>` (example: `algdati-blatt1-max_mustermann_at_hm.edu`)
-  - group repo: `<baseNameOfCourse>-<assignment>-<group>` (example: `algdati-blatt1-grp01`)
-
-Example:
-
-```.yaml
-algdati:
-  coursepath: algdati
-  semesterpath: semester/ob-20ws
-  useCoursenameAsPrefix: true
-  students:
-    - 12334         # GitLab ID
-    - ob@glabs.io   # email address
-    - daCoolestName # GitLab username
-  groups:
-    grp01:
-      - hugo@glabs.inc
-      - 2345
-    grp02:
-      - su@u.du
-      - allen@u2.du
-  blatt0:
-    assignmentpath: blatt0
-    per: group
-    description: Blatt 0, Algorithmen und Datenstrukturen I, WS 20/21
-    startercode:
-      url: git@gitlab.lrz.de:algdati/startercode/startercodeBlatt1.git
-      fromBranch: ws20
-      protectToBranch: true
-      additionalBranches:
-        - ss20
-        - 22ss
-        - main
-    # accesslevel: developer # default
-    clone:
-      localpath: /tmp
-      branch: develop
-      clone: true
-    grp00:
-      - stan
-    grp01:
-      - hugo
-      - sandra
-      - quentin
-  assignemnt1:
-    assignmentpath: a1
-    release:
-      mergeRequest:
-        source: develop
-        target: main
-        pipeline: true
-      dockerImages:
-        - customer
-        - book
-    per: student
-```
-
-## Usage
-
-```
-Manage GitLab for student assignments
-
-Usage:
-  glabs [command]
-
-Available Commands:
-  archive     Archive or unarchive repositories.
-  check       check course config
-  clone       Clone repositories.
-  completion  Generate the autocompletion script for the specified shell
-  delete      Delete repositories.
-  generate    Generate repositories.
-  help        Help about any command
-  protect     Protect branch for exisiting repositories.
-  report      generate activity report
-  setaccess   Set access level for exisiting repositories.
-  show        Show config of an assignment
-  update      Update repositories with code.
-  urls        get urls for repositories
-  version     Print the version number of Glabs
-
-Flags:
-      --config string   config file (default is $HOME/.glabs.yml)
-  -h, --help            help for glabs
-  -v, --verbose         verbose output
-
-Use "glabs [command] --help" for more information about a command.
-```
-
-Before generating check whether all students exist or not using the command
-
-```
-glabs check [course]
-```
-
-## Generating Reports of Assignments
-
-It is possible to generate reports in plain text (by default), HTML or JSON via the
-`report` command:
-
-```
-Generate activity report
-
-Usage:
-  glabs report course assignment [flags]
-
-Flags:
-  -e, --export-default-template   export the default HTML template
-  -h, --help                      help for report
-      --html                      generate HTML
-      --json                      generate JSON
-  -o, --output string             output to <file>
-  -t, --tmpl string               use template for HTML
-```
-
-If you do not like the default plain text or HTML template feel free to use your
-own template via `-t`. You can simply export the default template via `-e` and adapt
-it to your needs.
-
-All available report information which can be used in the templates, can be found
-[here](https://github.com/obcode/glabs/blob/master/gitlab/report/types.go).
-
-## Cloning Repos
-
-```
-Clone repositories for each student or group in course for assignment.
-                You can specify students or groups in order to clone only for these.
-
-Usage:
-  glabs clone course assignment [groups...|students...] [flags]
-
-Flags:
-  -b, --branch string   checkout branch after cloning
-  -f, --force           remove directory if it already exists
-  -h, --help            help for clone
-  -p, --path string     clone in this directory
-  -s, --suppress        suppress config output for piping to other commands
-
-Global Flags:
-      --config string   config file (default is $HOME/.glabs.yml)
-  -v, --verbose         verbose output
-```
-
-Command line options (`-b` and `-p`) override the config file settings.
-
-With `-s` it is possible to suppress all output but the local path for use in
-a pipe. For example
-
-```
-glabs clone algdati blatt3 "grp0[35]" -fs | xargs code
-```
-
-clones the two repositories for `grp03` and `grp05` and opens them in VS Code.
-
-## Getting URLs
-
-```
-get urls for repositories for each student or group in course for assignment.
-                You can specify students or groups in order to get an url only for these.
-
-Usage:
-  glabs urls course assignment [groups...|students...] [flags]
-
-Flags:
-  -h, --help   help for urls
-
-Global Flags:
-      --config string   config file (default is $HOME/.glabs.yml)
-  -v, --verbose         verbose output
-```
-
-This is useful for opening the webpages using a pipe, e.g.,
-
-```
-glabs urls algdati blatt3 grp15 | xargs open
-```
-
-`urls` without groups or students prints the assignment url.
-
-## Seeding using a custom tool
-
-Instead of providing each student/group the same repository using the startercode option it is possible to run a tool to seed each repository individually.
-
-1. Therefore a new repository gets created at the `clone.localpath` location.
-2. Afterwards the tool runs inside this location. The argument `%s` gets replaced by the location e.g. helpfull storing some solutions for the matching repo somewhere else.
-3. The files get added to the repository.
-4. The changes get commited using `seeder.name` and `seeder.email`.
-5. Finally the changes get pushed to the remote location.
-
-### Example using `seeder` Option
-
-```.yaml
-algdati:
-  coursepath: algdati
-  semesterpath: semester/ob-20ws
-  students:
-    - olli
-    - ob
-    - obcode
-  blatt0:
-    assignmentpath: blatt0
-    per: group
-    description: Blatt 0, Algorithmen und Datenstrukturen I, WS 20/21
-    seeder:
-      cmd: python
-      args:
-        - /data/repos/generate.py
-        - generate-keys
-        - %s
-      name: Your Name
-      email: foo@bar.com
-      toBranch: main
-    clone:
-      localpath: /tmp
-```
-
-## Replicating assignment issues
-
-You can optionally replicate one or multiple issues from the startercode repository
-into each newly generated student/group project.
-
-Behavior:
-
-1. Only runs if `startercode.replicateIssue: true` is set.
-2. Only runs for newly generated projects (not for already existing repositories).
-3. Copies only issue title and description.
-4. If `startercode.issueNumbers` is not set, default is `[1]`.
-
-Configuration example:
-
-```.yaml
+```yaml
 mpd:
   coursepath: mpd/semester
   semesterpath: ob-26ss
@@ -365,73 +57,41 @@ mpd:
     assignmentpath: blatt-01
     per: student
     startercode:
-      url: git@gitlab.lrz.de:mpd/startercode/blatt-01.git
+      url: git@gitlab.example.org:mpd/startercode/blatt-01.git
       fromBranch: template
-      replicateIssue: true
-      issueNumbers: [1, 3, 4, 7]
 ```
 
-With this config, issues `#1`, `#3`, `#4`, and `#7` are read from the startercode
-repository and created in every newly generated assignment repository.
-
-## Using starter code as a template
-
-Currently glabs does not support rewriting git history.
-
-What you can do is the following:
-
-1. Clone your starter code repository.
-2. Create a new branch. Example:
-
-    ```
-    $ git checkout -B ws24
-    ```
-
-3. Commit the whole tree with `commit-tree`. Be sure to remember the the
-   commit object id. Example:
-
-    ```
-    $ git commit-tree HEAD^{tree} -m "Initial"
-    6439f935612064028d6678c457991660cfe7e15e
-    ```
-
-4. Reset the current branch to the new commit. Example:
-
-    ```
-    git reset 6439f935612064028d6678c457991660cfe7e15e
-    ```
-
-5. Push the new branch to origin. Example:
-
-    ```
-    git push origin ws20
-    ```
-
-6. Use `fromBranch` in your assignment config.
-
-If you are doing this more often, you want to add a git alias like
-
-```git
-[alias]
-    new-semester = "!f() { \
-        BRANCH=${1:-ws24}; \
-        MSG=${2:-Initial}; \
-        if git show-ref --verify --quiet refs/heads/$BRANCH; then \
-            echo \"Error: Branch '$BRANCH' already exists. Please delete it first or choose another name.\"; \
-            return 1; \
-        fi; \
-        CURRENT=$(git branch --show-current) && \
-        git checkout -b $BRANCH && \
-        COMMIT=$(git commit-tree HEAD^{tree} -m \"$MSG\") && \
-        git reset $COMMIT && \
-        git push origin $BRANCH && \
-        git checkout $CURRENT && \
-        echo \"Branch '$BRANCH' created and pushed. Returned to '$CURRENT'\"; \
-    }; f"
-```
-
-and use it like so
+### 3) Validate config and generate repos
 
 ```sh
-git new-semester ws24 "Initial"
+glabs check mpd
+glabs generate mpd blatt01
 ```
+
+## Common commands
+
+```sh
+glabs check <course>
+glabs generate <course> <assignment> [groups...|students...]
+glabs protect <course> <assignment> [groups...|students...]
+glabs clone <course> <assignment> [groups...|students...]
+glabs urls <course> <assignment> [groups...|students...]
+glabs report <course> <assignment> [--html|--json]
+```
+
+## User handbook
+
+- Getting started: [docs/getting-started.md](docs/getting-started.md)
+- Configuration reference: [docs/configuration.md](docs/configuration.md)
+- Workflows and recipes: [docs/workflows.md](docs/workflows.md)
+- Command reference: [docs/commands.md](docs/commands.md)
+- Troubleshooting: [docs/troubleshooting.md](docs/troubleshooting.md)
+- Advanced topics: [docs/advanced.md](docs/advanced.md)
+
+## Contributing
+
+Issues and pull requests are welcome.
+
+## License
+
+MIT, see [LICENSE](LICENSE).

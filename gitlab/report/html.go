@@ -21,7 +21,7 @@ var HTMLTemplate = `
 		<table class="table table-compact w-full">
 		<thead>
 		<tr>
-			<th>Name</th> 
+			<th>Name</th>
 			<th>Member</th>
 			<th>Last Commit</th>
 			<th>Open Issues</th>
@@ -33,7 +33,7 @@ var HTMLTemplate = `
 				<th>Release.DockerImages</th>
 			{{- end}}
 		</tr>
-		</thead> 
+		</thead>
 		<tbody>
 		{{range .Projects -}}
 			{{if and .IsActive (gt .Commits 0) }}<tr class="active">

@@ -324,6 +324,10 @@ Control how merge requests are merged in every generated project:
   mergeRequest:
     mergeMethod: merge        # merge | semi_linear | ff
     squashOption: default_off  # never | always | default_off | default_on
+    pipeline: false           # Require successful pipeline before merge
+    skippedPipelinesAreSuccessful: false
+    allThreadsMustBeResolved: false
+    statusChecksMustSucceed: false
 ```
 
 ### Merge Request keys
@@ -332,6 +336,10 @@ Control how merge requests are merged in every generated project:
 |---|---|---|---|
 | `mergeRequest.mergeMethod` | Merge strategy for all MRs | `merge` | Applied at project creation |
 | `mergeRequest.squashOption` | Squash-on-merge setting | `default_off` | Applied at project creation |
+| `mergeRequest.pipeline` | Pipelines must succeed | `false` | Maps to GitLab merge check |
+| `mergeRequest.skippedPipelinesAreSuccessful` | Treat skipped pipelines as successful | `false` | Only relevant when `mergeRequest.pipeline=true` |
+| `mergeRequest.allThreadsMustBeResolved` | All threads must be resolved | `false` | Maps to GitLab merge check |
+| `mergeRequest.statusChecksMustSucceed` | Status checks must succeed | `false` | Maps to GitLab merge check |
 
 ### Merge method values
 
@@ -357,6 +365,10 @@ blatt01:
   mergeRequest:
     mergeMethod: ff          # Students must keep a linear history
     squashOption: always     # All commits squashed into one on merge
+    pipeline: true           # Block merge until latest pipeline succeeds
+    skippedPipelinesAreSuccessful: false
+    allThreadsMustBeResolved: true
+    statusChecksMustSucceed: true
 ```
 
 ## Full example

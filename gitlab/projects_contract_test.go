@@ -135,3 +135,52 @@ func TestGenerateProject_FallsBackToExistingProject(t *testing.T) {
 		t.Fatalf("project = %#v", project)
 	}
 }
+
+func TestGenerateProject_SetsMergeRequestChecks(t *testing.T) {
+	var createBody string
+
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost && r.URL.Path == "/api/v4/projects" {
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				t.Fatalf("ReadAll failed: %v", err)
+			}
+			createBody = string(body)
+			_, _ = w.Write([]byte(`{"id":31,"name":"repo-a","path_with_namespace":"mpd/ss26/repo-a"}`))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	})
+
+	assignmentCfg := &config.AssignmentConfig{
+		Description: "desc",
+		Path:        "mpd/ss26",
+		MergeRequest: &config.MergeRequest{
+			PipelineMustSucceed:           true,
+			SkippedPipelinesAreSuccessful: true,
+			AllThreadsMustBeResolved:      true,
+			StatusChecksMustSucceed:       true,
+		},
+	}
+
+	_, _, err := client.generateProject(assignmentCfg, "repo-a", 123)
+	if err != nil {
+		t.Fatalf("generateProject() returned error: %v", err)
+	}
+
+	checks := []string{
+		`"only_allow_merge_if_pipeline_succeeds":true`,
+		`"allow_merge_on_skipped_pipeline":true`,
+		`"only_allow_merge_if_all_discussions_are_resolved":true`,
+		`"only_allow_merge_if_all_status_checks_passed":true`,
+		"only_allow_merge_if_pipeline_succeeds=true",
+		"allow_merge_on_skipped_pipeline=true",
+		"only_allow_merge_if_all_discussions_are_resolved=true",
+		"only_allow_merge_if_all_status_checks_passed=true",
+	}
+	for i := 0; i < 4; i++ {
+		if !strings.Contains(createBody, checks[i]) && !strings.Contains(createBody, checks[i+4]) {
+			t.Fatalf("create project request body missing merge check field %q: %q", checks[i], createBody)
+		}
+	}
+}

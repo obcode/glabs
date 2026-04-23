@@ -254,3 +254,29 @@ func TestShow_WithSquashOption(t *testing.T) {
 		t.Fatalf("Show() output does not contain squash option 'always': %q", out)
 	}
 }
+
+func TestShow_WithMergeChecks(t *testing.T) {
+	cfg := &AssignmentConfig{
+		MergeRequest: &MergeRequest{
+			MergeMethod:                   MergeCommit,
+			SquashOption:                  SquashDefaultOff,
+			PipelineMustSucceed:           true,
+			SkippedPipelinesAreSuccessful: true,
+			AllThreadsMustBeResolved:      true,
+			StatusChecksMustSucceed:       true,
+		},
+	}
+	out := captureStdout(t, func() { cfg.Show() })
+	if !strings.Contains(out, "PipelineMustSucceed:") || !strings.Contains(out, "true") {
+		t.Fatalf("Show() output does not contain PipelineMustSucceed=true: %q", out)
+	}
+	if !strings.Contains(out, "AllThreadsMustBeResolved:") {
+		t.Fatalf("Show() output does not contain AllThreadsMustBeResolved key: %q", out)
+	}
+	if !strings.Contains(out, "SkippedPipelinesAreSuccessful:") {
+		t.Fatalf("Show() output does not contain SkippedPipelinesAreSuccessful key: %q", out)
+	}
+	if !strings.Contains(out, "StatusChecksMustSucceed:") {
+		t.Fatalf("Show() output does not contain StatusChecksMustSucceed key: %q", out)
+	}
+}

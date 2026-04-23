@@ -159,12 +159,13 @@ Expected:
 If wrong, check config:
 
 ```yaml
-startercode:
-  devBranch: main
-  protectDevBranchMergeOnly: true  # Must be true
+branches:
+  - name: main
+    mergeOnly: true  # Must be true
+    default: true
 ```
 
-Note: Only works if `devBranch` and `toBranch` are the same.
+Note: `mergeOnly` applies exactly to the branch specified in `name`.
 
 ## Modify existing repositories
 

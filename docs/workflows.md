@@ -26,12 +26,13 @@ Use this after changing branch protection settings in config. Does not regenerat
 
 ## Merge-only development branch
 
-Use this startercode config:
+Use this branch config:
 
 ```yaml
-startercode:
-  devBranch: main
-  protectDevBranchMergeOnly: true
+branches:
+  - name: main
+    mergeOnly: true
+    default: true
 ```
 
 Expected behavior in GitLab UI:
@@ -233,11 +234,11 @@ This enables a GitLab Flow where development happens on `develop` and production
 
 ## Replicate issues from starter repository
 
-When creating new repositories from startercode, automatically copy issues:
+When creating new repositories from startercode, configure issue replication with `issues`:
 
 ```yaml
-startercode:
-  replicateIssue: true
+issues:
+  replicateFromStartercode: true
   issueNumbers: [1, 3, 7]
 ```
 
@@ -253,7 +254,8 @@ startercode:
 ```yaml
 startercode:
   url: git@gitlab.example.org:course/starter.git
-  replicateIssue: true
+issues:
+  replicateFromStartercode: true
   issueNumbers: [1]  # Replicate first issue (usually assignment spec)
 ```
 

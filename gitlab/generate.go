@@ -161,11 +161,24 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 		}
 	}
 
+	if generated && len(assignmentCfg.Branches) > 0 {
+		baseBranch := defaultBranchName(assignmentCfg.Branches, "main")
+		if assignmentCfg.Startercode != nil {
+			baseBranch = assignmentCfg.Startercode.ToBranch
+		} else if assignmentCfg.Seeder != nil {
+			baseBranch = assignmentCfg.Seeder.ToBranch
+		}
+
+		if err := c.syncConfiguredBranches(assignmentCfg, project, baseBranch); err != nil {
+			log.Debug().Err(err).Str("project", project.Name).Msg("cannot apply configured branch rules")
+		}
+	}
+
 	// Replicate issues from startercode repo if configured
-	if generated && assignmentCfg.Startercode != nil && assignmentCfg.Startercode.ReplicateIssue {
+	if generated && assignmentCfg.Startercode != nil && assignmentCfg.Issues != nil && assignmentCfg.Issues.ReplicateFromStartercode {
 		starterProject, starterProjectErr := c.getStartercodeProject(assignmentCfg)
 
-		for _, issueNumber := range assignmentCfg.Startercode.IssueNumbers {
+		for _, issueNumber := range assignmentCfg.Issues.IssueNumbers {
 			cfg.Suffix = aurora.Sprintf(
 				aurora.Cyan(" ↪ replicating issue #%d from startercode"),
 				aurora.Yellow(issueNumber),

@@ -19,25 +19,24 @@ func TestSetBranch_Empty(t *testing.T) {
 }
 
 func TestSetProtectToBranch_WithBranch(t *testing.T) {
-	cfg := &AssignmentConfig{Startercode: &Startercode{ToBranch: "main"}}
+	cfg := &AssignmentConfig{}
 	cfg.SetProtectToBranch("feature")
-	if cfg.Startercode.ToBranch != "feature" {
-		t.Fatalf("ToBranch = %q, want %q", cfg.Startercode.ToBranch, "feature")
+	if len(cfg.Branches) != 1 {
+		t.Fatalf("len(Branches) = %d, want 1", len(cfg.Branches))
 	}
-	if !cfg.Startercode.ProtectToBranch {
-		t.Fatal("ProtectToBranch should be true")
+	if cfg.Branches[0].Name != "feature" || !cfg.Branches[0].Protect {
+		t.Fatalf("branch config = %#v", cfg.Branches[0])
 	}
 }
 
 func TestSetProtectToBranch_EmptyBranch(t *testing.T) {
-	cfg := &AssignmentConfig{Startercode: &Startercode{ToBranch: "main"}}
+	cfg := &AssignmentConfig{Branches: []BranchRule{{Name: "main"}}}
 	cfg.SetProtectToBranch("")
-	// empty: ToBranch stays unchanged, ProtectToBranch is set to true
-	if cfg.Startercode.ToBranch != "main" {
-		t.Fatalf("ToBranch = %q, want %q", cfg.Startercode.ToBranch, "main")
+	if len(cfg.Branches) != 1 {
+		t.Fatalf("len(Branches) = %d, want 1", len(cfg.Branches))
 	}
-	if !cfg.Startercode.ProtectToBranch {
-		t.Fatal("ProtectToBranch should be true even with empty branch string")
+	if cfg.Branches[0].Name != "main" || !cfg.Branches[0].Protect {
+		t.Fatalf("branch config = %#v", cfg.Branches[0])
 	}
 }
 

@@ -20,6 +20,8 @@ type AssignmentConfig struct {
 	ContainerRegistry     bool
 	AccessLevel           AccessLevel
 	MergeRequest          *MergeRequest
+	Branches              []BranchRule
+	Issues                *IssueReplication
 	Students              []*Student
 	Groups                []*Group
 	Startercode           *Startercode
@@ -47,15 +49,22 @@ type Seeder struct {
 }
 
 type Startercode struct {
-	URL                       string
-	FromBranch                string
-	ToBranch                  string
-	DevBranch                 string
-	AdditionalBranches        []string
-	ProtectToBranch           bool
-	ProtectDevBranchMergeOnly bool
-	ReplicateIssue            bool
-	IssueNumbers              []int
+	URL                string
+	FromBranch         string
+	ToBranch           string
+	AdditionalBranches []string
+}
+
+type BranchRule struct {
+	Name      string `mapstructure:"name"`
+	Protect   bool   `mapstructure:"protect"`
+	MergeOnly bool   `mapstructure:"mergeOnly"`
+	Default   bool   `mapstructure:"default"`
+}
+
+type IssueReplication struct {
+	ReplicateFromStartercode bool
+	IssueNumbers             []int
 }
 
 type Clone struct {

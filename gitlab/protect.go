@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/logrusorgru/aurora"
@@ -30,7 +31,7 @@ func (c *Client) ProtectToBranch(assignmentCfg *config.AssignmentConfig) {
 }
 
 func (c *Client) protectBranch(assignmentCfg *config.AssignmentConfig, project *gitlab.Project, spin bool) error {
-	if assignmentCfg.Startercode.ProtectToBranch || assignmentCfg.Startercode.ProtectDevBranchMergeOnly {
+	if hasProtectedBranches(assignmentCfg.Branches) {
 		// var cfg yacspin.Config
 		var spinner *yacspin.Spinner
 		if spin {
@@ -62,17 +63,22 @@ func (c *Client) protectBranch(assignmentCfg *config.AssignmentConfig, project *
 		log.Debug().
 			Str("name", project.Name).
 			Str("toURL", project.SSHURLToRepo).
-			Str("branch", assignmentCfg.Startercode.ToBranch).
+			Interface("branches", assignmentCfg.Branches).
 			Msg("protecting branch")
 
-		if assignmentCfg.Startercode.ProtectDevBranchMergeOnly &&
-			assignmentCfg.Startercode.DevBranch == assignmentCfg.Startercode.ToBranch {
-			err := c.protectSingleBranch(
-				project,
-				assignmentCfg.Startercode.ToBranch,
-				gitlab.NoPermissions,
-				gitlab.DeveloperPermissions,
-			)
+		for _, branch := range assignmentCfg.Branches {
+			if !branch.Protect && !branch.MergeOnly {
+				continue
+			}
+
+			pushLevel := gitlab.MaintainerPermissions
+			mergeLevel := gitlab.MaintainerPermissions
+			if branch.MergeOnly {
+				pushLevel = gitlab.NoPermissions
+				mergeLevel = gitlab.DeveloperPermissions
+			}
+
+			err := c.protectSingleBranch(project, branch.Name, pushLevel, mergeLevel)
 			if err != nil {
 				if spin {
 					err := spinner.StopFail()
@@ -81,42 +87,6 @@ func (c *Client) protectBranch(assignmentCfg *config.AssignmentConfig, project *
 					}
 				}
 				return err
-			}
-		} else {
-			if assignmentCfg.Startercode.ProtectToBranch {
-				err := c.protectSingleBranch(
-					project,
-					assignmentCfg.Startercode.ToBranch,
-					gitlab.MaintainerPermissions,
-					gitlab.MaintainerPermissions,
-				)
-				if err != nil {
-					if spin {
-						err := spinner.StopFail()
-						if err != nil {
-							log.Debug().Err(err).Msg("cannot stop spinner")
-						}
-					}
-					return err
-				}
-			}
-
-			if assignmentCfg.Startercode.ProtectDevBranchMergeOnly {
-				err := c.protectSingleBranch(
-					project,
-					assignmentCfg.Startercode.DevBranch,
-					gitlab.NoPermissions,
-					gitlab.DeveloperPermissions,
-				)
-				if err != nil {
-					if spin {
-						err := spinner.StopFail()
-						if err != nil {
-							log.Debug().Err(err).Msg("cannot stop spinner")
-						}
-					}
-					return err
-				}
 			}
 		}
 
@@ -131,19 +101,50 @@ func (c *Client) protectBranch(assignmentCfg *config.AssignmentConfig, project *
 	return nil
 }
 
+func hasProtectedBranches(branches []config.BranchRule) bool {
+	for _, branch := range branches {
+		if branch.Protect || branch.MergeOnly {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (c *Client) protectSingleBranch(
 	project *gitlab.Project,
 	branch string,
 	pushAccessLevel gitlab.AccessLevelValue,
 	mergeAccessLevel gitlab.AccessLevelValue,
 ) error {
-	_, err := c.ProtectedBranches.UnprotectRepositoryBranches(project.ID, branch)
-	if err != nil {
+	existing, _, err := c.ProtectedBranches.GetProtectedBranch(project.ID, branch)
+	if err == nil {
+		updateOpts := &gitlab.UpdateProtectedBranchOptions{
+			AllowedToPush:      replaceBranchPermissions(existing.PushAccessLevels, pushAccessLevel),
+			AllowedToMerge:     replaceBranchPermissions(existing.MergeAccessLevels, mergeAccessLevel),
+			AllowedToUnprotect: replaceBranchPermissions(existing.UnprotectAccessLevels, gitlab.MaintainerPermissions),
+		}
+
+		_, _, err = c.ProtectedBranches.UpdateProtectedBranch(project.ID, branch, updateOpts)
+		if err != nil {
+			log.Debug().Err(err).
+				Str("name", project.Name).
+				Str("toURL", project.SSHURLToRepo).
+				Str("branch", branch).
+				Msg("cannot update protected branch")
+			return fmt.Errorf("error while trying to update protected branch %s: %w", branch, err)
+		}
+
+		return nil
+	}
+
+	if !isProtectedBranchNotFoundError(err) {
 		log.Debug().Err(err).
 			Str("name", project.Name).
 			Str("toURL", project.SSHURLToRepo).
 			Str("branch", branch).
-			Msg("cannot unprotect branch, but that is okay")
+			Msg("cannot read protected branch")
+		return fmt.Errorf("error while trying to read protected branch %s: %w", branch, err)
 	}
 
 	opts := &gitlab.ProtectRepositoryBranchesOptions{
@@ -164,6 +165,31 @@ func (c *Client) protectSingleBranch(
 	}
 
 	return nil
+}
+
+func replaceBranchPermissions(existing []*gitlab.BranchAccessDescription, accessLevel gitlab.AccessLevelValue) *[]*gitlab.BranchPermissionOptions {
+	destroy := true
+	permissions := make([]*gitlab.BranchPermissionOptions, 0, len(existing)+1)
+	for _, level := range existing {
+		if level == nil || level.ID <= 0 {
+			continue
+		}
+
+		id := level.ID
+		permissions = append(permissions, &gitlab.BranchPermissionOptions{ID: &id, Destroy: &destroy})
+	}
+
+	permissions = append(permissions, &gitlab.BranchPermissionOptions{AccessLevel: gitlab.Ptr(accessLevel)})
+	return &permissions
+}
+
+func isProtectedBranchNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "404") || strings.Contains(msg, "not found")
 }
 
 func (c *Client) protectToBranchPerStudent(assignmentCfg *config.AssignmentConfig) {

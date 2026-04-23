@@ -110,7 +110,7 @@ GLABS_RUN_GITLAB_TC=1 go test -tags=integration -v -count=1 ./gitlab/... -run Te
 GLABS_RUN_GITLAB_TC=1 go test -tags=integration -v -count=1 ./gitlab/... -run TestIntegration_GitLab_Operations
 
 # Run all integration tests at once
-GLABS_RUN_GITLAB_TC=1 go test -tags=integration -v -count=1 ./gitlab/...
+GLABS_RUN_GITLAB_TC=1 go test -tags=integration -v -count=1 ./gitlab/... -run '^TestIntegration_'
 ```
 
 Notes:

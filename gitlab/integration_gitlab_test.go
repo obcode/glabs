@@ -19,9 +19,10 @@ import (
 )
 
 const (
-	gitLabImage       = "gitlab/gitlab-ce:17.6.1-ce.0"
-	gitLabRootToken   = "glabs-integration-root-token"
-	runIntegrationEnv = "GLABS_RUN_GITLAB_TC"
+	gitLabImage        = "gitlab/gitlab-ce:17.6.1-ce.0"
+	gitLabRootToken    = "glabs-integration-root-token"
+	runIntegrationEnv  = "GLABS_RUN_GITLAB_TC"
+	gitLabRootPassword = "G!abs-Root-P4ssword-2026"
 )
 
 func requireIntegrationEnabled(t *testing.T) {
@@ -84,7 +85,7 @@ func startGitLabContainer(t *testing.T) (*Client, string) {
 		Image:        gitLabImage,
 		ExposedPorts: []string{"80/tcp"},
 		Env: map[string]string{
-			"GITLAB_ROOT_PASSWORD": "glabs-root-password",
+			"GITLAB_ROOT_PASSWORD": gitLabRootPassword,
 			"GITLAB_OMNIBUS_CONFIG": strings.Join([]string{
 				"external_url 'http://localhost'",
 				"nginx['listen_port'] = 80",

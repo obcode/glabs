@@ -9,7 +9,7 @@ import (
 	"github.com/obcode/glabs/config"
 	"github.com/rs/zerolog/log"
 	"github.com/theckman/yacspin"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
 func (c *Client) Archive(assignmentCfg *config.AssignmentConfig, unarchive bool) {

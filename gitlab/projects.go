@@ -6,10 +6,10 @@ import (
 
 	"github.com/obcode/glabs/config"
 	"github.com/rs/zerolog/log"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
-func (c *Client) generateProject(assignmentCfg *config.AssignmentConfig, name string, inID int) (*gitlab.Project, bool, error) {
+func (c *Client) generateProject(assignmentCfg *config.AssignmentConfig, name string, inID int64) (*gitlab.Project, bool, error) {
 	generated := false
 	p := &gitlab.CreateProjectOptions{
 		Name:                                  gitlab.Ptr(name),

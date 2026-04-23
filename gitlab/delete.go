@@ -6,7 +6,7 @@ import (
 
 	"github.com/obcode/glabs/config"
 	"github.com/rs/zerolog/log"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
 func (c *Client) Delete(assignmentCfg *config.AssignmentConfig) {
@@ -27,7 +27,7 @@ func (c *Client) Delete(assignmentCfg *config.AssignmentConfig) {
 	}
 }
 
-func (c *Client) deletePerStudent(assignmentCfg *config.AssignmentConfig, assignmentGroupID int) {
+func (c *Client) deletePerStudent(assignmentCfg *config.AssignmentConfig, assignmentGroupID int64) {
 	if len(assignmentCfg.Students) == 0 {
 		fmt.Println("no students in config for assignment found")
 		return
@@ -38,7 +38,7 @@ func (c *Client) deletePerStudent(assignmentCfg *config.AssignmentConfig, assign
 	}
 }
 
-func (c *Client) deletePerGroup(assignmentCfg *config.AssignmentConfig, assignmentGroupID int) {
+func (c *Client) deletePerGroup(assignmentCfg *config.AssignmentConfig, assignmentGroupID int64) {
 	if len(assignmentCfg.Groups) == 0 {
 		log.Info().Str("group", assignmentCfg.Course).Msg("no groups found")
 		return
@@ -49,7 +49,7 @@ func (c *Client) deletePerGroup(assignmentCfg *config.AssignmentConfig, assignme
 	}
 }
 
-func (c *Client) delete(gid int, name string) {
+func (c *Client) delete(gid int64, name string) {
 	projects, _, err := c.Search.ProjectsByGroup(gid, name, &gitlab.SearchOptions{})
 	if err != nil {
 		log.Error().Str("project", name).Msg("searching for projects failed")

@@ -15,7 +15,7 @@ import (
 	cfg "github.com/obcode/glabs/config"
 	g "github.com/obcode/glabs/git"
 	"github.com/rs/zerolog/log"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
 func localpath(cfg *cfg.AssignmentConfig, project string) string {

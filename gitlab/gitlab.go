@@ -3,7 +3,7 @@ package gitlab
 import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
 type Client struct {
@@ -13,7 +13,7 @@ type Client struct {
 func NewClient() *Client {
 	log.Debug().Str("gitlab.host", viper.GetString("gitlab.host")).Msg("connecting to gitlab server")
 
-	client, err := gitlab.NewClient(viper.GetString("gitlab.token"), //nolint:staticcheck
+	client, err := gitlab.NewClient(viper.GetString("gitlab.token"),
 		gitlab.WithBaseURL(viper.GetString("gitlab.host")))
 
 	if err != nil {

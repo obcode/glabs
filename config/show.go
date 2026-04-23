@@ -18,7 +18,7 @@ func (cfg *AssignmentConfig) Show() {
 		mergeMethod = cfg.MergeRequest.MergeMethod
 	}
 	mergeRequestCfg := aurora.Sprintf(aurora.Cyan(`
-  %s       %s`),
+  %s      %s`),
 		aurora.Cyan("MergeMethod:"),
 		aurora.Yellow(mergeMethod),
 	)

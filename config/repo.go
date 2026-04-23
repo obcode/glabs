@@ -3,6 +3,7 @@ package config
 import (
 	"strings"
 
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
@@ -43,7 +44,16 @@ func startercode(assignmentKey string) *Startercode {
 
 func branches(assignmentKey string, starter *Startercode) []BranchRule {
 	var configured []BranchRule
-	if err := viper.UnmarshalKey(assignmentKey+".branches", &configured); err != nil {
+	raw := normalizeBranchRuleConfigKeys(viper.Get(assignmentKey + ".branches"))
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		Result:           &configured,
+		TagName:          "mapstructure",
+		WeaklyTypedInput: true,
+	})
+	if err != nil {
+		log.Fatal().Err(err).Str("assignmentKey", assignmentKey).Msg("cannot create branches decoder")
+	}
+	if err := decoder.Decode(raw); err != nil {
 		log.Fatal().Err(err).Str("assignmentKey", assignmentKey).Msg("cannot parse branches config")
 	}
 
@@ -58,6 +68,8 @@ func branches(assignmentKey string, starter *Startercode) []BranchRule {
 			rules[idx].Protect = rules[idx].Protect || rule.Protect
 			rules[idx].MergeOnly = rules[idx].MergeOnly || rule.MergeOnly
 			rules[idx].Default = rules[idx].Default || rule.Default
+			rules[idx].AllowForcePush = rules[idx].AllowForcePush || rule.AllowForcePush
+			rules[idx].CodeOwnerApprovalRequired = rules[idx].CodeOwnerApprovalRequired || rule.CodeOwnerApprovalRequired
 			return
 		}
 		seen[rule.Name] = len(rules)
@@ -109,6 +121,37 @@ func branches(assignmentKey string, starter *Startercode) []BranchRule {
 	}
 
 	return rules
+}
+
+func normalizeBranchRuleConfigKeys(value any) any {
+	switch typed := value.(type) {
+	case []any:
+		normalized := make([]any, len(typed))
+		for i, item := range typed {
+			normalized[i] = normalizeBranchRuleConfigKeys(item)
+		}
+		return normalized
+	case []map[string]any:
+		normalized := make([]any, len(typed))
+		for i, item := range typed {
+			normalized[i] = normalizeBranchRuleConfigKeys(item)
+		}
+		return normalized
+	case map[string]any:
+		normalized := make(map[string]any, len(typed))
+		for key, item := range typed {
+			switch key {
+			case "allow_force_push":
+				key = "allowForcePush"
+			case "code_owner_approval_required":
+				key = "codeOwnerApprovalRequired"
+			}
+			normalized[key] = normalizeBranchRuleConfigKeys(item)
+		}
+		return normalized
+	default:
+		return value
+	}
 }
 
 func defaultBranch(rules []BranchRule, fallback string) string {

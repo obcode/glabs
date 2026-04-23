@@ -138,13 +138,13 @@ func TestShow_WithStartercode_WithIssues(t *testing.T) {
 
 func TestShow_WithBranches(t *testing.T) {
 	cfg := &AssignmentConfig{
-		Branches: []BranchRule{{Name: "main", Protect: true, Default: true}, {Name: "develop", MergeOnly: true}},
+		Branches: []BranchRule{{Name: "main", Protect: true, Default: true, AllowForcePush: true}, {Name: "develop", MergeOnly: true, CodeOwnerApprovalRequired: true}},
 	}
 	out := captureStdout(t, func() { cfg.Show() })
 	if !strings.Contains(out, "Branches:") || !strings.Contains(out, "develop") {
 		t.Fatalf("Show() output does not contain branches block: %q", out)
 	}
-	if !strings.Contains(out, "mergeOnly") || !strings.Contains(out, "default") {
+	if !strings.Contains(out, "mergeOnly") || !strings.Contains(out, "default") || !strings.Contains(out, "allowForcePush") || !strings.Contains(out, "codeOwnerApprovalRequired") {
 		t.Fatalf("Show() output does not contain compact branch flags: %q", out)
 	}
 }

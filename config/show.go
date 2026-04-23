@@ -15,17 +15,37 @@ func (cfg *AssignmentConfig) Show() {
 
 	mergeMethod := MergeCommit
 	squashOption := SquashDefaultOff
+	pipelineMustSucceed := false
+	skippedPipelinesAreSuccessful := false
+	allThreadsMustBeResolved := false
+	statusChecksMustSucceed := false
 	if cfg.MergeRequest != nil {
 		mergeMethod = cfg.MergeRequest.MergeMethod
 		squashOption = cfg.MergeRequest.SquashOption
+		pipelineMustSucceed = cfg.MergeRequest.PipelineMustSucceed
+		skippedPipelinesAreSuccessful = cfg.MergeRequest.SkippedPipelinesAreSuccessful
+		allThreadsMustBeResolved = cfg.MergeRequest.AllThreadsMustBeResolved
+		statusChecksMustSucceed = cfg.MergeRequest.StatusChecksMustSucceed
 	}
 	mergeRequestCfg := aurora.Sprintf(aurora.Cyan(`
-  %s      %s
-  %s     %s`),
+  %s                   %s
+  %s                  %s
+  %s           %t
+  %s %t
+  %s      %t
+  %s       %t`),
 		aurora.Cyan("MergeMethod:"),
 		aurora.Yellow(mergeMethod),
 		aurora.Cyan("SquashOption:"),
 		aurora.Yellow(squashOption),
+		aurora.Cyan("PipelineMustSucceed:"),
+		aurora.Yellow(pipelineMustSucceed),
+		aurora.Cyan("SkippedPipelinesAreSuccessful:"),
+		aurora.Yellow(skippedPipelinesAreSuccessful),
+		aurora.Cyan("AllThreadsMustBeResolved:"),
+		aurora.Yellow(allThreadsMustBeResolved),
+		aurora.Cyan("StatusChecksMustSucceed:"),
+		aurora.Yellow(statusChecksMustSucceed),
 	)
 
 	startercode := aurora.Sprintf(aurora.Red("not defined"))

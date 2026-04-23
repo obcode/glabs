@@ -16,9 +16,17 @@ func (c *Client) generateProject(assignmentCfg *config.AssignmentConfig, name st
 	// Keep this fallback for safety when AssignmentConfig is constructed manually.
 	mergeMethod := config.MergeCommit
 	squashOption := config.SquashDefaultOff
+	pipelineMustSucceed := false
+	skippedPipelinesAreSuccessful := false
+	allThreadsMustBeResolved := false
+	statusChecksMustSucceed := false
 	if assignmentCfg.MergeRequest != nil {
 		mergeMethod = assignmentCfg.MergeRequest.MergeMethod
 		squashOption = assignmentCfg.MergeRequest.SquashOption
+		pipelineMustSucceed = assignmentCfg.MergeRequest.PipelineMustSucceed
+		skippedPipelinesAreSuccessful = assignmentCfg.MergeRequest.SkippedPipelinesAreSuccessful
+		allThreadsMustBeResolved = assignmentCfg.MergeRequest.AllThreadsMustBeResolved
+		statusChecksMustSucceed = assignmentCfg.MergeRequest.StatusChecksMustSucceed
 	}
 
 	// Convert glabs MergeMethod to GitLab API MergeMethodValue
@@ -46,18 +54,21 @@ func (c *Client) generateProject(assignmentCfg *config.AssignmentConfig, name st
 	}
 
 	p := &gitlab.CreateProjectOptions{
-		Name:                                  gitlab.Ptr(name),
-		Description:                           gitlab.Ptr(assignmentCfg.Description),
-		NamespaceID:                           gitlab.Ptr(inID),
-		MergeRequestsAccessLevel:              gitlab.Ptr(gitlab.EnabledAccessControl),
-		IssuesAccessLevel:                     gitlab.Ptr(gitlab.EnabledAccessControl),
-		BuildsAccessLevel:                     gitlab.Ptr(gitlab.EnabledAccessControl),
-		JobsEnabled:                           gitlab.Ptr(true),
-		Visibility:                            gitlab.Ptr(gitlab.PrivateVisibility),
-		ContainerRegistryEnabled:              gitlab.Ptr(assignmentCfg.ContainerRegistry),
-		OnlyAllowMergeIfAllStatusChecksPassed: gitlab.Ptr(false),
-		MergeMethod:                           gitlab.Ptr(gitlabMergeMethod),
-		SquashOption:                          gitlab.Ptr(gitlabSquashOption),
+		Name:                             gitlab.Ptr(name),
+		Description:                      gitlab.Ptr(assignmentCfg.Description),
+		NamespaceID:                      gitlab.Ptr(inID),
+		MergeRequestsAccessLevel:         gitlab.Ptr(gitlab.EnabledAccessControl),
+		IssuesAccessLevel:                gitlab.Ptr(gitlab.EnabledAccessControl),
+		BuildsAccessLevel:                gitlab.Ptr(gitlab.EnabledAccessControl),
+		JobsEnabled:                      gitlab.Ptr(true),
+		Visibility:                       gitlab.Ptr(gitlab.PrivateVisibility),
+		ContainerRegistryEnabled:         gitlab.Ptr(assignmentCfg.ContainerRegistry),
+		OnlyAllowMergeIfPipelineSucceeds: gitlab.Ptr(pipelineMustSucceed),
+		AllowMergeOnSkippedPipeline:      gitlab.Ptr(skippedPipelinesAreSuccessful),
+		OnlyAllowMergeIfAllDiscussionsAreResolved: gitlab.Ptr(allThreadsMustBeResolved),
+		OnlyAllowMergeIfAllStatusChecksPassed:     gitlab.Ptr(statusChecksMustSucceed),
+		MergeMethod:                               gitlab.Ptr(gitlabMergeMethod),
+		SquashOption:                              gitlab.Ptr(gitlabSquashOption),
 	}
 
 	project, _, err := c.Projects.CreateProject(p)

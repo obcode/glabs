@@ -159,5 +159,12 @@ func mergeRequest(assignmentKey string) *MergeRequest {
 		squashOption = SquashDefaultOff
 	}
 
-	return &MergeRequest{MergeMethod: mergeMethod, SquashOption: squashOption}
+	return &MergeRequest{
+		MergeMethod:                   mergeMethod,
+		SquashOption:                  squashOption,
+		PipelineMustSucceed:           viper.GetBool(assignmentKey + ".mergeRequest.pipeline"),
+		SkippedPipelinesAreSuccessful: viper.GetBool(assignmentKey + ".mergeRequest.skippedPipelinesAreSuccessful"),
+		AllThreadsMustBeResolved:      viper.GetBool(assignmentKey + ".mergeRequest.allThreadsMustBeResolved"),
+		StatusChecksMustSucceed:       viper.GetBool(assignmentKey + ".mergeRequest.statusChecksMustSucceed"),
+	}
 }

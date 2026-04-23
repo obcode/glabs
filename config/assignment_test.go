@@ -150,6 +150,18 @@ func TestGetAssignmentConfig_DefaultMergeRequest(t *testing.T) {
 	if cfg.MergeRequest.SquashOption != SquashDefaultOff {
 		t.Fatalf("MergeRequest.SquashOption = %q, want %q", cfg.MergeRequest.SquashOption, SquashDefaultOff)
 	}
+	if cfg.MergeRequest.PipelineMustSucceed {
+		t.Fatal("MergeRequest.PipelineMustSucceed = true, want false")
+	}
+	if cfg.MergeRequest.SkippedPipelinesAreSuccessful {
+		t.Fatal("MergeRequest.SkippedPipelinesAreSuccessful = true, want false")
+	}
+	if cfg.MergeRequest.AllThreadsMustBeResolved {
+		t.Fatal("MergeRequest.AllThreadsMustBeResolved = true, want false")
+	}
+	if cfg.MergeRequest.StatusChecksMustSucceed {
+		t.Fatal("MergeRequest.StatusChecksMustSucceed = true, want false")
+	}
 }
 
 func TestGetAssignmentConfig_SquashOption(t *testing.T) {
@@ -181,5 +193,37 @@ func TestGetAssignmentConfig_SquashOption(t *testing.T) {
 				t.Fatalf("SquashOption = %q, want %q", cfg.MergeRequest.SquashOption, tc.want)
 			}
 		})
+	}
+}
+
+func TestGetAssignmentConfig_MergeRequestChecks(t *testing.T) {
+	resetViper(t)
+
+	viper.Set("gitlab.host", "https://gitlab.example.org")
+	viper.Set("course", true)
+	viper.Set("course.coursepath", "mpd")
+	viper.Set("course.a1", true)
+	viper.Set("course.a1.assignmentpath", "blatt-01")
+	viper.Set("course.a1.mergeRequest.pipeline", true)
+	viper.Set("course.a1.mergeRequest.skippedPipelinesAreSuccessful", true)
+	viper.Set("course.a1.mergeRequest.allThreadsMustBeResolved", true)
+	viper.Set("course.a1.mergeRequest.statusChecksMustSucceed", true)
+
+	cfg := GetAssignmentConfig("course", "a1")
+
+	if cfg.MergeRequest == nil {
+		t.Fatal("MergeRequest should not be nil")
+	}
+	if !cfg.MergeRequest.PipelineMustSucceed {
+		t.Fatal("PipelineMustSucceed = false, want true")
+	}
+	if !cfg.MergeRequest.SkippedPipelinesAreSuccessful {
+		t.Fatal("SkippedPipelinesAreSuccessful = false, want true")
+	}
+	if !cfg.MergeRequest.AllThreadsMustBeResolved {
+		t.Fatal("AllThreadsMustBeResolved = false, want true")
+	}
+	if !cfg.MergeRequest.StatusChecksMustSucceed {
+		t.Fatal("StatusChecksMustSucceed = false, want true")
 	}
 }

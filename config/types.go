@@ -70,8 +70,12 @@ type Release struct {
 }
 
 type MergeRequest struct {
-	MergeMethod  MergeMethod
-	SquashOption SquashOption
+	MergeMethod                   MergeMethod
+	SquashOption                  SquashOption
+	PipelineMustSucceed           bool
+	SkippedPipelinesAreSuccessful bool
+	AllThreadsMustBeResolved      bool
+	StatusChecksMustSucceed       bool
 }
 
 type ReleaseMergeRequest struct {

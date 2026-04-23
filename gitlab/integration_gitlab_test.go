@@ -22,7 +22,7 @@ const (
 	gitLabImage        = "gitlab/gitlab-ce:17.6.1-ce.0"
 	gitLabRootToken    = "glabs-integration-root-token"
 	runIntegrationEnv  = "GLABS_RUN_GITLAB_TC"
-	gitLabRootPassword = "G!abs-Root-P4ssword-2026"
+	gitLabRootPassword = "zXq7!Rp3@Wk9#Tm2vL"
 )
 
 func requireIntegrationEnabled(t *testing.T) {

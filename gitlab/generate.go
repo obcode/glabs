@@ -49,7 +49,7 @@ func (c *Client) Generate(assignmentCfg *config.AssignmentConfig) {
 	}
 }
 
-func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGroupID int,
+func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGroupID int64,
 	projectname string, members []*config.Student, starterrepo *git.Starterrepo) {
 
 	cfg := yacspin.Config{
@@ -211,7 +211,7 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 	c.setaccess(assignmentCfg, project, members, &cfg)
 }
 
-func (c *Client) generatePerStudent(assignmentCfg *config.AssignmentConfig, assignmentGroupID int,
+func (c *Client) generatePerStudent(assignmentCfg *config.AssignmentConfig, assignmentGroupID int64,
 	starterrepo *git.Starterrepo) {
 	if len(assignmentCfg.Students) == 0 {
 		log.Info().Str("group", assignmentCfg.Course).Msg("no students found")
@@ -224,7 +224,7 @@ func (c *Client) generatePerStudent(assignmentCfg *config.AssignmentConfig, assi
 	}
 }
 
-func (c *Client) generatePerGroup(assignmentCfg *config.AssignmentConfig, assignmentGroupID int,
+func (c *Client) generatePerGroup(assignmentCfg *config.AssignmentConfig, assignmentGroupID int64,
 	starterrepo *git.Starterrepo) {
 	if len(assignmentCfg.Groups) == 0 {
 		log.Info().Str("group", assignmentCfg.Course).Msg("no groups found")

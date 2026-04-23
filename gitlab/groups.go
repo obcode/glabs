@@ -6,10 +6,10 @@ import (
 
 	"github.com/obcode/glabs/config"
 	"github.com/rs/zerolog/log"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
-func (c *Client) getGroupIDByFullPath(fullPath string) (int, error) {
+func (c *Client) getGroupIDByFullPath(fullPath string) (int64, error) {
 	pathParts := strings.Split(fullPath, "/")
 	searchTerm := pathParts[len(pathParts)-1]
 
@@ -30,7 +30,7 @@ func (c *Client) getGroupIDByFullPath(fullPath string) (int, error) {
 	return 0, fmt.Errorf("no gitlab group found for path %s", fullPath)
 }
 
-func (c *Client) getGroupID(assignmentCfg *config.AssignmentConfig) (int, error) {
+func (c *Client) getGroupID(assignmentCfg *config.AssignmentConfig) (int64, error) {
 	assignmentGroupID, err := c.getGroupIDByFullPath(assignmentCfg.Path)
 	if err != nil {
 		log.Debug().Err(err).
@@ -43,12 +43,12 @@ func (c *Client) getGroupID(assignmentCfg *config.AssignmentConfig) (int, error)
 	return assignmentGroupID, nil
 }
 
-func (c *Client) createGroup(assignmentCfg *config.AssignmentConfig) (int, error) {
+func (c *Client) createGroup(assignmentCfg *config.AssignmentConfig) (int64, error) {
 	pathParts := strings.Split(assignmentCfg.Path, "/")
 	path := pathParts[len(pathParts)-1]
 	name := pathParts[len(pathParts)-1]
 
-	var parentID *int
+	var parentID *int64
 	if len(pathParts) > 1 {
 		parentPath := strings.Join(pathParts[:len(pathParts)-1], "/")
 		resolvedParentID, err := c.getGroupIDByFullPath(parentPath)

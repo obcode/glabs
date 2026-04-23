@@ -9,7 +9,7 @@ import (
 	"github.com/obcode/glabs/config"
 	"github.com/rs/zerolog/log"
 	"github.com/theckman/yacspin"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
 func (c *Client) Setaccess(assignmentCfg *config.AssignmentConfig) {
@@ -114,8 +114,8 @@ func (c *Client) setaccess(assignmentCfg *config.AssignmentConfig,
 		info, err := c.addMember(assignmentCfg, project.ID, userID)
 		if err != nil {
 			log.Debug().Err(err).
-				Int("projectID", project.ID).
-				Int("userID", userID).
+				Int64("projectID", project.ID).
+				Int64("userID", userID).
 				Str("student", student.Raw).
 				Str("course", assignmentCfg.Course).
 				Str("assignment", assignmentCfg.Name).
@@ -138,7 +138,7 @@ func (c *Client) setaccess(assignmentCfg *config.AssignmentConfig,
 	}
 }
 
-func (c *Client) inviteByEmail(cfg *config.AssignmentConfig, projectID int, email string) (string, error) {
+func (c *Client) inviteByEmail(cfg *config.AssignmentConfig, projectID int64, email string) (string, error) {
 	m := &gitlab.InvitesOptions{
 		Email:       &email,
 		AccessLevel: gitlab.Ptr(gitlab.AccessLevelValue(cfg.AccessLevel)),

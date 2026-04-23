@@ -6,14 +6,14 @@ import (
 
 	"github.com/obcode/glabs/config"
 	"github.com/rs/zerolog/log"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
 func (c *Client) getUser(student *config.Student) (*gitlab.User, error) {
 	var options *gitlab.ListUsersOptions
 
 	if student.Id != nil {
-		user, _, err := c.Users.GetUser(*student.Id, gitlab.GetUsersOptions{})
+		user, _, err := c.Users.GetUser(int64(*student.Id), &gitlab.GetUserOptions{})
 		return user, err
 	} else {
 
@@ -46,7 +46,7 @@ func (c *Client) getUser(student *config.Student) (*gitlab.User, error) {
 	}
 }
 
-func (c *Client) getUserID(student *config.Student) (int, error) {
+func (c *Client) getUserID(student *config.Student) (int64, error) {
 	user, err := c.getUser(student)
 
 	if err != nil {
@@ -55,12 +55,12 @@ func (c *Client) getUserID(student *config.Student) (int, error) {
 	}
 
 	userID := user.ID
-	log.Debug().Interface("user", student).Int("userID", userID).Msg("found user with id")
+	log.Debug().Interface("user", student).Int64("userID", userID).Msg("found user with id")
 
 	return userID, nil
 }
 
-func (c *Client) addMember(assignmentConfig *config.AssignmentConfig, projectID, userID int) (string, error) {
+func (c *Client) addMember(assignmentConfig *config.AssignmentConfig, projectID, userID int64) (string, error) {
 	member, _, _ := c.ProjectMembers.GetInheritedProjectMember(projectID, userID)
 	if member != nil {
 		if member.AccessLevel == gitlab.OwnerPermissions {
@@ -91,6 +91,6 @@ func (c *Client) addMember(assignmentConfig *config.AssignmentConfig, projectID,
 		return "", fmt.Errorf("problem while adding member with id... %d: %w", userID, err)
 	}
 
-	log.Debug().Int("projectID", projectID).Msg("granted access to repo")
+	log.Debug().Int64("projectID", projectID).Msg("granted access to repo")
 	return fmt.Sprintf("added successfully with accesslevel %s", config.AccessLevel(member.AccessLevel).String()), nil
 }

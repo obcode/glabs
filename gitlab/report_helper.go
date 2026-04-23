@@ -11,7 +11,7 @@ import (
 	"github.com/obcode/glabs/gitlab/report"
 	"github.com/rs/zerolog/log"
 	"github.com/theckman/yacspin"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
 func (c *Client) report(assignmentCfg *config.AssignmentConfig) *report.Reports {
@@ -50,7 +50,7 @@ func (c *Client) report(assignmentCfg *config.AssignmentConfig) *report.Reports 
 		}
 		return nil
 	}
-	log.Debug().Int("groupID", groupID).Msg("found group id")
+	log.Debug().Int64("groupID", groupID).Msg("found group id")
 
 	projects := make([]*gitlab.Project, 0)
 	var opts *gitlab.ListGroupProjectsOptions
@@ -76,7 +76,7 @@ func (c *Client) report(assignmentCfg *config.AssignmentConfig) *report.Reports 
 
 			opts = &gitlab.ListGroupProjectsOptions{
 				ListOptions: gitlab.ListOptions{
-					Page:    page,
+					Page:    int64(page),
 					PerPage: 0,
 				},
 			}
@@ -225,7 +225,7 @@ func (c *Client) projectReport(assignmentCfg *config.AssignmentConfig, project *
 		}
 		if assignmentCfg.Release.DockerImages != nil {
 			t := true
-			opts := &gitlab.ListRegistryRepositoriesOptions{
+			opts := &gitlab.ListProjectRegistryRepositoriesOptions{
 				Tags:      &t,
 				TagsCount: &t,
 			}
@@ -267,7 +267,7 @@ func (c *Client) projectReport(assignmentCfg *config.AssignmentConfig, project *
 		CreatedAt:              project.CreatedAt,
 		LastActivity:           project.LastActivityAt,
 		LastCommit:             lastCommit,
-		OpenIssuesCount:        project.OpenIssuesCount,
+		OpenIssuesCount:        int(project.OpenIssuesCount),
 		OpenMergeRequestsCount: len(mergeRequests),
 		WebURL:                 project.WebURL,
 		Members:                members,

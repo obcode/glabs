@@ -7,7 +7,7 @@ import (
 
 	"github.com/obcode/glabs/config"
 	"github.com/rs/zerolog/log"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
 // getStartercodeProject extracts the project path from the startercode URL and returns the GitLab project
@@ -57,7 +57,7 @@ func (c *Client) getStartercodeProject(assignmentCfg *config.AssignmentConfig) (
 // replicateIssue loads a single issue from source project and creates it in target project
 func (c *Client) replicateIssue(sourceProject *gitlab.Project, targetProject *gitlab.Project, issueNumber int) error {
 	// Load issue from startercode project
-	issue, _, err := c.Issues.GetIssue(sourceProject.ID, issueNumber, nil)
+	issue, _, err := c.Issues.GetIssue(sourceProject.ID, int64(issueNumber), nil)
 	if err != nil {
 		return fmt.Errorf("could not get issue from startercode project %d with number %d: %w", sourceProject.ID, issueNumber, err)
 	}

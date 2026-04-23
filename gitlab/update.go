@@ -10,7 +10,7 @@ import (
 	"github.com/obcode/glabs/git"
 	"github.com/rs/zerolog/log"
 	"github.com/theckman/yacspin"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
 func (c *Client) Update(assignmentCfg *config.AssignmentConfig) {

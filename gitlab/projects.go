@@ -15,8 +15,10 @@ func (c *Client) generateProject(assignmentCfg *config.AssignmentConfig, name st
 	// Merge method should already be defaulted by config parsing.
 	// Keep this fallback for safety when AssignmentConfig is constructed manually.
 	mergeMethod := config.MergeCommit
+	squashOption := config.SquashDefaultOff
 	if assignmentCfg.MergeRequest != nil {
 		mergeMethod = assignmentCfg.MergeRequest.MergeMethod
+		squashOption = assignmentCfg.MergeRequest.SquashOption
 	}
 
 	// Convert glabs MergeMethod to GitLab API MergeMethodValue
@@ -28,6 +30,19 @@ func (c *Client) generateProject(assignmentCfg *config.AssignmentConfig, name st
 		gitlabMergeMethod = gitlab.FastForwardMerge
 	default:
 		gitlabMergeMethod = gitlab.NoFastForwardMerge
+	}
+
+	// Convert glabs SquashOption to GitLab API SquashOptionValue
+	var gitlabSquashOption gitlab.SquashOptionValue
+	switch squashOption {
+	case config.SquashNever:
+		gitlabSquashOption = gitlab.SquashOptionNever
+	case config.SquashAlways:
+		gitlabSquashOption = gitlab.SquashOptionAlways
+	case config.SquashDefaultOn:
+		gitlabSquashOption = gitlab.SquashOptionDefaultOn
+	default:
+		gitlabSquashOption = gitlab.SquashOptionDefaultOff
 	}
 
 	p := &gitlab.CreateProjectOptions{
@@ -42,6 +57,7 @@ func (c *Client) generateProject(assignmentCfg *config.AssignmentConfig, name st
 		ContainerRegistryEnabled:              gitlab.Ptr(assignmentCfg.ContainerRegistry),
 		OnlyAllowMergeIfAllStatusChecksPassed: gitlab.Ptr(false),
 		MergeMethod:                           gitlab.Ptr(gitlabMergeMethod),
+		SquashOption:                          gitlab.Ptr(gitlabSquashOption),
 	}
 
 	project, _, err := c.Projects.CreateProject(p)

@@ -147,5 +147,17 @@ func mergeRequest(assignmentKey string) *MergeRequest {
 		mergeMethod = MergeCommit
 	}
 
-	return &MergeRequest{MergeMethod: mergeMethod}
+	squashOption := SquashDefaultOff
+	switch viper.GetString(assignmentKey + ".mergeRequest.squashOption") {
+	case "never":
+		squashOption = SquashNever
+	case "always":
+		squashOption = SquashAlways
+	case "default_on":
+		squashOption = SquashDefaultOn
+	case "default_off":
+		squashOption = SquashDefaultOff
+	}
+
+	return &MergeRequest{MergeMethod: mergeMethod, SquashOption: squashOption}
 }

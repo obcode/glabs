@@ -324,6 +324,59 @@ func TestIntegration_GitLab_Operations(t *testing.T) {
 			t.Fatalf("expected user %q to be a project member after Setaccess()", itUsername)
 		}
 	})
+
+	// ── Sub-test: MergeMethod ─────────────────────────────────────────────────
+	t.Run("MergeMethod", func(t *testing.T) {
+		cases := []struct {
+			subPath     string
+			mergeMethod config.MergeMethod
+			wantGitLab  gitlabapi.MergeMethodValue
+		}{
+			{"mergemethod-merge-a1", config.MergeCommit, gitlabapi.NoFastForwardMerge},
+			{"mergemethod-semi-a1", config.SemiLinearHistory, gitlabapi.RebaseMerge},
+			{"mergemethod-ff-a1", config.FastForward, gitlabapi.FastForwardMerge},
+		}
+
+		for _, tc := range cases {
+			tc := tc
+			t.Run(string(tc.mergeMethod), func(t *testing.T) {
+				un := "student1"
+				path := parent.FullPath + "/" + tc.subPath
+				cfg := &config.AssignmentConfig{
+					Course:            "it",
+					Name:              "a1",
+					Path:              path,
+					URL:               baseURL + "/" + path,
+					Per:               config.PerStudent,
+					Description:       "merge method integration test",
+					ContainerRegistry: false,
+					MergeRequest:      &config.MergeRequest{MergeMethod: tc.mergeMethod},
+					Students:          []*config.Student{{Username: &un, Raw: un}},
+				}
+
+				groupID, err := client.createGroup(cfg)
+				if err != nil {
+					t.Fatalf("createGroup(%q) failed: %v", tc.subPath, err)
+				}
+
+				repoName := cfg.RepoNameWithSuffix(un)
+				project, _, err := client.generateProject(cfg, repoName, groupID)
+				if err != nil {
+					t.Fatalf("generateProject failed: %v", err)
+				}
+
+				projectPath := cfg.Path + "/" + repoName
+				proj, _, err := client.Projects.GetProject(projectPath, &gitlabapi.GetProjectOptions{})
+				if err != nil {
+					t.Fatalf("GetProject failed: %v", err)
+				}
+				_ = project
+				if proj.MergeMethod != tc.wantGitLab {
+					t.Fatalf("MergeMethod = %q, want %q", proj.MergeMethod, tc.wantGitLab)
+				}
+			})
+		}
+	})
 }
 
 func TestIntegration_GitLab_GroupAndProjectLifecycle(t *testing.T) {

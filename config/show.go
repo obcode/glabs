@@ -13,6 +13,16 @@ func (cfg *AssignmentConfig) Show() {
 		containerRegistry = aurora.Green("enabled")
 	}
 
+	mergeMethod := MergeCommit
+	if cfg.MergeRequest != nil {
+		mergeMethod = cfg.MergeRequest.MergeMethod
+	}
+	mergeRequestCfg := aurora.Sprintf(aurora.Cyan(`
+  %s      %s`),
+		aurora.Cyan("MergeMethod:"),
+		aurora.Yellow(mergeMethod),
+	)
+
 	startercode := aurora.Sprintf(aurora.Red("not defined"))
 	if cfg.Startercode != nil {
 		issueNumbers := aurora.Sprintf(aurora.Red("not defined"))
@@ -71,9 +81,9 @@ func (cfg *AssignmentConfig) Show() {
 	}
 	release := aurora.Sprintf(aurora.Red("not defined"))
 	if cfg.Release != nil {
-		mergeRequest := aurora.Sprintf(aurora.Red("not defined"))
+		releaseMergeRequest := aurora.Sprintf(aurora.Red("not defined"))
 		if cfg.Release.MergeRequest != nil {
-			mergeRequest = aurora.Sprintf(`
+			releaseMergeRequest = aurora.Sprintf(`
     %s   %s
     %s   %s
     %s       %t`,
@@ -100,7 +110,7 @@ func (cfg *AssignmentConfig) Show() {
   %s     %s
   %s     %s`),
 			aurora.Cyan("MergeRequest:"),
-			mergeRequest,
+			releaseMergeRequest,
 			aurora.Cyan("DockerImages:"),
 			dockerImages,
 		)
@@ -142,7 +152,8 @@ Per:                %s
 Base-URL:           %s
 Description:	    %s
 AccessLevel:        %s
-Container-Registry: %s
+MergeRequest:       %s
+%s %s
 Startercode:        %s
 Seeding:            %s
 Release:            %s
@@ -156,6 +167,8 @@ Release:            %s
 		aurora.Yellow(cfg.URL),
 		aurora.Yellow(cfg.Description),
 		aurora.Yellow(cfg.AccessLevel.String()),
+		mergeRequestCfg,
+		aurora.Cyan("Container-Registry:"),
 		containerRegistry,
 		aurora.Yellow(startercode),
 		aurora.Yellow(seeding),

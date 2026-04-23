@@ -144,7 +144,7 @@ func TestShow_WithClone(t *testing.T) {
 func TestShow_WithRelease_MergeRequestAndDockerImages(t *testing.T) {
 	cfg := &AssignmentConfig{
 		Release: &Release{
-			MergeRequest: &MergeRequest{
+			MergeRequest: &ReleaseMergeRequest{
 				SourceBranch: "develop",
 				TargetBranch: "main",
 				HasPipeline:  true,
@@ -158,7 +158,7 @@ func TestShow_WithRelease_MergeRequestAndDockerImages(t *testing.T) {
 func TestShow_WithRelease_MergeRequestOnly(t *testing.T) {
 	cfg := &AssignmentConfig{
 		Release: &Release{
-			MergeRequest: &MergeRequest{
+			MergeRequest: &ReleaseMergeRequest{
 				SourceBranch: "develop",
 				TargetBranch: "main",
 			},
@@ -223,5 +223,21 @@ func TestShow_PerGroup_ListsGroups(t *testing.T) {
 	out := captureStdout(t, func() { cfg.Show() })
 	if !strings.Contains(out, "team1") {
 		t.Fatalf("Show(PerGroup) output does not contain team1: %q", out)
+	}
+}
+
+func TestShow_WithMergeMethod(t *testing.T) {
+	cfg := &AssignmentConfig{
+		MergeRequest: &MergeRequest{MergeMethod: SemiLinearHistory},
+	}
+	out := captureStdout(t, func() { cfg.Show() })
+	if !strings.Contains(out, "MergeRequest:") {
+		t.Fatalf("Show() output does not contain MergeRequest header: %q", out)
+	}
+	if !strings.Contains(out, "MergeMethod:") {
+		t.Fatalf("Show() output does not contain nested MergeMethod key: %q", out)
+	}
+	if !strings.Contains(out, "semi_linear") {
+		t.Fatalf("Show() output does not contain merge method semi_linear: %q", out)
 	}
 }

@@ -94,6 +94,8 @@ func TestGetAssignmentConfig(t *testing.T) {
 	viper.Set("course.a1.assignmentpath", "blatt-01")
 	viper.Set("course.a1.per", "student")
 	viper.Set("course.a1.description", "blatt 1")
+	viper.Set("course.a1.mergeRequest", map[string]any{"mergeMethod": "semi_linear"})
+	viper.Set("course.a1.mergeRequest.mergeMethod", "semi_linear")
 	viper.Set("course.a1.release", map[string]any{"dockerImages": []string{"registry/app"}})
 	viper.Set("course.a1.release.dockerImages", []string{"registry/app"})
 
@@ -122,5 +124,27 @@ func TestGetAssignmentConfig(t *testing.T) {
 	}
 	if cfg.AccessLevel != Developer {
 		t.Fatalf("AccessLevel = %v, want %v", cfg.AccessLevel, Developer)
+	}
+	if cfg.MergeRequest == nil || cfg.MergeRequest.MergeMethod != SemiLinearHistory {
+		t.Fatalf("MergeRequest = %#v, want semi_linear", cfg.MergeRequest)
+	}
+}
+
+func TestGetAssignmentConfig_DefaultMergeRequest(t *testing.T) {
+	resetViper(t)
+
+	viper.Set("gitlab.host", "https://gitlab.example.org")
+	viper.Set("course", true)
+	viper.Set("course.coursepath", "mpd")
+	viper.Set("course.a1", true)
+	viper.Set("course.a1.assignmentpath", "blatt-01")
+
+	cfg := GetAssignmentConfig("course", "a1")
+
+	if cfg.MergeRequest == nil {
+		t.Fatal("MergeRequest should be initialized with defaults")
+	}
+	if cfg.MergeRequest.MergeMethod != MergeCommit {
+		t.Fatalf("MergeRequest.MergeMethod = %q, want %q", cfg.MergeRequest.MergeMethod, MergeCommit)
 	}
 }

@@ -57,6 +57,7 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 		Description:           description(assignmentKey),
 		ContainerRegistry:     containerRegistry,
 		AccessLevel:           accessLevel(assignmentKey),
+		MergeRequest:          mergeRequest(assignmentKey),
 		Students:              students(per, course, assignment, onlyForStudentsOrGroups...),
 		Groups:                groups(per, course, assignment, onlyForStudentsOrGroups...),
 		Startercode:           startercode(assignmentKey),
@@ -133,4 +134,18 @@ func description(assignmentKey string) string {
 	}
 
 	return description
+}
+
+func mergeRequest(assignmentKey string) *MergeRequest {
+	mergeMethod := MergeCommit
+	switch viper.GetString(assignmentKey + ".mergeRequest.mergeMethod") {
+	case "semi_linear":
+		mergeMethod = SemiLinearHistory
+	case "ff":
+		mergeMethod = FastForward
+	case "merge":
+		mergeMethod = MergeCommit
+	}
+
+	return &MergeRequest{MergeMethod: mergeMethod}
 }

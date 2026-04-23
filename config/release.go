@@ -14,12 +14,12 @@ func release(assignmentKey string) *Release {
 	}
 
 	return &Release{
-		MergeRequest: mergeRequest(assignmentKey),
+		MergeRequest: releaseMergeRequest(assignmentKey),
 		DockerImages: dockerImages(assignmentKey),
 	}
 }
 
-func mergeRequest(assignmentKey string) *MergeRequest {
+func releaseMergeRequest(assignmentKey string) *ReleaseMergeRequest {
 	mergeRequestMap := viper.GetStringMapString(assignmentKey + ".release.mergeRequest")
 	if len(mergeRequestMap) == 0 {
 		log.Debug().Str("assignmemtKey", assignmentKey).Msg("no release by merge request provided")
@@ -36,7 +36,7 @@ func mergeRequest(assignmentKey string) *MergeRequest {
 		targetBranch = tB
 	}
 
-	return &MergeRequest{
+	return &ReleaseMergeRequest{
 		SourceBranch: sourceBranch,
 		TargetBranch: targetBranch,
 		HasPipeline:  viper.GetBool(assignmentKey + ".release.mergeRequest.pipeline"),

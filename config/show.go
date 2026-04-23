@@ -14,13 +14,18 @@ func (cfg *AssignmentConfig) Show() {
 	}
 
 	mergeMethod := MergeCommit
+	squashOption := SquashDefaultOff
 	if cfg.MergeRequest != nil {
 		mergeMethod = cfg.MergeRequest.MergeMethod
+		squashOption = cfg.MergeRequest.SquashOption
 	}
 	mergeRequestCfg := aurora.Sprintf(aurora.Cyan(`
-  %s      %s`),
+  %s      %s
+  %s     %s`),
 		aurora.Cyan("MergeMethod:"),
 		aurora.Yellow(mergeMethod),
+		aurora.Cyan("SquashOption:"),
+		aurora.Yellow(squashOption),
 	)
 
 	startercode := aurora.Sprintf(aurora.Red("not defined"))

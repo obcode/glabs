@@ -147,4 +147,39 @@ func TestGetAssignmentConfig_DefaultMergeRequest(t *testing.T) {
 	if cfg.MergeRequest.MergeMethod != MergeCommit {
 		t.Fatalf("MergeRequest.MergeMethod = %q, want %q", cfg.MergeRequest.MergeMethod, MergeCommit)
 	}
+	if cfg.MergeRequest.SquashOption != SquashDefaultOff {
+		t.Fatalf("MergeRequest.SquashOption = %q, want %q", cfg.MergeRequest.SquashOption, SquashDefaultOff)
+	}
+}
+
+func TestGetAssignmentConfig_SquashOption(t *testing.T) {
+	cases := []struct {
+		value string
+		want  SquashOption
+	}{
+		{"never", SquashNever},
+		{"always", SquashAlways},
+		{"default_on", SquashDefaultOn},
+		{"default_off", SquashDefaultOff},
+	}
+	for _, tc := range cases {
+		t.Run(tc.value, func(t *testing.T) {
+			resetViper(t)
+			viper.Set("gitlab.host", "https://gitlab.example.org")
+			viper.Set("course", true)
+			viper.Set("course.coursepath", "mpd")
+			viper.Set("course.a1", true)
+			viper.Set("course.a1.assignmentpath", "blatt-01")
+			viper.Set("course.a1.mergeRequest.squashOption", tc.value)
+
+			cfg := GetAssignmentConfig("course", "a1")
+
+			if cfg.MergeRequest == nil {
+				t.Fatal("MergeRequest should not be nil")
+			}
+			if cfg.MergeRequest.SquashOption != tc.want {
+				t.Fatalf("SquashOption = %q, want %q", cfg.MergeRequest.SquashOption, tc.want)
+			}
+		})
+	}
 }

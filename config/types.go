@@ -70,7 +70,8 @@ type Release struct {
 }
 
 type MergeRequest struct {
-	MergeMethod MergeMethod
+	MergeMethod  MergeMethod
+	SquashOption SquashOption
 }
 
 type ReleaseMergeRequest struct {
@@ -104,4 +105,18 @@ const (
 	SemiLinearHistory MergeMethod = "semi_linear"
 	// FastForward only allows fast-forward merges; no merge commits.
 	FastForward MergeMethod = "ff"
+)
+
+// SquashOption represents the squash-on-merge setting for GitLab projects.
+type SquashOption string
+
+const (
+	// SquashNever disables squashing for all merge requests.
+	SquashNever SquashOption = "never"
+	// SquashAlways squashes all merge requests automatically.
+	SquashAlways SquashOption = "always"
+	// SquashDefaultOff lets users opt in to squash per MR (default off).
+	SquashDefaultOff SquashOption = "default_off"
+	// SquashDefaultOn lets users opt out of squash per MR (default on).
+	SquashDefaultOn SquashOption = "default_on"
 )

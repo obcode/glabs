@@ -123,6 +123,7 @@ Patterns are **regular expressions**, so:
     containerRegistry: false
     mergeRequest:
       mergeMethod: merge        # merge | semi_linear | ff
+      squashOption: default_off  # never | always | default_off | default_on
 
     startercode:
       ...
@@ -321,7 +322,8 @@ Control how merge requests are merged in every generated project:
 ```yaml
 <assignment>:
   mergeRequest:
-    mergeMethod: merge    # merge | semi_linear | ff
+    mergeMethod: merge        # merge | semi_linear | ff
+    squashOption: default_off  # never | always | default_off | default_on
 ```
 
 ### Merge Request keys
@@ -329,6 +331,7 @@ Control how merge requests are merged in every generated project:
 | Key | Purpose | Default | Notes |
 |---|---|---|---|
 | `mergeRequest.mergeMethod` | Merge strategy for all MRs | `merge` | Applied at project creation |
+| `mergeRequest.squashOption` | Squash-on-merge setting | `default_off` | Applied at project creation |
 
 ### Merge method values
 
@@ -338,12 +341,22 @@ Control how merge requests are merged in every generated project:
 | `semi_linear` | Merge commit with semi-linear history | Require a linear history; fast-forward commits are rebased before merge |
 | `ff` | Fast-forward merge | No merge commits; only fast-forward merges allowed |
 
+### Squash option values
+
+| Value | GitLab UI name | Description |
+|---|---|---|
+| `never` | Do not allow | Squashing is disabled; the checkbox is hidden |
+| `always` | Require | Every MR is squashed automatically; the checkbox is hidden |
+| `default_off` | Allow | Squash checkbox visible but unchecked by default (GitLab default) |
+| `default_on` | Encourage | Squash checkbox visible and checked by default |
+
 **Example:**
 
 ```yaml
 blatt01:
   mergeRequest:
-    mergeMethod: ff   # Students must keep a linear history
+    mergeMethod: ff          # Students must keep a linear history
+    squashOption: always     # All commits squashed into one on merge
 ```
 
 ## Full example

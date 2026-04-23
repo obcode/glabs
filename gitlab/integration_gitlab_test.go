@@ -377,6 +377,59 @@ func TestIntegration_GitLab_Operations(t *testing.T) {
 			})
 		}
 	})
+
+	// ── Sub-test: SquashOption ────────────────────────────────────────────────
+	t.Run("SquashOption", func(t *testing.T) {
+		cases := []struct {
+			subPath      string
+			squashOption config.SquashOption
+			wantGitLab   gitlabapi.SquashOptionValue
+		}{
+			{"squash-never-a1", config.SquashNever, gitlabapi.SquashOptionNever},
+			{"squash-always-a1", config.SquashAlways, gitlabapi.SquashOptionAlways},
+			{"squash-default-off-a1", config.SquashDefaultOff, gitlabapi.SquashOptionDefaultOff},
+			{"squash-default-on-a1", config.SquashDefaultOn, gitlabapi.SquashOptionDefaultOn},
+		}
+
+		for _, tc := range cases {
+			tc := tc
+			t.Run(string(tc.squashOption), func(t *testing.T) {
+				un := "student1"
+				path := parent.FullPath + "/" + tc.subPath
+				cfg := &config.AssignmentConfig{
+					Course:            "it",
+					Name:              "a1",
+					Path:              path,
+					URL:               baseURL + "/" + path,
+					Per:               config.PerStudent,
+					Description:       "squash option integration test",
+					ContainerRegistry: false,
+					MergeRequest:      &config.MergeRequest{MergeMethod: config.MergeCommit, SquashOption: tc.squashOption},
+					Students:          []*config.Student{{Username: &un, Raw: un}},
+				}
+
+				groupID, err := client.createGroup(cfg)
+				if err != nil {
+					t.Fatalf("createGroup(%q) failed: %v", tc.subPath, err)
+				}
+
+				repoName := cfg.RepoNameWithSuffix(un)
+				_, _, err = client.generateProject(cfg, repoName, groupID)
+				if err != nil {
+					t.Fatalf("generateProject failed: %v", err)
+				}
+
+				projectPath := cfg.Path + "/" + repoName
+				proj, _, err := client.Projects.GetProject(projectPath, &gitlabapi.GetProjectOptions{})
+				if err != nil {
+					t.Fatalf("GetProject failed: %v", err)
+				}
+				if proj.SquashOption != tc.wantGitLab {
+					t.Fatalf("SquashOption = %q, want %q", proj.SquashOption, tc.wantGitLab)
+				}
+			})
+		}
+	})
 }
 
 func TestIntegration_GitLab_GroupAndProjectLifecycle(t *testing.T) {

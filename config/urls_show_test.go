@@ -241,3 +241,16 @@ func TestShow_WithMergeMethod(t *testing.T) {
 		t.Fatalf("Show() output does not contain merge method semi_linear: %q", out)
 	}
 }
+
+func TestShow_WithSquashOption(t *testing.T) {
+	cfg := &AssignmentConfig{
+		MergeRequest: &MergeRequest{MergeMethod: MergeCommit, SquashOption: SquashAlways},
+	}
+	out := captureStdout(t, func() { cfg.Show() })
+	if !strings.Contains(out, "SquashOption:") {
+		t.Fatalf("Show() output does not contain SquashOption key: %q", out)
+	}
+	if !strings.Contains(out, "always") {
+		t.Fatalf("Show() output does not contain squash option 'always': %q", out)
+	}
+}

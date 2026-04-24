@@ -5,11 +5,10 @@ import (
 	"strings"
 
 	"github.com/obcode/glabs/config"
-	"github.com/rs/zerolog/log"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
-func (c *Client) syncConfiguredBranches(assignmentCfg *config.AssignmentConfig, project *gitlab.Project, baseBranch string) error {
+func (c *Client) syncConfiguredBranches(assignmentCfg *config.AssignmentConfig, project *gitlab.Project, baseBranch string, memberCount int) error {
 	if len(assignmentCfg.Branches) == 0 {
 		return nil
 	}
@@ -39,11 +38,7 @@ func (c *Client) syncConfiguredBranches(assignmentCfg *config.AssignmentConfig, 
 		return fmt.Errorf("error while switching default branch to %s: %w", defaultBranch, err)
 	}
 
-	if err := c.protectBranch(assignmentCfg, project, false); err != nil {
-		log.Debug().Err(err).Str("project", project.Name).Msg("cannot protect configured branches")
-	}
-
-	return nil
+	return c.protectBranchForMemberCount(assignmentCfg, project, false, memberCount)
 }
 
 func defaultBranchName(branches []config.BranchRule, fallback string) string {

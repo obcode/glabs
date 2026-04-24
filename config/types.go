@@ -87,7 +87,35 @@ type MergeRequest struct {
 	SkippedPipelinesAreSuccessful bool
 	AllThreadsMustBeResolved      bool
 	StatusChecksMustSucceed       bool
+	Approvals                     []MergeRequestApprovalRule
+	ApprovalSettings              *MergeRequestApprovalSettings
 }
+
+type MergeRequestApprovalRule struct {
+	Name                  string   `mapstructure:"name"`
+	Branch                string   `mapstructure:"branch"`
+	Branches              []string `mapstructure:"branches"`
+	Usernames             []string `mapstructure:"usernames"`
+	Groups                []string `mapstructure:"groups"`
+	MultiMemberGroupsOnly bool     `mapstructure:"multiMemberGroupsOnly"`
+	RequiredApprovals     int      `mapstructure:"requiredApprovals"`
+}
+
+type MergeRequestApprovalSettings struct {
+	PreventApprovalByMergeRequestCreator       *bool
+	PreventApprovalsByUsersWhoAddCommits       *bool
+	PreventEditingApprovalRulesInMergeRequests *bool
+	RequireUserReauthenticationToApprove       *bool
+	WhenCommitAdded                            *ApprovalWhenCommitAdded
+}
+
+type ApprovalWhenCommitAdded string
+
+const (
+	ApprovalKeepApprovals                          ApprovalWhenCommitAdded = "keepApprovals"
+	ApprovalRemoveAllApprovals                     ApprovalWhenCommitAdded = "removeAllApprovals"
+	ApprovalRemoveCodeOwnerApprovalsIfFilesChanged ApprovalWhenCommitAdded = "removeCodeOwnerApprovalsIfTheirFilesChanged"
+)
 
 type ReleaseMergeRequest struct {
 	SourceBranch string

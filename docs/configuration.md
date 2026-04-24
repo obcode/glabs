@@ -372,6 +372,24 @@ Control how merge requests are merged in every generated project:
     skippedPipelinesAreSuccessful: false
     allThreadsMustBeResolved: false
     statusChecksMustSucceed: false
+    approvals:
+      settings:
+        preventApprovalByMergeRequestCreator: true
+        preventApprovalsByUsersWhoAddCommits: false
+        preventEditingApprovalRulesInMergeRequests: false
+        requireUserReauthenticationToApprove: false
+        whenCommitAdded: removeAllApprovals
+      rules:
+        - name: review-main
+          branch: main
+          usernames: [myusername]
+          groups: []
+          requiredApprovals: 1
+        - name: review-release
+          branches: [release, stable]
+          usernames: [release-owner]
+          groups: [mpd/tutors]
+          requiredApprovals: 2
 ```
 
 ### Merge Request keys
@@ -384,6 +402,31 @@ Control how merge requests are merged in every generated project:
 | `mergeRequest.skippedPipelinesAreSuccessful` | Treat skipped pipelines as successful | `false` | Only relevant when `mergeRequest.pipeline=true` |
 | `mergeRequest.allThreadsMustBeResolved` | All threads must be resolved | `false` | Maps to GitLab merge check |
 | `mergeRequest.statusChecksMustSucceed` | Status checks must succeed | `false` | Maps to GitLab merge check |
+| `mergeRequest.approvals` | Approval configuration block | `{}` | Contains `settings` and `rules` |
+| `mergeRequest.approvals.settings` | Project-level approval settings | `{}` | Maps to GitLab approval settings API |
+| `mergeRequest.approvals.settings.preventApprovalByMergeRequestCreator` | Prevent approval by MR creator | unset | Inverted and mapped to GitLab `merge_requests_author_approval` |
+| `mergeRequest.approvals.settings.preventApprovalsByUsersWhoAddCommits` | Prevent approval by committers | unset | Maps to GitLab `merge_requests_disable_committers_approval` |
+| `mergeRequest.approvals.settings.preventEditingApprovalRulesInMergeRequests` | Prevent editing rules in MRs | unset | Maps to GitLab `disable_overriding_approvers_per_merge_request` |
+| `mergeRequest.approvals.settings.requireUserReauthenticationToApprove` | Require user re-authentication to approve | unset | Maps to GitLab `require_reauthentication_to_approve` |
+| `mergeRequest.approvals.settings.whenCommitAdded` | Approval reset mode on push | unset | `keepApprovals` \| `removeAllApprovals` \| `removeCodeOwnerApprovalsIfTheirFilesChanged` |
+| `mergeRequest.approvals.rules` | Project approval rules (per protected branch) | `[]` | Applied by `generate` and `protect` |
+| `mergeRequest.approvals.rules[].name` | Rule name in GitLab | auto (`glabs-approval-<branch>`) | For multiple branches in one rule, branch name is appended |
+| `mergeRequest.approvals.rules[].branch` | Single target branch | — | Convenience alias for one branch |
+| `mergeRequest.approvals.rules[].branches` | Target branches | `[]` | Each branch becomes one project approval rule |
+| `mergeRequest.approvals.rules[].usernames` | Approvers (GitLab usernames) | `[]` | `@` prefix is allowed and removed automatically |
+| `mergeRequest.approvals.rules[].groups` | Approver groups (full path or numeric ID) | `[]` | Example full path: `mpd/tutors` |
+| `mergeRequest.approvals.rules[].multiMemberGroupsOnly` | Only apply rule for groups with more than one member | `false` | Skipped for `per: student` and one-person groups |
+| `mergeRequest.approvals.rules[].requiredApprovals` | Required number of approvals | `0` | `0` + empty usernames/groups removes an existing rule |
+
+Note: Email addresses and numeric user IDs are not accepted in `mergeRequest.approvals.rules[].usernames` and result in an explicit error. Use usernames only.
+
+Note: Approval rules for branches that are not protected in the target project are skipped with a warning; other valid approval rules are still applied.
+
+Requirements for approval rules:
+- Each target branch must exist in the repository.
+- Each target branch must be protected (configured with `protect: true` or `mergeOnly: true`).
+- Configured approvers must have project/group access in GitLab so they are eligible approvers.
+- Rules with `multiMemberGroupsOnly: true` are only applied for `per: group` projects with more than one member.
 
 ### Merge method values
 
@@ -413,6 +456,32 @@ blatt01:
     skippedPipelinesAreSuccessful: false
     allThreadsMustBeResolved: true
     statusChecksMustSucceed: true
+    approvals:
+      settings:
+        preventApprovalByMergeRequestCreator: true
+        preventApprovalsByUsersWhoAddCommits: false
+        preventEditingApprovalRulesInMergeRequests: false
+        requireUserReauthenticationToApprove: false
+        whenCommitAdded: removeAllApprovals
+      rules:
+        - name: review-main
+          branch: main
+          usernames:
+            - instructor
+          requiredApprovals: 1
+        - name: review-release
+          branches: [release]
+          usernames:
+            - release-owner
+          groups:
+            - mpd/tutors
+          multiMemberGroupsOnly: true
+          requiredApprovals: 2
+        - name: no-review-next
+          branch: next
+          usernames: []
+          groups: []
+          requiredApprovals: 0
 ```
 
 ## Full example

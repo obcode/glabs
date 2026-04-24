@@ -227,3 +227,78 @@ func TestGetAssignmentConfig_MergeRequestChecks(t *testing.T) {
 		t.Fatal("StatusChecksMustSucceed = false, want true")
 	}
 }
+
+func TestGetAssignmentConfig_MergeRequestApprovals(t *testing.T) {
+	resetViper(t)
+
+	viper.Set("gitlab.host", "https://gitlab.example.org")
+	viper.Set("course", true)
+	viper.Set("course.coursepath", "mpd")
+	viper.Set("course.a1", true)
+	viper.Set("course.a1.assignmentpath", "blatt-01")
+	viper.Set("course.a1.mergeRequest.approvals", map[string]any{
+		"settings": map[string]any{
+			"preventApprovalByMergeRequestCreator":       true,
+			"preventApprovalsByUsersWhoAddCommits":       true,
+			"preventEditingApprovalRulesInMergeRequests": true,
+			"requireUserReauthenticationToApprove":       true,
+			"whenCommitAdded":                            "removeAllApprovals",
+		},
+		"rules": []map[string]any{
+			{
+				"name":                  "review-main",
+				"branches":              []string{"main", "develop"},
+				"usernames":             []string{"me", "mentor"},
+				"groups":                []string{"mpd/tutors", "17"},
+				"multiMemberGroupsOnly": true,
+				"requiredApprovals":     2,
+			},
+			{
+				"name":               "legacy-release",
+				"branch":             "release",
+				"usernames":          []string{"owner"},
+				"required_approvals": 1,
+			},
+		},
+	})
+
+	cfg := GetAssignmentConfig("course", "a1")
+	if cfg.MergeRequest == nil {
+		t.Fatal("MergeRequest should not be nil")
+	}
+	if len(cfg.MergeRequest.Approvals) != 2 {
+		t.Fatalf("len(MergeRequest.Approvals) = %d, want 2", len(cfg.MergeRequest.Approvals))
+	}
+
+	first := cfg.MergeRequest.Approvals[0]
+	if first.Name != "review-main" {
+		t.Fatalf("first.Name = %q, want review-main", first.Name)
+	}
+	if len(first.Branches) != 2 || first.Branches[0] != "main" || first.Branches[1] != "develop" {
+		t.Fatalf("first.Branches = %#v, want [main develop]", first.Branches)
+	}
+	if first.RequiredApprovals != 2 {
+		t.Fatalf("first.RequiredApprovals = %d, want 2", first.RequiredApprovals)
+	}
+	if !first.MultiMemberGroupsOnly {
+		t.Fatal("first.MultiMemberGroupsOnly = false, want true")
+	}
+
+	second := cfg.MergeRequest.Approvals[1]
+	if len(second.Branches) != 1 || second.Branches[0] != "release" {
+		t.Fatalf("second.Branches = %#v, want [release]", second.Branches)
+	}
+	if second.RequiredApprovals != 1 {
+		t.Fatalf("second.RequiredApprovals = %d, want 1", second.RequiredApprovals)
+	}
+
+	if cfg.MergeRequest.ApprovalSettings == nil {
+		t.Fatal("MergeRequest.ApprovalSettings should not be nil")
+	}
+	if cfg.MergeRequest.ApprovalSettings.PreventApprovalByMergeRequestCreator == nil || !*cfg.MergeRequest.ApprovalSettings.PreventApprovalByMergeRequestCreator {
+		t.Fatal("PreventApprovalByMergeRequestCreator should be true")
+	}
+	if cfg.MergeRequest.ApprovalSettings.WhenCommitAdded == nil || *cfg.MergeRequest.ApprovalSettings.WhenCommitAdded != ApprovalRemoveAllApprovals {
+		t.Fatalf("WhenCommitAdded = %#v, want %q", cfg.MergeRequest.ApprovalSettings.WhenCommitAdded, ApprovalRemoveAllApprovals)
+	}
+}

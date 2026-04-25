@@ -119,6 +119,15 @@ func (c *Client) protectSingleBranch(
 ) error {
 	existing, _, err := c.ProtectedBranches.GetProtectedBranch(project.ID, branch.Name)
 	if err == nil {
+		// GitLab can keep stale push permissions when updating existing rules to
+		// "No one" (merge-only). Recreate the rule to enforce the access levels.
+		if pushAccessLevel == gitlab.NoPermissions {
+			if err := c.recreateProtectedBranch(project, branch, pushAccessLevel, mergeAccessLevel); err != nil {
+				return err
+			}
+			return nil
+		}
+
 		updateOpts := &gitlab.UpdateProtectedBranchOptions{
 			AllowedToPush:             replaceBranchPermissions(existing.PushAccessLevels, pushAccessLevel),
 			AllowedToMerge:            replaceBranchPermissions(existing.MergeAccessLevels, mergeAccessLevel),
@@ -147,6 +156,29 @@ func (c *Client) protectSingleBranch(
 			Str("branch", branch.Name).
 			Msg("cannot read protected branch")
 		return fmt.Errorf("error while trying to read protected branch %s: %w", branch.Name, err)
+	}
+
+	if err := c.recreateProtectedBranch(project, branch, pushAccessLevel, mergeAccessLevel); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) recreateProtectedBranch(
+	project *gitlab.Project,
+	branch config.BranchRule,
+	pushAccessLevel gitlab.AccessLevelValue,
+	mergeAccessLevel gitlab.AccessLevelValue,
+) error {
+	_, err := c.ProtectedBranches.UnprotectRepositoryBranches(project.ID, branch.Name)
+	if err != nil && !isProtectedBranchNotFoundError(err) {
+		log.Debug().Err(err).
+			Str("name", project.Name).
+			Str("toURL", project.SSHURLToRepo).
+			Str("branch", branch.Name).
+			Msg("cannot unprotect branch")
+		return fmt.Errorf("error while trying to unprotect branch %s: %w", branch.Name, err)
 	}
 
 	opts := &gitlab.ProtectRepositoryBranchesOptions{

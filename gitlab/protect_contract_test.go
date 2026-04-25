@@ -367,6 +367,45 @@ func TestProtectSingleBranch_Success(t *testing.T) {
 	}
 }
 
+func TestProtectSingleBranch_MergeOnly_RecreatesExistingRule(t *testing.T) {
+	deleteCalled := false
+	postCalled := false
+	patchCalled := false
+
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "protected_branches"):
+			_, _ = w.Write([]byte(`{"id":1,"name":"main","push_access_levels":[{"id":10,"access_level":40}],"merge_access_levels":[{"id":11,"access_level":40}],"unprotect_access_levels":[{"id":12,"access_level":40}]}`))
+		case r.Method == http.MethodDelete && strings.Contains(r.URL.Path, "protected_branches"):
+			deleteCalled = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "protected_branches"):
+			postCalled = true
+			_, _ = w.Write([]byte(`{"id":1,"name":"main"}`))
+		case r.Method == http.MethodPatch && strings.Contains(r.URL.Path, "protected_branches"):
+			patchCalled = true
+			_, _ = w.Write([]byte(`{"id":1,"name":"main"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	project := &gitlabapi.Project{ID: 1, Name: "myrepo"}
+	err := client.protectSingleBranch(project, config.BranchRule{Name: "main", MergeOnly: true}, gitlabapi.NoPermissions, gitlabapi.DeveloperPermissions)
+	if err != nil {
+		t.Fatalf("protectSingleBranch() error = %v", err)
+	}
+	if !deleteCalled {
+		t.Fatal("protectSingleBranch() did not unprotect existing branch before recreating merge-only rule")
+	}
+	if !postCalled {
+		t.Fatal("protectSingleBranch() did not create merge-only protected branch rule")
+	}
+	if patchCalled {
+		t.Fatal("protectSingleBranch() should not patch existing protected branch for merge-only rule")
+	}
+}
+
 func TestProtectSingleBranch_GetNotFound_ProtectStillCalled(t *testing.T) {
 	// Get returns 404 (branch not yet protected) -> protectSingleBranch creates the rule.
 	protectCalled := false

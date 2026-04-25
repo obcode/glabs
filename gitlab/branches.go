@@ -41,6 +41,7 @@ func (c *Client) syncConfiguredBranches(assignmentCfg *config.AssignmentConfig, 
 
 	if err := c.protectBranch(assignmentCfg, project, false); err != nil {
 		log.Debug().Err(err).Str("project", project.Name).Msg("cannot protect configured branches")
+		return fmt.Errorf("error while protecting configured branches for %s: %w", project.Name, err)
 	}
 
 	return nil

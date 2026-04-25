@@ -31,7 +31,7 @@ func TestSyncConfiguredBranches_ReturnsErrorWhenProtectionFails(t *testing.T) {
 	}
 	project := &gitlabapi.Project{ID: 1, Name: "repo"}
 
-	err := client.syncConfiguredBranches(cfg, project, "main")
+	err := client.syncConfiguredBranches(cfg, project, "main", 0)
 	if err == nil {
 		t.Fatal("syncConfiguredBranches() expected error when branch protection fails, got nil")
 	}

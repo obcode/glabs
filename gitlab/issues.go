@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/obcode/glabs/config"
+	"github.com/obcode/glabs/v2/config"
 	"github.com/rs/zerolog/log"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )

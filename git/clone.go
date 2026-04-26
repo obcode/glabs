@@ -10,7 +10,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/logrusorgru/aurora"
-	"github.com/obcode/glabs/config"
+	"github.com/obcode/glabs/v2/config"
 	"github.com/rs/zerolog/log"
 	"github.com/theckman/yacspin"
 )

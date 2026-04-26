@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/obcode/glabs/config"
+	"github.com/obcode/glabs/v2/config"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	gitlabapi "gitlab.com/gitlab-org/api/client-go/v2"

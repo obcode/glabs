@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/obcode/glabs/config"
-	"github.com/obcode/glabs/gitlab"
-	"github.com/obcode/glabs/gitlab/report"
+	"github.com/obcode/glabs/v2/config"
+	"github.com/obcode/glabs/v2/gitlab"
+	"github.com/obcode/glabs/v2/gitlab/report"
 	"github.com/spf13/cobra"
 )
 

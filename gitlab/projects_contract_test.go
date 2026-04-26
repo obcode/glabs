@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/obcode/glabs/config"
+	"github.com/obcode/glabs/v2/config"
 )
 
 func TestGetProjectByName_FindsSingleProject(t *testing.T) {

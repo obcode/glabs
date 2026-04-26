@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime/debug"
 
 	"github.com/obcode/glabs/v2/cmd"
 	"github.com/spf13/viper"
@@ -16,6 +17,11 @@ var (
 )
 
 func main() {
+	if version == "dev" {
+		if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" {
+			version = info.Main.Version
+		}
+	}
 	viper.Set("Version", version)
 	viper.Set("Commit", commit)
 	viper.Set("Date", date)

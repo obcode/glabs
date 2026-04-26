@@ -445,6 +445,9 @@ Requirements for approval rules:
 | `default_off` | Allow | Squash checkbox visible but unchecked by default (GitLab default) |
 | `default_on` | Encourage | Squash checkbox visible and checked by default |
 
+> **Warning:**
+> Although the GitLab UI sometimes displays squash settings in the context of individual branch rules, **squash options are always project-wide**. Changing the squash setting in any branch rule or merge request rule will affect all branches in the project. There is currently no way to configure squash behavior per branch. This is a known limitation of GitLab, even if the UI suggests otherwise.
+
 **Example:**
 
 ```yaml

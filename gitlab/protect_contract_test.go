@@ -648,7 +648,7 @@ func TestApplyMergeRequestApprovalRules_RejectsMultipleAnyApproverApprovalCounts
 	if err == nil {
 		t.Fatal("applyMergeRequestApprovalRules() expected error, got nil")
 	}
-	if !strings.Contains(err.Error(), "only one any-approver rule") {
+	if !strings.Contains(err.Error(), "any-approver") {
 		t.Fatalf("error = %q, want any-approver guidance", err)
 	}
 }

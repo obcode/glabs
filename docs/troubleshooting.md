@@ -145,7 +145,71 @@ In GitLab UI you see wrong permissions or "Allowed to push and merge" instead of
 
 ```sh
 # Reapply protection rules
+## Branch protection
+
+### Branch protection not as expected
+
+**Symptoms:**
+
+In GitLab UI you see wrong permissions or "Allowed to push and merge" instead of merge-only.
+
+**Verification:**
+
+```sh
+# Reapply protection rules
 glabs protect <course> <assignment>
+```
+
+Then check GitLab UI for expected behavior.
+
+**For merge-only dev branch:**
+
+Expected:
+- **Allowed to merge**: Developers and Maintainers
+- **Allowed to push and merge**: No one
+
+If wrong, check config:
+
+```yaml
+branches:
+  - name: main
+    mergeOnly: true  # Must be true
+    default: true
+```
+
+### Approval rule for multiple branches not shown correctly in UI
+
+**Problem:**
+When you configure an approval rule in glabs for multiple branches with "any eligible user" (no specific approvers), glabs (and the GitLab API) will create only a single any-approver rule per project, covering all specified branches.
+
+**UI Limitation:**
+In the GitLab web interface, the Approvals tab may display only the first branch for which the rule applies. However, the rule is actually active for all branches listed in your glabs YAML configuration.
+
+- The rule is enforced for all configured branches, even if only one is shown in the UI.
+- This is a display issue in GitLab, not a bug in glabs or your YAML config.
+- You can verify this by creating a merge request on any of the other branches—the rule will be enforced there as well.
+
+**Example:**
+
+```yaml
+rules:
+  - name: main-review
+    branches:
+      - main
+      - startercode
+    requiredApprovals: 1
+  - name: startercode-result
+    branch: startercode
+    usernames:
+      - obcode
+    requiredApprovals: 1
+```
+
+In the GitLab UI, "Minimum required approvals" may show only `main`, but the rule also applies to `startercode`.
+
+---
+**Note:**
+This is a known GitLab behavior and cannot be changed by glabs.
 ```
 
 Then check GitLab UI for expected behavior.

@@ -131,15 +131,15 @@ func (c *Client) applyMergeRequestApprovalRulesForMemberCount(assignmentCfg *con
 				continue
 			}
 
+			// Sammle alle any-approver Regeln (ohne usernames/groups) für alle Branches
 			if len(usernames) == 0 && len(groupIDs) == 0 {
 				approvalsRequired := int64(configuredRule.RequiredApprovals)
-				if anyApproverConfigured && anyApproverApprovalsRequired != approvalsRequired {
-					return fmt.Errorf("cannot configure approval rules %q and %q without usernames/groups: GitLab allows only one any-approver rule per project, but they require different approvals (%d and %d)", anyApproverRuleName, ruleName, anyApproverApprovalsRequired, approvalsRequired)
-				}
 				if !anyApproverConfigured {
 					anyApproverConfigured = true
 					anyApproverRuleName = ruleName
 					anyApproverApprovalsRequired = approvalsRequired
+				} else if anyApproverApprovalsRequired != approvalsRequired {
+					return fmt.Errorf("cannot configure multiple any-approver rules with different requiredApprovals (%d vs %d)", anyApproverApprovalsRequired, approvalsRequired)
 				}
 				anyApproverBranchIDByName[branchName] = protectedBranchID
 				continue

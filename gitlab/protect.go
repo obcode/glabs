@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/logrusorgru/aurora"
-	"github.com/obcode/glabs/config"
+	"github.com/obcode/glabs/v2/config"
 	"github.com/rs/zerolog/log"
 	"github.com/theckman/yacspin"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
@@ -31,70 +31,85 @@ func (c *Client) ProtectToBranch(assignmentCfg *config.AssignmentConfig) {
 }
 
 func (c *Client) protectBranch(assignmentCfg *config.AssignmentConfig, project *gitlab.Project, spin bool) error {
-	if hasProtectedBranches(assignmentCfg.Branches) {
-		// var cfg yacspin.Config
-		var spinner *yacspin.Spinner
-		if spin {
-			cfg := yacspin.Config{
-				Frequency: 100 * time.Millisecond,
-				CharSet:   yacspin.CharSets[69],
-				Suffix: aurora.Sprintf(aurora.Cyan(" protect branch for project %s at %s"),
-					aurora.Yellow(project.Name),
-					aurora.Magenta(assignmentCfg.URL+"/"+project.Name),
-				),
-				SuffixAutoColon:   true,
-				StopCharacter:     "✓",
-				StopColors:        []string{"fgGreen"},
-				StopFailMessage:   "error",
-				StopFailCharacter: "✗",
-				StopFailColors:    []string{"fgRed"},
-			}
-			var err error
-			spinner, err = yacspin.New(cfg)
-			if err != nil {
-				log.Debug().Err(err).Msg("cannot create spinner")
-			}
-			err = spinner.Start()
-			if err != nil {
-				log.Debug().Err(err).Msg("cannot start spinner")
-			}
+	return c.protectBranchForMemberCount(assignmentCfg, project, spin, 0)
+}
+
+func (c *Client) protectBranchForMemberCount(assignmentCfg *config.AssignmentConfig, project *gitlab.Project, spin bool, memberCount int) error {
+	if !hasProtectedBranches(assignmentCfg.Branches) && !hasMergeRequestApprovalConfig(assignmentCfg.MergeRequest) {
+		return nil
+	}
+
+	var spinner *yacspin.Spinner
+	if spin {
+		cfg := yacspin.Config{
+			Frequency: 100 * time.Millisecond,
+			CharSet:   yacspin.CharSets[69],
+			Suffix: aurora.Sprintf(aurora.Cyan(" protect branch for project %s at %s"),
+				aurora.Yellow(project.Name),
+				aurora.Magenta(assignmentCfg.URL+"/"+project.Name),
+			),
+			SuffixAutoColon:   true,
+			StopCharacter:     "✓",
+			StopColors:        []string{"fgGreen"},
+			StopFailMessage:   "error",
+			StopFailCharacter: "✗",
+			StopFailColors:    []string{"fgRed"},
+		}
+		var err error
+		spinner, err = yacspin.New(cfg)
+		if err != nil {
+			log.Debug().Err(err).Msg("cannot create spinner")
+		}
+		err = spinner.Start()
+		if err != nil {
+			log.Debug().Err(err).Msg("cannot start spinner")
+		}
+	}
+
+	log.Debug().
+		Str("name", project.Name).
+		Str("toURL", project.SSHURLToRepo).
+		Interface("branches", assignmentCfg.Branches).
+		Msg("protecting branch")
+
+	for _, branch := range assignmentCfg.Branches {
+		if !branch.Protect && !branch.MergeOnly {
+			continue
 		}
 
-		log.Debug().
-			Str("name", project.Name).
-			Str("toURL", project.SSHURLToRepo).
-			Interface("branches", assignmentCfg.Branches).
-			Msg("protecting branch")
+		pushLevel := gitlab.MaintainerPermissions
+		mergeLevel := gitlab.MaintainerPermissions
+		if branch.MergeOnly {
+			pushLevel = gitlab.NoPermissions
+			mergeLevel = gitlab.DeveloperPermissions
+		}
 
-		for _, branch := range assignmentCfg.Branches {
-			if !branch.Protect && !branch.MergeOnly {
-				continue
-			}
-
-			pushLevel := gitlab.MaintainerPermissions
-			mergeLevel := gitlab.MaintainerPermissions
-			if branch.MergeOnly {
-				pushLevel = gitlab.NoPermissions
-				mergeLevel = gitlab.DeveloperPermissions
-			}
-
-			err := c.protectSingleBranch(project, branch, pushLevel, mergeLevel)
-			if err != nil {
-				if spin {
-					err := spinner.StopFail()
-					if err != nil {
-						log.Debug().Err(err).Msg("cannot stop spinner")
-					}
+		err := c.protectSingleBranch(project, branch, pushLevel, mergeLevel)
+		if err != nil {
+			if spin {
+				err := spinner.StopFail()
+				if err != nil {
+					log.Debug().Err(err).Msg("cannot stop spinner")
 				}
-				return err
 			}
+			return err
 		}
+	}
 
+	if err := c.applyMergeRequestApprovalRulesForMemberCount(assignmentCfg, project, memberCount); err != nil {
 		if spin {
-			spinner.StopMessage(aurora.Sprintf(aurora.Green("ok")))
-			if err := spinner.Stop(); err != nil {
+			err := spinner.StopFail()
+			if err != nil {
 				log.Debug().Err(err).Msg("cannot stop spinner")
 			}
+		}
+		return err
+	}
+
+	if spin {
+		spinner.StopMessage(aurora.Sprintf(aurora.Green("ok")))
+		if err := spinner.Stop(); err != nil {
+			log.Debug().Err(err).Msg("cannot stop spinner")
 		}
 	}
 
@@ -109,6 +124,14 @@ func hasProtectedBranches(branches []config.BranchRule) bool {
 	}
 
 	return false
+}
+
+func hasMergeRequestApprovalConfig(mergeRequest *config.MergeRequest) bool {
+	if mergeRequest == nil {
+		return false
+	}
+
+	return len(mergeRequest.Approvals) > 0 || mergeRequest.ApprovalSettings != nil
 }
 
 func (c *Client) protectSingleBranch(
@@ -244,7 +267,7 @@ func (c *Client) protectToBranchPerStudent(assignmentCfg *config.AssignmentConfi
 			fmt.Printf("cannot set access for project %s failed with %s", projectname, err)
 			return
 		}
-		if err := c.protectBranch(assignmentCfg, project, true); err != nil {
+		if err := c.protectBranchForMemberCount(assignmentCfg, project, true, 1); err != nil {
 			log.Error().Err(err).Str("group", assignmentCfg.Course).Msg("cannot protect the branch")
 		}
 	}
@@ -266,7 +289,7 @@ func (c *Client) protectToBranchPerGroup(assignmentCfg *config.AssignmentConfig)
 			fmt.Printf("cannot set access for project %s failed with %s", projectname, err)
 			return
 		}
-		if err := c.protectBranch(assignmentCfg, project, true); err != nil {
+		if err := c.protectBranchForMemberCount(assignmentCfg, project, true, len(grp.Members)); err != nil {
 			log.Error().Err(err).Str("group", assignmentCfg.Course).Msg("cannot protect the branch")
 		}
 	}

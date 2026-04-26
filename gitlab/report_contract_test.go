@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/obcode/glabs/config"
+	"github.com/obcode/glabs/v2/config"
 )
 
 // makeFullReportHandler returns a handler that mocks all calls needed by report().

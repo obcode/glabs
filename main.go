@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/obcode/glabs/cmd"
+	"github.com/obcode/glabs/v2/cmd"
 	"github.com/spf13/viper"
 )
 

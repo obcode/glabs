@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/obcode/glabs/config"
+	"github.com/obcode/glabs/v2/config"
 )
 
 // ---- getUser ----------------------------------------------------------------

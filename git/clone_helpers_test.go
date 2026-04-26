@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/obcode/glabs/config"
+	"github.com/obcode/glabs/v2/config"
 )
 
 func TestCloneurl_HTTPS(t *testing.T) {

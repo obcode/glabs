@@ -7,8 +7,8 @@ import (
 	"os"
 	"text/template"
 
-	"github.com/obcode/glabs/config"
-	r "github.com/obcode/glabs/gitlab/report"
+	"github.com/obcode/glabs/v2/config"
+	r "github.com/obcode/glabs/v2/gitlab/report"
 )
 
 func (c *Client) Report(assignmentCfg *config.AssignmentConfig, templateFile *string, output *string) {

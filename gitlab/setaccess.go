@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/logrusorgru/aurora"
-	"github.com/obcode/glabs/config"
+	"github.com/obcode/glabs/v2/config"
 	"github.com/rs/zerolog/log"
 	"github.com/theckman/yacspin"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"

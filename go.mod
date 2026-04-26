@@ -1,4 +1,4 @@
-module github.com/obcode/glabs
+module github.com/obcode/glabs/v2
 
 go 1.26
 

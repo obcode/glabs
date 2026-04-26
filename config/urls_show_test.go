@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -141,11 +142,19 @@ func TestShow_WithBranches(t *testing.T) {
 		Branches: []BranchRule{{Name: "main", Protect: true, Default: true, AllowForcePush: true}, {Name: "develop", MergeOnly: true, CodeOwnerApprovalRequired: true}},
 	}
 	out := captureStdout(t, func() { cfg.Show() })
+	ansiPattern := regexp.MustCompile(`\x1b\[[0-9;]*m`)
+	plain := ansiPattern.ReplaceAllString(out, "")
 	if !strings.Contains(out, "Branches:") || !strings.Contains(out, "develop") {
 		t.Fatalf("Show() output does not contain branches block: %q", out)
 	}
-	if !strings.Contains(out, "mergeOnly") || !strings.Contains(out, "default") || !strings.Contains(out, "allowForcePush") || !strings.Contains(out, "codeOwnerApprovalRequired") {
-		t.Fatalf("Show() output does not contain compact branch flags: %q", out)
+	if !strings.Contains(plain, "- main:") || !strings.Contains(plain, "protect, default, allowForcePush") {
+		t.Fatalf("Show() output does not contain enabled branch flags for main: %q", plain)
+	}
+	if !strings.Contains(plain, "- develop:") || !strings.Contains(plain, "mergeOnly, codeOwnerApprovalRequired") {
+		t.Fatalf("Show() output does not contain enabled branch flags for develop: %q", plain)
+	}
+	if strings.Contains(plain, "protect=false") || strings.Contains(plain, "mergeOnly=false") || strings.Contains(plain, "default=false") {
+		t.Fatalf("Show() output still contains disabled branch flags: %q", plain)
 	}
 }
 
@@ -253,6 +262,14 @@ func TestShow_PerGroup_ListsGroups(t *testing.T) {
 	if !strings.Contains(out, "team1") {
 		t.Fatalf("Show(PerGroup) output does not contain team1: %q", out)
 	}
+	ansiPattern := regexp.MustCompile(`\x1b\[[0-9;]*m`)
+	plain := ansiPattern.ReplaceAllString(out, "")
+	if !strings.Contains(plain, "- team1 (2): alice, bob") {
+		t.Fatalf("Show(PerGroup) output does not contain inline group count for team1: %q", plain)
+	}
+	if !strings.Contains(plain, "- team2 (1): carol") {
+		t.Fatalf("Show(PerGroup) output does not contain inline group count for team2: %q", plain)
+	}
 }
 
 func TestShow_WithMergeMethod(t *testing.T) {
@@ -307,6 +324,170 @@ func TestShow_WithMergeChecks(t *testing.T) {
 	}
 	if !strings.Contains(out, "StatusChecksMustSucceed:") {
 		t.Fatalf("Show() output does not contain StatusChecksMustSucceed key: %q", out)
+	}
+}
+
+func TestShow_WithMergeRequestApprovals(t *testing.T) {
+	cfg := &AssignmentConfig{
+		MergeRequest: &MergeRequest{
+			Approvals: []MergeRequestApprovalRule{{
+				Name:                  "review-main",
+				Branches:              []string{"main", "develop"},
+				Usernames:             []string{"alice"},
+				Groups:                []string{"mpd/tutors"},
+				MultiMemberGroupsOnly: true,
+				RequiredApprovals:     2,
+			}},
+		},
+	}
+	out := captureStdout(t, func() { cfg.Show() })
+	ansiPattern := regexp.MustCompile(`\x1b\[[0-9;]*m`)
+	plain := ansiPattern.ReplaceAllString(out, "")
+	if !strings.Contains(out, "Approvals:") {
+		t.Fatalf("Show() output does not contain Approvals label: %q", out)
+	}
+	if !strings.Contains(out, "Settings:") {
+		t.Fatalf("Show() output does not contain approval settings header: %q", out)
+	}
+	if !strings.Contains(out, "Rules:") {
+		t.Fatalf("Show() output does not contain approval rules header: %q", out)
+	}
+	if !strings.Contains(out, "review-main") {
+		t.Fatalf("Show() output does not contain approval rule name: %q", out)
+	}
+	if !strings.Contains(plain, "\n      - review-main:") {
+		t.Fatalf("Show() output does not contain aligned approval rule label: %q", plain)
+	}
+	if !strings.Contains(out, "requiredApprovals") {
+		t.Fatalf("Show() output does not contain requiredApprovals field: %q", out)
+	}
+	if !strings.Contains(out, "branches") {
+		t.Fatalf("Show() output does not contain branches field for approval rule: %q", out)
+	}
+	if !strings.Contains(out, "usernames") {
+		t.Fatalf("Show() output does not contain usernames field for approval rule: %q", out)
+	}
+	if !strings.Contains(out, "multiMemberGroupsOnly") {
+		t.Fatalf("Show() output does not contain multiMemberGroupsOnly field for approval rule: %q", out)
+	}
+}
+
+func TestShow_WithMergeRequestApprovals_OmitsEmptyUsersAndGroups(t *testing.T) {
+	cfg := &AssignmentConfig{
+		MergeRequest: &MergeRequest{
+			Approvals: []MergeRequestApprovalRule{{
+				Name:              "review-main",
+				Branches:          []string{"main"},
+				Usernames:         []string{},
+				Groups:            []string{},
+				RequiredApprovals: 1,
+			}},
+		},
+	}
+	out := captureStdout(t, func() { cfg.Show() })
+	if strings.Contains(out, "usernames") {
+		t.Fatalf("Show() output should omit empty usernames field for approval rule: %q", out)
+	}
+	if strings.Contains(out, "groups") {
+		t.Fatalf("Show() output should omit empty groups field for approval rule: %q", out)
+	}
+	if !strings.Contains(out, "branches") || !strings.Contains(out, "requiredApprovals") {
+		t.Fatalf("Show() output should keep non-empty approval rule fields: %q", out)
+	}
+}
+
+func TestShow_WithMergeRequestApprovalSettings(t *testing.T) {
+	preventCreator := true
+	preventCommitters := true
+	preventEditing := true
+	reauth := true
+	whenCommitAdded := ApprovalRemoveAllApprovals
+
+	cfg := &AssignmentConfig{
+		MergeRequest: &MergeRequest{
+			ApprovalSettings: &MergeRequestApprovalSettings{
+				PreventApprovalByMergeRequestCreator:       &preventCreator,
+				PreventApprovalsByUsersWhoAddCommits:       &preventCommitters,
+				PreventEditingApprovalRulesInMergeRequests: &preventEditing,
+				RequireUserReauthenticationToApprove:       &reauth,
+				WhenCommitAdded:                            &whenCommitAdded,
+			},
+		},
+	}
+	out := captureStdout(t, func() { cfg.Show() })
+	if !strings.Contains(out, "Approvals:") || !strings.Contains(out, "Settings:") {
+		t.Fatalf("Show() output does not contain nested approvals settings block: %q", out)
+	}
+	if !strings.Contains(out, "PreventApprovalByMergeRequestCreator") {
+		t.Fatalf("Show() output does not contain approval settings key: %q", out)
+	}
+	if !strings.Contains(out, "WhenCommitAdded") || !strings.Contains(out, string(ApprovalRemoveAllApprovals)) {
+		t.Fatalf("Show() output does not contain approval whenCommitAdded setting: %q", out)
+	}
+}
+
+func TestShow_WithUndefinedApprovalsBlocks(t *testing.T) {
+	cfg := &AssignmentConfig{
+		MergeRequest: &MergeRequest{},
+	}
+
+	out := captureStdout(t, func() { cfg.Show() })
+	if !strings.Contains(out, "Approvals:") || !strings.Contains(out, "Settings:") || !strings.Contains(out, "Rules:") {
+		t.Fatalf("Show() output does not contain nested approvals headers: %q", out)
+	}
+	if strings.Count(out, "not defined") < 2 {
+		t.Fatalf("Show() output does not contain not defined markers for empty approvals blocks: %q", out)
+	}
+}
+
+func TestShow_MergeRequestValuesAlign(t *testing.T) {
+	cfg := &AssignmentConfig{
+		MergeRequest: &MergeRequest{
+			MergeMethod:                   SemiLinearHistory,
+			SquashOption:                  SquashNever,
+			PipelineMustSucceed:           true,
+			SkippedPipelinesAreSuccessful: true,
+			AllThreadsMustBeResolved:      true,
+			StatusChecksMustSucceed:       true,
+		},
+	}
+
+	out := captureStdout(t, func() { cfg.Show() })
+	ansiPattern := regexp.MustCompile(`\x1b\[[0-9;]*m`)
+	plain := ansiPattern.ReplaceAllString(out, "")
+	lines := strings.Split(plain, "\n")
+
+	var mergeMethodLine, skippedLine, statusChecksLine string
+	for _, line := range lines {
+		switch {
+		case strings.Contains(line, "MergeMethod:"):
+			mergeMethodLine = line
+		case strings.Contains(line, "SkippedPipelinesAreSuccessful:"):
+			skippedLine = line
+		case strings.Contains(line, "StatusChecksMustSucceed:"):
+			statusChecksLine = line
+		}
+	}
+
+	if mergeMethodLine == "" || skippedLine == "" || statusChecksLine == "" {
+		t.Fatalf("Show() output is missing merge request lines: %q", plain)
+	}
+
+	mergeMethodValueIndex := strings.Index(mergeMethodLine, string(SemiLinearHistory))
+	skippedValueIndex := strings.Index(skippedLine, "true")
+	statusChecksValueIndex := strings.Index(statusChecksLine, "true")
+	if mergeMethodValueIndex < 0 || skippedValueIndex < 0 || statusChecksValueIndex < 0 {
+		t.Fatalf("Show() output is missing expected values: %q", plain)
+	}
+
+	if mergeMethodValueIndex != skippedValueIndex || mergeMethodValueIndex != statusChecksValueIndex {
+		t.Fatalf(
+			"Show() merge request values are not aligned: mergeMethod=%d skipped=%d statusChecks=%d in %q",
+			mergeMethodValueIndex,
+			skippedValueIndex,
+			statusChecksValueIndex,
+			plain,
+		)
 	}
 }
 

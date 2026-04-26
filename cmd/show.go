@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/obcode/glabs/config"
+	"github.com/obcode/glabs/v2/config"
 	"github.com/spf13/cobra"
 )
 

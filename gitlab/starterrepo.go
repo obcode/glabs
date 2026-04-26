@@ -5,8 +5,8 @@ import (
 
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
-	cfg "github.com/obcode/glabs/config"
-	g "github.com/obcode/glabs/git"
+	cfg "github.com/obcode/glabs/v2/config"
+	g "github.com/obcode/glabs/v2/git"
 	"github.com/rs/zerolog/log"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )

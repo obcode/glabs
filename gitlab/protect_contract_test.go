@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/obcode/glabs/config"
+	"github.com/obcode/glabs/v2/config"
 	gitlabapi "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
@@ -343,6 +343,448 @@ func TestProtectBranch_UpdateSendsAdditionalBranchProtectionFlags(t *testing.T) 
 	}
 	if patchBody["code_owner_approval_required"] != true {
 		t.Errorf("code_owner_approval_required = %#v, want true", patchBody["code_owner_approval_required"])
+	}
+}
+
+func TestProtectBranch_AppliesMergeRequestApprovals(t *testing.T) {
+	var createBody map[string]any
+	protectedMain := `{"id":10,"name":"main","push_access_levels":[{"id":10,"access_level":40}],"merge_access_levels":[{"id":11,"access_level":40}],"unprotect_access_levels":[{"id":12,"access_level":40}]}`
+
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/groups":
+			if r.URL.Query().Get("search") != "tutors" {
+				t.Fatalf("groups search query = %q, want tutors", r.URL.Query().Get("search"))
+			}
+			_, _ = w.Write([]byte(`[{"id":55,"full_path":"mpd/tutors"}]`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/protected_branches/main":
+			_, _ = w.Write([]byte(protectedMain))
+		case r.Method == http.MethodPatch && r.URL.Path == "/api/v4/projects/1/protected_branches/main":
+			_, _ = w.Write([]byte(`{"id":10,"name":"main"}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/protected_branches":
+			_, _ = w.Write([]byte(`[{"id":10,"name":"main"}]`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/approval_rules":
+			_, _ = w.Write([]byte(`[]`))
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v4/projects/1/approval_rules":
+			if err := json.NewDecoder(r.Body).Decode(&createBody); err != nil {
+				t.Fatalf("json.Decode() error = %v", err)
+			}
+			_, _ = w.Write([]byte(`{"id":77,"name":"review-main"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	cfg := &config.AssignmentConfig{
+		Branches: []config.BranchRule{{Name: "main", Protect: true}},
+		MergeRequest: &config.MergeRequest{Approvals: []config.MergeRequestApprovalRule{{
+			Name:              "review-main",
+			Branches:          []string{"main"},
+			Usernames:         []string{"@me"},
+			Groups:            []string{"mpd/tutors"},
+			RequiredApprovals: 2,
+		}}},
+	}
+	project := &gitlabapi.Project{ID: 1, Name: "myrepo"}
+	if err := client.protectBranch(cfg, project, false); err != nil {
+		t.Fatalf("protectBranch() error = %v", err)
+	}
+
+	if createBody["name"] != "review-main" {
+		t.Fatalf("approval rule name = %#v, want review-main", createBody["name"])
+	}
+	if createBody["approvals_required"] != float64(2) {
+		t.Fatalf("approvals_required = %#v, want 2", createBody["approvals_required"])
+	}
+
+	usernames, ok := createBody["usernames"].([]any)
+	if !ok || len(usernames) != 1 || usernames[0] != "me" {
+		t.Fatalf("usernames = %#v, want [\"me\"]", createBody["usernames"])
+	}
+	groupIDs, ok := createBody["group_ids"].([]any)
+	if !ok || len(groupIDs) != 1 || groupIDs[0] != float64(55) {
+		t.Fatalf("group_ids = %#v, want [55]", createBody["group_ids"])
+	}
+	branchIDs, ok := createBody["protected_branch_ids"].([]any)
+	if !ok || len(branchIDs) != 1 || branchIDs[0] != float64(10) {
+		t.Fatalf("protected_branch_ids = %#v, want [10]", createBody["protected_branch_ids"])
+	}
+}
+
+func TestProtectBranch_AppliesMergeRequestApprovalSettings(t *testing.T) {
+	var body map[string]any
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v4/projects/1/approvals":
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("json.Decode() error = %v", err)
+			}
+			_, _ = w.Write([]byte(`{"merge_requests_author_approval":false}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	preventCreator := true
+	preventCommitters := true
+	preventEditing := true
+	reauth := true
+	whenCommitAdded := config.ApprovalRemoveCodeOwnerApprovalsIfFilesChanged
+	cfg := &config.AssignmentConfig{
+		MergeRequest: &config.MergeRequest{
+			ApprovalSettings: &config.MergeRequestApprovalSettings{
+				PreventApprovalByMergeRequestCreator:       &preventCreator,
+				PreventApprovalsByUsersWhoAddCommits:       &preventCommitters,
+				PreventEditingApprovalRulesInMergeRequests: &preventEditing,
+				RequireUserReauthenticationToApprove:       &reauth,
+				WhenCommitAdded:                            &whenCommitAdded,
+			},
+		},
+	}
+	project := &gitlabapi.Project{ID: 1, Name: "myrepo"}
+	if err := client.protectBranch(cfg, project, false); err != nil {
+		t.Fatalf("protectBranch() error = %v", err)
+	}
+
+	if body["merge_requests_author_approval"] != false {
+		t.Fatalf("merge_requests_author_approval = %#v, want false", body["merge_requests_author_approval"])
+	}
+	if body["merge_requests_disable_committers_approval"] != true {
+		t.Fatalf("merge_requests_disable_committers_approval = %#v, want true", body["merge_requests_disable_committers_approval"])
+	}
+	if body["disable_overriding_approvers_per_merge_request"] != true {
+		t.Fatalf("disable_overriding_approvers_per_merge_request = %#v, want true", body["disable_overriding_approvers_per_merge_request"])
+	}
+	if body["require_reauthentication_to_approve"] != true {
+		t.Fatalf("require_reauthentication_to_approve = %#v, want true", body["require_reauthentication_to_approve"])
+	}
+	if body["reset_approvals_on_push"] != false {
+		t.Fatalf("reset_approvals_on_push = %#v, want false", body["reset_approvals_on_push"])
+	}
+	if body["selective_code_owner_removals"] != true {
+		t.Fatalf("selective_code_owner_removals = %#v, want true", body["selective_code_owner_removals"])
+	}
+}
+
+func TestProtectBranch_ClearsApprovalRuleWhenNoApproversConfigured(t *testing.T) {
+	deleted := false
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/protected_branches":
+			_, _ = w.Write([]byte(`[{"id":10,"name":"main"}]`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/approval_rules":
+			_, _ = w.Write([]byte(`[{"id":9,"name":"no-review"}]`))
+		case r.Method == http.MethodDelete && r.URL.Path == "/api/v4/projects/1/approval_rules/9":
+			deleted = true
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+	cfg := &config.AssignmentConfig{
+		MergeRequest: &config.MergeRequest{Approvals: []config.MergeRequestApprovalRule{{
+			Name:              "no-review",
+			Branches:          []string{"main"},
+			RequiredApprovals: 0,
+		}}},
+	}
+	project := &gitlabapi.Project{ID: 1, Name: "myrepo"}
+	if err := client.protectBranch(cfg, project, false); err != nil {
+		t.Fatalf("protectBranch() error = %v", err)
+	}
+	if !deleted {
+		t.Fatal("approval rule delete was not called")
+	}
+}
+
+func TestProtectBranch_SkipsApprovalRuleForUnprotectedBranch(t *testing.T) {
+	created := 0
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/protected_branches":
+			_, _ = w.Write([]byte(`[{"id":10,"name":"main"}]`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/approval_rules":
+			_, _ = w.Write([]byte(`[]`))
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v4/projects/1/approval_rules":
+			created++
+			_, _ = w.Write([]byte(`{"id":77,"name":"main-review"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	cfg := &config.AssignmentConfig{
+		MergeRequest: &config.MergeRequest{Approvals: []config.MergeRequestApprovalRule{
+			{
+				Name:              "main-review",
+				Branches:          []string{"main"},
+				Usernames:         []string{"me"},
+				RequiredApprovals: 1,
+			},
+			{
+				Name:              "missing-branch-review",
+				Branches:          []string{"blubber"},
+				Usernames:         []string{"me"},
+				RequiredApprovals: 1,
+			},
+		}},
+	}
+	project := &gitlabapi.Project{ID: 1, Name: "myrepo"}
+	if err := client.protectBranch(cfg, project, false); err != nil {
+		t.Fatalf("protectBranch() error = %v", err)
+	}
+	if created != 1 {
+		t.Fatalf("created approval rules = %d, want 1", created)
+	}
+}
+
+func TestApplyMergeRequestApprovalRules_MergesAnyApproverRulesAcrossBranches(t *testing.T) {
+	var createBody map[string]any
+	created := 0
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/protected_branches":
+			_, _ = w.Write([]byte(`[{"id":10,"name":"main"},{"id":11,"name":"blubber"}]`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/approval_rules":
+			_, _ = w.Write([]byte(`[]`))
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v4/projects/1/approval_rules":
+			created++
+			if err := json.NewDecoder(r.Body).Decode(&createBody); err != nil {
+				t.Fatalf("json.Decode() error = %v", err)
+			}
+			_, _ = w.Write([]byte(`{"id":77,"name":"main-review","rule_type":"any_approver"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	cfg := &config.AssignmentConfig{
+		MergeRequest: &config.MergeRequest{Approvals: []config.MergeRequestApprovalRule{
+			{Name: "main-review", Branches: []string{"main"}, RequiredApprovals: 1},
+			{Name: "blubber-review", Branches: []string{"blubber"}, RequiredApprovals: 1},
+		}},
+	}
+	project := &gitlabapi.Project{ID: 1, Name: "myrepo"}
+	if err := client.applyMergeRequestApprovalRules(cfg, project); err != nil {
+		t.Fatalf("applyMergeRequestApprovalRules() error = %v", err)
+	}
+	if created != 1 {
+		t.Fatalf("created approval rules = %d, want 1", created)
+	}
+	if createBody["rule_type"] != "any_approver" {
+		t.Fatalf("rule_type = %#v, want any_approver", createBody["rule_type"])
+	}
+	if createBody["approvals_required"] != float64(1) {
+		t.Fatalf("approvals_required = %#v, want 1", createBody["approvals_required"])
+	}
+	branchIDs, ok := createBody["protected_branch_ids"].([]any)
+	if !ok || len(branchIDs) != 2 || branchIDs[0] != float64(11) || branchIDs[1] != float64(10) {
+		t.Fatalf("protected_branch_ids = %#v, want [11 10]", createBody["protected_branch_ids"])
+	}
+}
+
+func TestApplyMergeRequestApprovalRules_UpdatesExistingAnyApproverRule(t *testing.T) {
+	var updateBody map[string]any
+	updated := 0
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/protected_branches":
+			_, _ = w.Write([]byte(`[{"id":10,"name":"main"},{"id":11,"name":"blubber"}]`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/approval_rules":
+			_, _ = w.Write([]byte(`[{"id":9,"name":"Minimum required approvals","rule_type":"any_approver"}]`))
+		case r.Method == http.MethodPut && r.URL.Path == "/api/v4/projects/1/approval_rules/9":
+			updated++
+			if err := json.NewDecoder(r.Body).Decode(&updateBody); err != nil {
+				t.Fatalf("json.Decode() error = %v", err)
+			}
+			_, _ = w.Write([]byte(`{"id":9,"name":"Minimum required approvals","rule_type":"any_approver"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	cfg := &config.AssignmentConfig{
+		MergeRequest: &config.MergeRequest{Approvals: []config.MergeRequestApprovalRule{
+			{Name: "main-review", Branches: []string{"main"}, RequiredApprovals: 1},
+			{Name: "blubber-review", Branches: []string{"blubber"}, RequiredApprovals: 1},
+		}},
+	}
+	project := &gitlabapi.Project{ID: 1, Name: "myrepo"}
+	if err := client.applyMergeRequestApprovalRules(cfg, project); err != nil {
+		t.Fatalf("applyMergeRequestApprovalRules() error = %v", err)
+	}
+	if updated != 1 {
+		t.Fatalf("updated approval rules = %d, want 1", updated)
+	}
+	if updateBody["approvals_required"] != float64(1) {
+		t.Fatalf("approvals_required = %#v, want 1", updateBody["approvals_required"])
+	}
+	branchIDs, ok := updateBody["protected_branch_ids"].([]any)
+	if !ok || len(branchIDs) != 2 || branchIDs[0] != float64(11) || branchIDs[1] != float64(10) {
+		t.Fatalf("protected_branch_ids = %#v, want [11 10]", updateBody["protected_branch_ids"])
+	}
+}
+
+func TestApplyMergeRequestApprovalRules_RejectsMultipleAnyApproverApprovalCounts(t *testing.T) {
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/protected_branches":
+			_, _ = w.Write([]byte(`[{"id":10,"name":"main"},{"id":11,"name":"blubber"}]`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/approval_rules":
+			_, _ = w.Write([]byte(`[]`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	cfg := &config.AssignmentConfig{
+		MergeRequest: &config.MergeRequest{Approvals: []config.MergeRequestApprovalRule{
+			{Name: "main-review", Branches: []string{"main"}, RequiredApprovals: 1},
+			{Name: "blubber-review", Branches: []string{"blubber"}, RequiredApprovals: 2},
+		}},
+	}
+	project := &gitlabapi.Project{ID: 1, Name: "myrepo"}
+	err := client.applyMergeRequestApprovalRules(cfg, project)
+	if err == nil {
+		t.Fatal("applyMergeRequestApprovalRules() expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "only one any-approver rule") {
+		t.Fatalf("error = %q, want any-approver guidance", err)
+	}
+}
+
+func TestApplyMergeRequestApprovalRules_MultiMemberGroupsOnly_SkipsForStudentProjects(t *testing.T) {
+	created := 0
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/protected_branches":
+			_, _ = w.Write([]byte(`[{"id":10,"name":"main"}]`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/approval_rules":
+			_, _ = w.Write([]byte(`[]`))
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v4/projects/1/approval_rules":
+			created++
+			_, _ = w.Write([]byte(`{"id":77,"name":"review-main"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	cfg := &config.AssignmentConfig{
+		Per: config.PerStudent,
+		MergeRequest: &config.MergeRequest{Approvals: []config.MergeRequestApprovalRule{{
+			Name:                  "review-main",
+			Branches:              []string{"main"},
+			Usernames:             []string{"me"},
+			MultiMemberGroupsOnly: true,
+			RequiredApprovals:     1,
+		}}},
+	}
+	project := &gitlabapi.Project{ID: 1, Name: "myrepo"}
+	if err := client.applyMergeRequestApprovalRulesForMemberCount(cfg, project, 1); err != nil {
+		t.Fatalf("applyMergeRequestApprovalRulesForMemberCount() error = %v", err)
+	}
+	if created != 0 {
+		t.Fatalf("created approval rules = %d, want 0", created)
+	}
+}
+
+func TestApplyMergeRequestApprovalRules_MultiMemberGroupsOnly_SkipsForSingleMemberGroup(t *testing.T) {
+	created := 0
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/protected_branches":
+			_, _ = w.Write([]byte(`[{"id":10,"name":"main"}]`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/approval_rules":
+			_, _ = w.Write([]byte(`[]`))
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v4/projects/1/approval_rules":
+			created++
+			_, _ = w.Write([]byte(`{"id":77,"name":"review-main"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	cfg := &config.AssignmentConfig{
+		Per: config.PerGroup,
+		MergeRequest: &config.MergeRequest{Approvals: []config.MergeRequestApprovalRule{{
+			Name:                  "review-main",
+			Branches:              []string{"main"},
+			Usernames:             []string{"me"},
+			MultiMemberGroupsOnly: true,
+			RequiredApprovals:     1,
+		}}},
+	}
+	project := &gitlabapi.Project{ID: 1, Name: "myrepo"}
+	if err := client.applyMergeRequestApprovalRulesForMemberCount(cfg, project, 1); err != nil {
+		t.Fatalf("applyMergeRequestApprovalRulesForMemberCount() error = %v", err)
+	}
+	if created != 0 {
+		t.Fatalf("created approval rules = %d, want 0", created)
+	}
+}
+
+func TestApplyMergeRequestApprovalRules_MultiMemberGroupsOnly_AppliesForMultiMemberGroup(t *testing.T) {
+	created := 0
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/protected_branches":
+			_, _ = w.Write([]byte(`[{"id":10,"name":"main"}]`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/approval_rules":
+			_, _ = w.Write([]byte(`[]`))
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v4/projects/1/approval_rules":
+			created++
+			_, _ = w.Write([]byte(`{"id":77,"name":"review-main"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	cfg := &config.AssignmentConfig{
+		Per: config.PerGroup,
+		MergeRequest: &config.MergeRequest{Approvals: []config.MergeRequestApprovalRule{{
+			Name:                  "review-main",
+			Branches:              []string{"main"},
+			Usernames:             []string{"me"},
+			MultiMemberGroupsOnly: true,
+			RequiredApprovals:     1,
+		}}},
+	}
+	project := &gitlabapi.Project{ID: 1, Name: "myrepo"}
+	if err := client.applyMergeRequestApprovalRulesForMemberCount(cfg, project, 2); err != nil {
+		t.Fatalf("applyMergeRequestApprovalRulesForMemberCount() error = %v", err)
+	}
+	if created != 1 {
+		t.Fatalf("created approval rules = %d, want 1", created)
+	}
+}
+
+func TestProtectBranch_EmailApproverNotSupported_ReturnsError(t *testing.T) {
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/protected_branches":
+			_, _ = w.Write([]byte(`[{"id":10,"name":"main"}]`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/approval_rules":
+			_, _ = w.Write([]byte(`[]`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	cfg := &config.AssignmentConfig{
+		MergeRequest: &config.MergeRequest{Approvals: []config.MergeRequestApprovalRule{{
+			Name:              "main-review",
+			Branches:          []string{"main"},
+			Usernames:         []string{"me@example.org"},
+			RequiredApprovals: 1,
+		}}},
+	}
+	project := &gitlabapi.Project{ID: 1, Name: "myrepo"}
+	err := client.protectBranch(cfg, project, false)
+	if err == nil {
+		t.Fatal("protectBranch() expected error for email approver, got nil")
+	}
+	if !strings.Contains(err.Error(), "email") || !strings.Contains(err.Error(), "use username") {
+		t.Fatalf("error = %q, want email guidance", err)
 	}
 }
 

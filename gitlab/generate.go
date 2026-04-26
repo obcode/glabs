@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/logrusorgru/aurora"
-	"github.com/obcode/glabs/config"
-	"github.com/obcode/glabs/git"
+	"github.com/obcode/glabs/v2/config"
+	"github.com/obcode/glabs/v2/git"
 	"github.com/rs/zerolog/log"
 	"github.com/theckman/yacspin"
 )
@@ -169,8 +169,9 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 			baseBranch = assignmentCfg.Seeder.ToBranch
 		}
 
-		if err := c.syncConfiguredBranches(assignmentCfg, project, baseBranch); err != nil {
-			log.Debug().Err(err).Str("project", project.Name).Msg("cannot apply configured branch rules")
+		if err := c.syncConfiguredBranches(assignmentCfg, project, baseBranch, len(members)); err != nil {
+			log.Error().Err(err).Str("project", project.Name).Msg("cannot apply configured branch rules")
+			fmt.Printf("error: cannot apply branch/approval rules for project %s: %v\n", project.Name, err)
 		}
 	}
 

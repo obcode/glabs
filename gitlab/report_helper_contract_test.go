@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/obcode/glabs/config"
+	"github.com/obcode/glabs/v2/config"
 	gitlabapi "gitlab.com/gitlab-org/api/client-go/v2"
 )
 

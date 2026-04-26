@@ -16,11 +16,15 @@ var versionCmd = &cobra.Command{
 	Short: "Print the version number of Glabs",
 	Long:  `All software has versions. This is Glabs'`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Glabs version %s, commit %s, build date %s, build by %s\n",
-			viper.GetString("Version"),
-			viper.GetString("Commit"),
-			viper.GetString("Date"),
-			viper.GetString("BuiltBy"),
-		)
+		if viper.GetString("Commit") == "none" {
+			fmt.Printf("Glabs version %s\n", viper.GetString("Version"))
+		} else {
+			fmt.Printf("Glabs version %s, commit %s, build date %s, build by %s\n",
+				viper.GetString("Version"),
+				viper.GetString("Commit"),
+				viper.GetString("Date"),
+				viper.GetString("BuiltBy"),
+			)
+		}
 	},
 }

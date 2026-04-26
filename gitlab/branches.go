@@ -10,6 +10,9 @@ import (
 
 func (c *Client) syncConfiguredBranches(assignmentCfg *config.AssignmentConfig, project *gitlab.Project, baseBranch string, memberCount int) error {
 	if len(assignmentCfg.Branches) == 0 {
+		if hasMergeRequestApprovalConfig(assignmentCfg.MergeRequest) {
+			return c.protectBranchForMemberCount(assignmentCfg, project, false, memberCount)
+		}
 		return nil
 	}
 

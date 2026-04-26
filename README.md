@@ -18,7 +18,7 @@ This README is the quick entry point. The full user handbook lives in the docs f
 Prerequisite: Go 1.24+
 
 ```sh
-go install github.com/obcode/glabs@latest
+go install github.com/obcode/glabs/v2@latest
 ```
 
 ### Build from local checkout

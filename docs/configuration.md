@@ -50,7 +50,8 @@ Create course files in `coursesfilepath`, for example `mpd.yaml`:
 mpd:
   coursepath: mpd/semester          # GitLab subgroup path
   semesterpath: ob-26ss             # Optional semester identifier
-  useCoursenameAsPrefix: false       # Add course name to project names
+  useCoursenameAsPrefix: false      # Add course name to project names
+  useEmailDomainAsSuffix: true      # Add domainname to repo name
 
   students:
     - alice@example.org

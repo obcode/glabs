@@ -101,6 +101,7 @@ func (cfg *AssignmentConfig) Show() {
 		fieldCandidate(0, "Course"),
 		fieldCandidate(0, "Assignment"),
 		fieldCandidate(0, "Coursename-Prefix"),
+		fieldCandidate(0, "EmailDomain-Suffix"),
 		fieldCandidate(0, "Per"),
 		fieldCandidate(0, "Base-URL"),
 		fieldCandidate(0, "Description"),
@@ -155,6 +156,7 @@ func (cfg *AssignmentConfig) Show() {
 	writeTopField("Course", cfg.Course)
 	writeTopField("Assignment", cfg.Name)
 	writeTopField("Coursename-Prefix", cfg.UseCoursenameAsPrefix)
+	writeTopField("EmailDomain-Suffix", cfg.UseEmailDomainAsSuffix)
 	writeTopField("Per", cfg.Per)
 	writeTopField("Base-URL", cfg.URL)
 	writeTopField("Description", cfg.Description)

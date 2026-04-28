@@ -47,10 +47,25 @@ func TestRepoNamingHelpers(t *testing.T) {
 	mail := "a@b.example"
 	user := "alice"
 
+	// Default (field not set, should use suffix)
 	cfg := &AssignmentConfig{Course: "mpd", Name: "blatt01", UseCoursenameAsPrefix: true}
-
+	viper.Reset()
 	if got := cfg.RepoSuffix(&Student{Email: &mail}); got != "a_at_b.example" {
-		t.Fatalf("RepoSuffix(email) = %q", got)
+		t.Fatalf("RepoSuffix(email, default) = %q", got)
+	}
+
+	// Explicitly set to true
+	viper.Set("mpd.useEmailDomainAsSuffix", true)
+	cfg.UseEmailDomainAsSuffix = true
+	if got := cfg.RepoSuffix(&Student{Email: &mail}); got != "a_at_b.example" {
+		t.Fatalf("RepoSuffix(email, true) = %q", got)
+	}
+
+	// Explicitly set to false
+	viper.Set("mpd.useEmailDomainAsSuffix", false)
+	cfg.UseEmailDomainAsSuffix = false
+	if got := cfg.RepoSuffix(&Student{Email: &mail}); got != "a" {
+		t.Fatalf("RepoSuffix(email, false) = %q", got)
 	}
 	if got := cfg.RepoSuffix(&Student{Id: &id}); got != "123" {
 		t.Fatalf("RepoSuffix(id) = %q", got)

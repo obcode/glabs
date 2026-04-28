@@ -2,6 +2,21 @@ package config
 
 import "github.com/ProtonMail/go-crypto/openpgp"
 
+func (ac AccessLevel) String() string {
+	switch ac {
+	case 10:
+		return "guest"
+	case 20:
+		return "reporter"
+	case 30:
+		return "developer"
+	case 40:
+		return "maintainer"
+	default:
+		return "maintainer"
+	}
+}
+
 type Student struct {
 	Id       *int
 	Username *string
@@ -10,24 +25,25 @@ type Student struct {
 }
 
 type AssignmentConfig struct {
-	Course                string
-	Name                  string
-	UseCoursenameAsPrefix bool
-	Path                  string
-	URL                   string
-	Per                   Per
-	Description           string
-	ContainerRegistry     bool
-	AccessLevel           AccessLevel
-	MergeRequest          *MergeRequest
-	Branches              []BranchRule
-	Issues                *IssueReplication
-	Students              []*Student
-	Groups                []*Group
-	Startercode           *Startercode
-	Clone                 *Clone
-	Release               *Release
-	Seeder                *Seeder
+	Course                 string
+	Name                   string
+	UseCoursenameAsPrefix  bool
+	UseEmailDomainAsSuffix bool
+	Path                   string
+	URL                    string
+	Per                    Per
+	Description            string
+	ContainerRegistry      bool
+	AccessLevel            AccessLevel
+	MergeRequest           *MergeRequest
+	Branches               []BranchRule
+	Issues                 *IssueReplication
+	Students               []*Student
+	Groups                 []*Group
+	Startercode            *Startercode
+	Clone                  *Clone
+	Release                *Release
+	Seeder                 *Seeder
 }
 
 type Per string

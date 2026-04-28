@@ -9,19 +9,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-func (ac AccessLevel) String() string {
-	if ac == 10 {
-		return "guest"
-	}
-	if ac == 20 {
-		return "reporter"
-	}
-	if ac == 30 {
-		return "developer"
-	}
-	return "maintainer"
-}
-
 func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...string) *AssignmentConfig {
 	if !viper.IsSet(course) {
 		log.Fatal().
@@ -56,21 +43,27 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 		Course:                course,
 		Name:                  assignment,
 		UseCoursenameAsPrefix: viper.GetBool(course + ".useCoursenameAsPrefix"),
-		Path:                  path,
-		URL:                   url,
-		Per:                   per,
-		Description:           description(assignmentKey),
-		ContainerRegistry:     containerRegistry,
-		AccessLevel:           accessLevel(assignmentKey),
-		MergeRequest:          mergeRequest(assignmentKey),
-		Branches:              branchRules,
-		Issues:                issues(assignmentKey),
-		Students:              students(per, course, assignment, onlyForStudentsOrGroups...),
-		Groups:                groups(per, course, assignment, onlyForStudentsOrGroups...),
-		Startercode:           starter,
-		Clone:                 clone(assignmentKey, defaultCloneBranch),
-		Release:               release,
-		Seeder:                seeder(assignmentKey),
+		UseEmailDomainAsSuffix: func() bool {
+			if viper.IsSet(course + ".useEmailDomainAsSuffix") {
+				return viper.GetBool(course + ".useEmailDomainAsSuffix")
+			}
+			return true // default
+		}(),
+		Path:              path,
+		URL:               url,
+		Per:               per,
+		Description:       description(assignmentKey),
+		ContainerRegistry: containerRegistry,
+		AccessLevel:       accessLevel(assignmentKey),
+		MergeRequest:      mergeRequest(assignmentKey),
+		Branches:          branchRules,
+		Issues:            issues(assignmentKey),
+		Students:          students(per, course, assignment, onlyForStudentsOrGroups...),
+		Groups:            groups(per, course, assignment, onlyForStudentsOrGroups...),
+		Startercode:       starter,
+		Clone:             clone(assignmentKey, defaultCloneBranch),
+		Release:           release,
+		Seeder:            seeder(assignmentKey),
 	}
 
 	return assignmentConfig
@@ -80,6 +73,12 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 // This is incompatible to the filesystem and gitlab so replacing the values is necessary.
 func (cfg *AssignmentConfig) RepoSuffix(student *Student) string {
 	if student.Email != nil {
+		// If explicitly set to false, always use part before @
+		if viper.IsSet(cfg.Course+".useEmailDomainAsSuffix") && !cfg.UseEmailDomainAsSuffix {
+			parts := strings.SplitN(*student.Email, "@", 2)
+			return parts[0]
+		}
+		// Default: use _at_ replacement
 		return strings.ReplaceAll(*student.Email, "@", "_at_")
 	}
 	if student.Id != nil {
@@ -88,7 +87,6 @@ func (cfg *AssignmentConfig) RepoSuffix(student *Student) string {
 	if student.Username != nil {
 		return *student.Username
 	}
-
 	return ""
 }
 

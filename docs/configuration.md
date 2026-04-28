@@ -83,6 +83,7 @@ mpd:
 | `coursepath` | GitLab subgroup path for course | — | Required |
 | `semesterpath` | Additional grouping level | — | Optional |
 | `useCoursenameAsPrefix` | Prepend course name to project names | `false` | Example: `mpd-blatt01` |
+| `useEmailDomainAsSuffix` | Use full email (with `_at_...`) as repo suffix | `true` | If `false`, only the part before `@` is used (e.g. `alice` instead of `alice_at_example.org`). |
 | `students` | List of course-wide students | — | Can be overridden per assignment |
 | `groups` | Dict of group → student lists | — | For `per: group` assignments |
 
@@ -94,7 +95,9 @@ Students and groups can be specified by:
 - **Username**: `alice`
 - **User ID**: `12345`
 
-You can mix formats. If using emails, the `@` is replaced with `_at_` in project names (filesystem compatibility).
+
+You can mix formats. By default, if using emails, the `@` is replaced with `_at_` in project names (filesystem compatibility), e.g. `mpd-blatt01-alice_at_example.org`.
+If you set `useEmailDomainAsSuffix: false`, only the part before the `@` is used, e.g. `mpd-blatt01-alice`.
 
 ### Student/Group filtering
 

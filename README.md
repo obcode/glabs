@@ -21,11 +21,25 @@ Prerequisite: Go 1.24+
 go install github.com/obcode/glabs/v2@latest
 ```
 
+### Add glabs to your PATH
+
+After installation, make sure that your Go bin directory is in your `PATH` so you can use `glabs` from anywhere:
+
+```sh
+export PATH="$PATH:$(go env GOPATH)/bin"
+```
+
+You can add this line to your `~/.bashrc`, `~/.zshrc`, or `~/.profile` to make it permanent.
+
 ### Build from local checkout
 
 ```sh
 go install .
 ```
+
+### or just unpack the prebuilt binaries
+
+from <https://github.com/obcode/glabs/releases>
 
 ## Quickstart
 

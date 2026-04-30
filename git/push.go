@@ -13,6 +13,7 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/obcode/glabs/v2/config"
 	"github.com/rs/zerolog/log"
+	"github.com/spf13/viper"
 	"github.com/theckman/yacspin"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
@@ -133,16 +134,24 @@ func CloneBranch(url, fromBranch string, orphan bool, orphanMessage string) (*gi
 	orphanBranchName := fmt.Sprintf("orphan-%s-%d", fromBranch, time.Now().UnixNano())
 	orphanRef := plumbing.NewBranchReferenceName(orphanBranchName)
 
+	committerName := "glabs"
+	committerEmail := "glabs-bot@noreply.example.com"
+
+	if viper.IsSet("committer") {
+		committerName = viper.GetString("committer.name")
+		committerEmail = viper.GetString("committer.email")
+	}
+
 	now := time.Now()
 	commit := &object.Commit{
 		Author: object.Signature{
-			Name:  "glabs",
-			Email: "noreply@example.com",
+			Name:  committerName,
+			Email: committerEmail,
 			When:  now,
 		},
 		Committer: object.Signature{
-			Name:  "glabs",
-			Email: "noreply@example.com",
+			Name:  committerName,
+			Email: committerEmail,
 			When:  now,
 		},
 		Message:  orphanMessage,

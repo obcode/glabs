@@ -159,6 +159,44 @@ Print glabs version.
 glabs version
 ```
 
+## push
+
+You can push one deferred branch at a time to all student/group repositories using the `push` command. You can define more than one deferred branch.
+
+### Assignment Config Example
+
+```yaml
+deferredBranches:
+  solution:
+    url:           # (optional) source repo, defaults to startercode URL
+    fromBranch:    # (default: solution)
+    toBranch:      # (default: solution)
+    orphan:        # (default: true)
+    orphanMessage: # (default: Snapshot of solution)
+  anotherbranch:
+    url:           # (optional) source repo, defaults to startercode URL
+    fromBranch:    # (default: anotherbranch)
+    toBranch:      # (default: anotherbranch)
+    orphan:        # (default: true)
+    orphanMessage: # (default: Snapshot of anotherbranch)
+```
+
+- If `orphan: true`, a new orphan branch is created in each repo with a single commit from the deferred branch.
+- If `orphan: false`, the deferred branch is pushed as a normal branch (with complete history).
+- deferred branches are always pushed with `--force`
+
+**Usage:**
+
+```sh
+glabs push <course> <assignment> <deferred-branch> [groups...|students...]
+```
+
+e.g.
+
+```sh
+glabs push mpd ass1 solution
+```
+
 ## Filtering students or groups
 
 When specifying `[groups...|students...]`, patterns are treated as regular expressions:
@@ -209,4 +247,3 @@ glabs generate --help         # Show generate help with flags
 glabs protect --help          # Show protect help
 glabs report --help           # Show report help
 glabs -v generate mpd blatt01 # Run with verbose logging
-```

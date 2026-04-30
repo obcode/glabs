@@ -216,6 +216,20 @@ func (cfg *AssignmentConfig) Show() {
 		}
 	}
 
+	writeSectionHeader("DeferredBranches")
+	if len(cfg.DeferredBranches) == 0 {
+		writeSectionNotDefined()
+	} else {
+		for name, branch := range cfg.DeferredBranches {
+			writeIndentedHeader(2, fmt.Sprintf("- %s", name))
+			writeSectionField("    URL", branch.URL)
+			writeSectionField("    FromBranch", branch.FromBranch)
+			writeSectionField("    ToBranch", branch.ToBranch)
+			writeSectionField("    Orphan", branch.Orphan)
+			writeSectionField("    OrphanMessage", branch.OrphanMessage)
+		}
+	}
+
 	writeSectionHeader("MergeRequest")
 	writeSectionField("MergeMethod", mergeMethod)
 	writeSectionField("SquashOption", squashOption)

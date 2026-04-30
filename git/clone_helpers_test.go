@@ -15,7 +15,7 @@ func TestCloneurl_HTTPS(t *testing.T) {
 		UseCoursenameAsPrefix: true,
 	}
 
-	got := cloneurl(cfg, "alice")
+	got := ProjectRepoUrl(cfg, "alice")
 	want := "git@gitlab.example.org:mpd/ss26/blatt-01/mpd-blatt01-alice"
 	if got != want {
 		t.Fatalf("cloneurl() = %q, want %q", got, want)
@@ -30,7 +30,7 @@ func TestCloneurl_ContainsExpectedParts(t *testing.T) {
 		UseCoursenameAsPrefix: true,
 	}
 
-	got := cloneurl(cfg, "bob")
+	got := ProjectRepoUrl(cfg, "bob")
 
 	if strings.Contains(got, "https://") {
 		t.Fatalf("cloneurl() should not contain https://, got %q", got)
@@ -51,7 +51,7 @@ func TestCloneurl_WithoutCoursePrefix(t *testing.T) {
 		UseCoursenameAsPrefix: false,
 	}
 
-	got := cloneurl(cfg, "team1")
+	got := ProjectRepoUrl(cfg, "team1")
 	want := "git@gitlab.example.org:mpd/ss26/blatt-01/blatt01-team1"
 	if got != want {
 		t.Fatalf("cloneurl() = %q, want %q", got, want)

@@ -11,7 +11,7 @@ import (
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
-func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *g.Starterrepo, project *gitlab.Project) error {
+func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *g.SourceRepo, project *gitlab.Project) error {
 	conf := &config.RemoteConfig{
 		Name: project.Name,
 		URLs: []string{project.SSHURLToRepo},

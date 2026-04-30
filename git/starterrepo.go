@@ -6,17 +6,11 @@ import (
 
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/logrusorgru/aurora"
 	"github.com/rs/zerolog/log"
 	"github.com/theckman/yacspin"
 )
-
-type SourceRepo struct {
-	Repo *git.Repository
-	Auth ssh.AuthMethod
-}
 
 func PrepareSourceRepo(url, fromBranch string) (*SourceRepo, error) {
 	cfg := yacspin.Config{
@@ -71,6 +65,7 @@ func PrepareSourceRepo(url, fromBranch string) (*SourceRepo, error) {
 
 	return &SourceRepo{
 		Repo: r,
+		Ref:  plumbing.ReferenceName("refs/heads/" + fromBranch),
 		Auth: auth,
 	}, nil
 }

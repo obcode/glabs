@@ -72,7 +72,9 @@ mpd:
     per: student
     startercode:
       url: git@gitlab.example.org:mpd/startercode/blatt-01.git
-      fromBranch: template
+      fromBranch: startercode
+      template: true
+      templateMessage: Initial Commit
 ```
 
 ### 3) Validate config and generate repos

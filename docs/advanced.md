@@ -15,8 +15,10 @@ mpd:
   blatt02:
     startercode:
       url: git@gitlab.lrz.de:mpd/starter.git
-      fromBranch: template
+      fromBranch: startercode
       toBranch: main
+      template: true
+      templateMessage: Initial Startercode
 
     branches:
       - name: main

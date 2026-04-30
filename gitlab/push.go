@@ -13,7 +13,7 @@ func (c *Client) Push(assignmentCfg *config.AssignmentConfig, branchname string)
 		return fmt.Errorf("error: no config for deferred branch \"%s\" found\n", branchname)
 	}
 
-	repo, branchRef, err := git.CloneBranch(branch.URL, branch.FromBranch, branch.Orphan, branch.OrphanMessage)
+	sourceRepo, err := git.CloneBranch(branch.URL, branch.FromBranch, branch.Orphan, branch.OrphanMessage)
 	if err != nil {
 		return err
 	}
@@ -39,7 +39,7 @@ func (c *Client) Push(assignmentCfg *config.AssignmentConfig, branchname string)
 			return err
 		}
 
-		err = git.PushBranch(assignmentCfg, projectname, repo, branchRef, branch.ToBranch, true, project)
+		err = git.PushBranch(assignmentCfg, projectname, sourceRepo, branch.ToBranch, true, project)
 		if err != nil {
 			return err
 		}

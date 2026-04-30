@@ -169,6 +169,8 @@ func (cfg *AssignmentConfig) Show() {
 	} else {
 		writeSectionField("URL", cfg.Startercode.URL)
 		writeSectionField("FromBranch", cfg.Startercode.FromBranch)
+		writeSectionField("Template", cfg.Startercode.Template)
+		writeSectionField("TemplateMessage", cfg.Startercode.TemplateMessage)
 		writeSectionField("ToBranch", cfg.Startercode.ToBranch)
 		writeSectionField("AdditionalBranches", cfg.Startercode.AdditionalBranches)
 	}

@@ -18,7 +18,7 @@ import (
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
-func CloneBranch(url, fromBranch string, orphan bool, orphanMessage string) (*git.Repository, plumbing.ReferenceName, error) {
+func CloneBranch(url, fromBranch string, singleCommit bool, commitMessage string) (*SourceRepo, error) {
 	cfg := yacspin.Config{
 		Frequency: 100 * time.Millisecond,
 		CharSet:   yacspin.CharSets[69],
@@ -46,7 +46,7 @@ func CloneBranch(url, fromBranch string, orphan bool, orphanMessage string) (*gi
 	auth, err := GetAuth()
 	if err != nil {
 		fmt.Printf("error: %v", err)
-		return nil, "", err
+		return nil, err
 	}
 
 	storer := memory.NewStorage()
@@ -67,7 +67,7 @@ func CloneBranch(url, fromBranch string, orphan bool, orphanMessage string) (*gi
 		if err != nil {
 			log.Debug().Err(err).Msg("cannot stop spinner")
 		}
-		return nil, "", err
+		return nil, err
 	}
 
 	wt, err := repo.Worktree()
@@ -78,7 +78,7 @@ func CloneBranch(url, fromBranch string, orphan bool, orphanMessage string) (*gi
 		if err != nil {
 			log.Debug().Err(err).Msg("cannot stop spinner")
 		}
-		return nil, "", err
+		return nil, err
 	}
 
 	if err := wt.Checkout(&git.CheckoutOptions{
@@ -91,11 +91,15 @@ func CloneBranch(url, fromBranch string, orphan bool, orphanMessage string) (*gi
 		if err != nil {
 			log.Debug().Err(err).Msg("cannot stop spinner")
 		}
-		return nil, "", err
+		return nil, err
 	}
 
-	if !orphan {
-		return repo, sourceRef, nil
+	if !singleCommit {
+		return &SourceRepo{
+			Repo: repo,
+			Ref:  sourceRef,
+			Auth: auth,
+		}, nil
 	}
 
 	headRef, err := repo.Head()
@@ -106,7 +110,7 @@ func CloneBranch(url, fromBranch string, orphan bool, orphanMessage string) (*gi
 		if err != nil {
 			log.Debug().Err(err).Msg("cannot stop spinner")
 		}
-		return nil, "", err
+		return nil, err
 	}
 
 	headCommit, err := repo.CommitObject(headRef.Hash())
@@ -117,7 +121,7 @@ func CloneBranch(url, fromBranch string, orphan bool, orphanMessage string) (*gi
 		if err != nil {
 			log.Debug().Err(err).Msg("cannot stop spinner")
 		}
-		return nil, "", err
+		return nil, err
 	}
 
 	tree, err := headCommit.Tree()
@@ -128,11 +132,11 @@ func CloneBranch(url, fromBranch string, orphan bool, orphanMessage string) (*gi
 		if err != nil {
 			log.Debug().Err(err).Msg("cannot stop spinner")
 		}
-		return nil, "", err
+		return nil, err
 	}
 
-	orphanBranchName := fmt.Sprintf("orphan-%s-%d", fromBranch, time.Now().UnixNano())
-	orphanRef := plumbing.NewBranchReferenceName(orphanBranchName)
+	singleCommitBranchName := fmt.Sprintf("orphan-%s-%d", fromBranch, time.Now().UnixNano())
+	refName := plumbing.NewBranchReferenceName(singleCommitBranchName)
 
 	committerName := "glabs"
 	committerEmail := "glabs-bot@noreply.example.com"
@@ -154,7 +158,7 @@ func CloneBranch(url, fromBranch string, orphan bool, orphanMessage string) (*gi
 			Email: committerEmail,
 			When:  now,
 		},
-		Message:  orphanMessage,
+		Message:  commitMessage,
 		TreeHash: tree.Hash,
 	}
 
@@ -166,7 +170,7 @@ func CloneBranch(url, fromBranch string, orphan bool, orphanMessage string) (*gi
 		if err != nil {
 			log.Debug().Err(err).Msg("cannot stop spinner")
 		}
-		return nil, "", err
+		return nil, err
 	}
 
 	commitHash, err := repo.Storer.SetEncodedObject(encoded)
@@ -177,22 +181,22 @@ func CloneBranch(url, fromBranch string, orphan bool, orphanMessage string) (*gi
 		if err != nil {
 			log.Debug().Err(err).Msg("cannot stop spinner")
 		}
-		return nil, "", err
+		return nil, err
 	}
 
-	if err := repo.Storer.SetReference(plumbing.NewHashReference(orphanRef, commitHash)); err != nil {
+	if err := repo.Storer.SetReference(plumbing.NewHashReference(refName, commitHash)); err != nil {
 		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
 
 		err := spinner.StopFail()
 		if err != nil {
 			log.Debug().Err(err).Msg("cannot stop spinner")
 		}
-		return nil, "", err
+		return nil, err
 	}
 
 	if err := repo.CreateBranch(&gitconfig.Branch{
-		Name:  orphanRef.Short(),
-		Merge: orphanRef,
+		Name:  refName.Short(),
+		Merge: refName,
 	}); err != nil && err != git.ErrBranchExists {
 		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
 
@@ -200,11 +204,11 @@ func CloneBranch(url, fromBranch string, orphan bool, orphanMessage string) (*gi
 		if err != nil {
 			log.Debug().Err(err).Msg("cannot stop spinner")
 		}
-		return nil, "", err
+		return nil, err
 	}
 
 	if err := wt.Checkout(&git.CheckoutOptions{
-		Branch: orphanRef,
+		Branch: refName,
 		Force:  true,
 	}); err != nil {
 		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
@@ -213,26 +217,30 @@ func CloneBranch(url, fromBranch string, orphan bool, orphanMessage string) (*gi
 		if err != nil {
 			log.Debug().Err(err).Msg("cannot stop spinner")
 		}
-		return nil, "", err
+		return nil, err
 	}
 
-	if orphan {
-		spinner.StopMessage(fmt.Sprintf("using branch '%s' with single commit '%s'", orphanRef.Short(), orphanMessage))
+	if singleCommit {
+		spinner.StopMessage(fmt.Sprintf("using branch '%s' with single commit '%s'", refName.Short(), commitMessage))
 	}
 	errs := spinner.Stop()
 	if errs != nil {
 		log.Debug().Err(err).Msg("cannot stop spinner")
 	}
 
-	return repo, orphanRef, nil
+	return &SourceRepo{
+		Repo: repo,
+		Ref:  refName,
+		Auth: auth,
+	}, nil
 }
 
-func PushBranch(assignmentCfg *config.AssignmentConfig, projectname string, repo *git.Repository, localRef plumbing.ReferenceName, toBranch string, force bool, project *gitlab.Project) error {
+func PushBranch(assignmentCfg *config.AssignmentConfig, projectname string, sourceRepo *SourceRepo, toBranch string, force bool, project *gitlab.Project) error {
 	cfg := yacspin.Config{
 		Frequency: 100 * time.Millisecond,
 		CharSet:   yacspin.CharSets[69],
 		Suffix: aurora.Sprintf(aurora.Cyan(" pushing branch %s to project %s / branch %s"),
-			aurora.Yellow(localRef.Short()),
+			aurora.Yellow(sourceRepo.Ref.Short()),
 			aurora.Magenta(assignmentCfg.URL+"/"+project.Name),
 			aurora.Magenta(toBranch),
 		),
@@ -258,7 +266,7 @@ func PushBranch(assignmentCfg *config.AssignmentConfig, projectname string, repo
 		URLs: []string{project.SSHURLToRepo},
 	}
 
-	remote, err := repo.CreateRemote(conf)
+	remote, err := sourceRepo.Repo.CreateRemote(conf)
 	if err != nil {
 		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
 
@@ -272,19 +280,7 @@ func PushBranch(assignmentCfg *config.AssignmentConfig, projectname string, repo
 		return fmt.Errorf("cannot create remote: %w", err)
 	}
 
-	auth, err := GetAuth()
-	if err != nil {
-		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-		err := spinner.StopFail()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
-		fmt.Printf("error: %v", err)
-		return err
-	}
-
-	spec := localRef.String() + ":" + plumbing.NewBranchReferenceName(toBranch).String()
+	spec := sourceRepo.Ref.String() + ":" + plumbing.NewBranchReferenceName(toBranch).String()
 	if force {
 		spec = "+" + spec
 	}
@@ -292,10 +288,10 @@ func PushBranch(assignmentCfg *config.AssignmentConfig, projectname string, repo
 	pushOpts := &git.PushOptions{
 		RemoteName: remote.Config().Name,
 		RefSpecs:   []gitconfig.RefSpec{gitconfig.RefSpec(spec)},
-		Auth:       auth,
+		Auth:       sourceRepo.Auth,
 	}
 
-	err = repo.Push(pushOpts)
+	err = sourceRepo.Repo.Push(pushOpts)
 	if err != nil {
 		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
 

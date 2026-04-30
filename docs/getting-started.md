@@ -66,8 +66,12 @@ mpd:
     per: student
     startercode:
       url: git@gitlab.example.org:mpd/startercode/blatt-01.git
-      fromBranch: template
+      fromBranch: startercode
+      template: true
 ```
+
+If you set `template: true` all commits in startercode will be squashed to just
+one commit using the `templateMessage`.
 
 ## Important defaults at a glance
 
@@ -84,6 +88,8 @@ mpd:
 | Assignment | `mergeRequest.allThreadsMustBeResolved` | `false` |
 | Assignment | `mergeRequest.statusChecksMustSucceed` | `false` |
 | Startercode | `fromBranch` | `main` |
+| Startercode | `template` | `false` |
+| Startercode | `templateMessage` | `Initial` |
 | Startercode | `toBranch` | `main` |
 | Startercode | `additionalBranches` | `[]` |
 | Branches | first `branches[].default` | `true` on first branch |

@@ -19,10 +19,10 @@ func (c *Client) Update(assignmentCfg *config.AssignmentConfig) {
 		exitFunc(1)
 	}
 
-	var starterrepo *git.Starterrepo
+	var starterrepo *git.SourceRepo
 
 	if assignmentCfg.Startercode != nil {
-		starterrepo, err = git.PrepareStartercodeRepo(assignmentCfg)
+		starterrepo, err = git.PrepareSourceRepo(assignmentCfg.Startercode.URL, assignmentCfg.Startercode.FromBranch)
 
 		if err != nil {
 			fmt.Println(err)
@@ -41,7 +41,7 @@ func (c *Client) Update(assignmentCfg *config.AssignmentConfig) {
 	}
 }
 
-func (c *Client) update(assignmentCfg *config.AssignmentConfig, project *gitlab.Project, starterrepo *git.Starterrepo) {
+func (c *Client) update(assignmentCfg *config.AssignmentConfig, project *gitlab.Project, starterrepo *git.SourceRepo) {
 
 	cfg := yacspin.Config{
 		Frequency: 100 * time.Millisecond,
@@ -88,7 +88,7 @@ func (c *Client) update(assignmentCfg *config.AssignmentConfig, project *gitlab.
 	}
 }
 
-func (c *Client) updatePerStudent(assignmentCfg *config.AssignmentConfig, starterrepo *git.Starterrepo) {
+func (c *Client) updatePerStudent(assignmentCfg *config.AssignmentConfig, starterrepo *git.SourceRepo) {
 	if len(assignmentCfg.Students) == 0 {
 		log.Info().Str("group", assignmentCfg.Course).Msg("no students found")
 		return
@@ -108,7 +108,7 @@ func (c *Client) updatePerStudent(assignmentCfg *config.AssignmentConfig, starte
 	}
 }
 
-func (c *Client) updatePerGroup(assignmentCfg *config.AssignmentConfig, starterrepo *git.Starterrepo) {
+func (c *Client) updatePerGroup(assignmentCfg *config.AssignmentConfig, starterrepo *git.SourceRepo) {
 	if len(assignmentCfg.Groups) == 0 {
 		log.Info().Str("group", assignmentCfg.Course).Msg("no groups found")
 		return

@@ -26,16 +26,16 @@ func Clone(cfg *config.AssignmentConfig, noSpinner bool) {
 	case config.PerStudent:
 		for _, stud := range cfg.Students {
 			suffix := cfg.RepoSuffix(stud)
-			clone(localpath(cfg, suffix), cfg.Clone.Branch, cloneurl(cfg, suffix), auth, cfg.Clone.Force, noSpinner)
+			clone(localpath(cfg, suffix), cfg.Clone.Branch, ProjectRepoUrl(cfg, suffix), auth, cfg.Clone.Force, noSpinner)
 		}
 	case config.PerGroup:
 		for _, grp := range cfg.Groups {
-			clone(localpath(cfg, grp.Name), cfg.Clone.Branch, cloneurl(cfg, grp.Name), auth, cfg.Clone.Force, noSpinner)
+			clone(localpath(cfg, grp.Name), cfg.Clone.Branch, ProjectRepoUrl(cfg, grp.Name), auth, cfg.Clone.Force, noSpinner)
 		}
 	}
 }
 
-func cloneurl(cfg *config.AssignmentConfig, suffix string) string {
+func ProjectRepoUrl(cfg *config.AssignmentConfig, suffix string) string {
 	return fmt.Sprintf("%s/%s-%s",
 		strings.Replace(strings.Replace(cfg.URL, "https://", "git@", 1), "/", ":", 1),
 		cfg.RepoBaseName(), suffix)

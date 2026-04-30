@@ -39,6 +39,42 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 	branchRules := branches(assignmentKey, starter)
 	defaultCloneBranch := defaultBranch(branchRules, "main")
 
+	deferredBranches := make(map[string]*DeferredBranch)
+	deferredBranchesCfg := viper.GetStringMap(assignmentKey + ".deferredBranches")
+	if len(deferredBranchesCfg) > 0 {
+		for name := range deferredBranchesCfg {
+			configMap := viper.GetStringMapString(assignmentKey + ".deferredBranches." + name)
+
+			url, ok := configMap["url"]
+			if !ok {
+				url = starter.URL
+			}
+			fromBranch := configMap["frombranch"]
+			toBranch, ok := configMap["tobranch"]
+			if !ok {
+				toBranch = fromBranch
+			}
+			orphanValue, ok := configMap["orphan"]
+			orphan := true
+			if ok && orphanValue == "false" {
+				orphan = false
+			}
+
+			orphanMessage, ok := configMap["orphanmessage"]
+			if !ok {
+				orphanMessage = fmt.Sprintf("Snapshot of %s", name)
+			}
+
+			deferredBranches[name] = &DeferredBranch{
+				URL:           url,
+				FromBranch:    fromBranch,
+				ToBranch:      toBranch,
+				Orphan:        orphan,
+				OrphanMessage: orphanMessage,
+			}
+		}
+	}
+
 	assignmentConfig := &AssignmentConfig{
 		Course:                course,
 		Name:                  assignment,
@@ -64,6 +100,7 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 		Clone:             clone(assignmentKey, defaultCloneBranch),
 		Release:           release,
 		Seeder:            seeder(assignmentKey),
+		DeferredBranches:  deferredBranches,
 	}
 
 	return assignmentConfig

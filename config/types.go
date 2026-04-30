@@ -44,6 +44,15 @@ type AssignmentConfig struct {
 	Clone                  *Clone
 	Release                *Release
 	Seeder                 *Seeder
+	DeferredBranches       map[string]*DeferredBranch
+}
+
+type DeferredBranch struct {
+	URL           string
+	FromBranch    string
+	ToBranch      string
+	Orphan        bool
+	OrphanMessage string
 }
 
 type Per string

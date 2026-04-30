@@ -9,31 +9,22 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/logrusorgru/aurora"
-	"github.com/obcode/glabs/v2/config"
 	"github.com/rs/zerolog/log"
 	"github.com/theckman/yacspin"
 )
 
-type Starterrepo struct {
+type SourceRepo struct {
 	Repo *git.Repository
 	Auth ssh.AuthMethod
 }
 
-func PrepareStartercodeRepo(assignmentCfg *config.AssignmentConfig) (*Starterrepo, error) {
-	if assignmentCfg.Startercode == nil {
-		log.Debug().
-			Str("course", assignmentCfg.Course).
-			Str("assignment", assignmentCfg.Name).
-			Msg("no startercode provided")
-		return nil, nil
-	}
-
+func PrepareSourceRepo(url, fromBranch string) (*SourceRepo, error) {
 	cfg := yacspin.Config{
 		Frequency: 100 * time.Millisecond,
 		CharSet:   yacspin.CharSets[69],
-		Suffix: aurora.Sprintf(aurora.Cyan(" cloning startercode from %s, branch %s"),
-			aurora.Yellow(assignmentCfg.Startercode.URL),
-			aurora.Yellow(assignmentCfg.Startercode.FromBranch),
+		Suffix: aurora.Sprintf(aurora.Cyan(" cloning source code from %s, branch %s"),
+			aurora.Yellow(url),
+			aurora.Yellow(fromBranch),
 		),
 		SuffixAutoColon:   true,
 		StopCharacter:     "✓",
@@ -65,8 +56,8 @@ func PrepareStartercodeRepo(assignmentCfg *config.AssignmentConfig) (*Starterrep
 
 	r, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
 		Auth:          auth,
-		URL:           assignmentCfg.Startercode.URL,
-		ReferenceName: plumbing.ReferenceName("refs/heads/" + assignmentCfg.Startercode.FromBranch),
+		URL:           url,
+		ReferenceName: plumbing.ReferenceName("refs/heads/" + fromBranch),
 	})
 
 	errs := spinner.Stop()
@@ -78,7 +69,7 @@ func PrepareStartercodeRepo(assignmentCfg *config.AssignmentConfig) (*Starterrep
 		return nil, fmt.Errorf("error while cloning repo (wrong URL or no rights?): %w", err)
 	}
 
-	return &Starterrepo{
+	return &SourceRepo{
 		Repo: r,
 		Auth: auth,
 	}, nil

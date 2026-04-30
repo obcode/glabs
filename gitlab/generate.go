@@ -26,10 +26,10 @@ func (c *Client) Generate(assignmentCfg *config.AssignmentConfig) {
 		}
 	}
 
-	var starterrepo *git.Starterrepo
+	var starterrepo *git.SourceRepo
 
 	if assignmentCfg.Startercode != nil {
-		starterrepo, err = git.PrepareStartercodeRepo(assignmentCfg)
+		starterrepo, err = git.PrepareSourceRepo(assignmentCfg.Startercode.URL, assignmentCfg.Startercode.FromBranch)
 
 		if err != nil {
 			fmt.Println(err)
@@ -49,7 +49,7 @@ func (c *Client) Generate(assignmentCfg *config.AssignmentConfig) {
 }
 
 func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGroupID int64,
-	projectname string, members []*config.Student, starterrepo *git.Starterrepo) {
+	projectname string, members []*config.Student, starterrepo *git.SourceRepo) {
 
 	cfg := yacspin.Config{
 		Frequency: 100 * time.Millisecond,
@@ -225,7 +225,7 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 }
 
 func (c *Client) generatePerStudent(assignmentCfg *config.AssignmentConfig, assignmentGroupID int64,
-	starterrepo *git.Starterrepo) {
+	starterrepo *git.SourceRepo) {
 	if len(assignmentCfg.Students) == 0 {
 		log.Info().Str("group", assignmentCfg.Course).Msg("no students found")
 		return
@@ -238,7 +238,7 @@ func (c *Client) generatePerStudent(assignmentCfg *config.AssignmentConfig, assi
 }
 
 func (c *Client) generatePerGroup(assignmentCfg *config.AssignmentConfig, assignmentGroupID int64,
-	starterrepo *git.Starterrepo) {
+	starterrepo *git.SourceRepo) {
 	if len(assignmentCfg.Groups) == 0 {
 		log.Info().Str("group", assignmentCfg.Course).Msg("no groups found")
 		return

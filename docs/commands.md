@@ -197,6 +197,14 @@ e.g.
 glabs push mpd ass1 solution
 ```
 
+If you are using `orphan` you might want to set the committer name and email in `~/.glabs.yaml` like so
+
+```
+committer:
+  name: Example User
+  email: user@example.com
+```
+
 ## Filtering students or groups
 
 When specifying `[groups...|students...]`, patterns are treated as regular expressions:

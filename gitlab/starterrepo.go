@@ -27,7 +27,7 @@ func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *g.So
 
 	refSpec := config.RefSpec(
 		fmt.Sprintf("+refs/heads/%s:refs/heads/%s",
-			assignmentCfg.Startercode.FromBranch,
+			from.Ref.Short(),
 			assignmentCfg.Startercode.ToBranch),
 	)
 
@@ -35,7 +35,7 @@ func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *g.So
 		Str("refSpec", string(refSpec)).
 		Str("name", project.Name).
 		Str("toURL", project.SSHURLToRepo).
-		Str("fromBranch", assignmentCfg.Startercode.FromBranch).
+		Str("fromBranch", from.Ref.Short()).
 		Str("toBranch", assignmentCfg.Startercode.ToBranch).
 		Msg("pushing starter code")
 

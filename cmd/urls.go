@@ -17,12 +17,19 @@ var (
 				config.GetCourseURL(args[0])
 			} else {
 				assignmentConfig := config.GetAssignmentConfig(args[0], args[1], args[2:]...)
-				assignmentConfig.Urls(len(args) == 2)
+				if startercode {
+					assignmentConfig.StartercodeURL()
+				} else {
+					assignmentConfig.Urls(len(args) == 2)
+				}
 			}
 		},
 	}
+	startercode bool
 )
 
 func init() {
 	rootCmd.AddCommand(urlsCmd)
+	urlsCmd.Flags().BoolVarP(&startercode, "startercode", "s", false, "print url of startercode")
+
 }

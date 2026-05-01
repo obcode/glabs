@@ -2,11 +2,12 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 )
 
 func (cfg *AssignmentConfig) StartercodeURL() {
-	url, err := cfg.gitURLToWebURL(cfg.Startercode.URL)
+	url, err := cfg.gitURLToWebURL(cfg.Startercode.URL, cfg.Startercode.FromBranch)
 	if err != nil {
 		fmt.Printf("error: %s\n", err)
 		return
@@ -14,7 +15,7 @@ func (cfg *AssignmentConfig) StartercodeURL() {
 	fmt.Println(url)
 }
 
-func (cfg *AssignmentConfig) gitURLToWebURL(raw string) (string, error) {
+func (cfg *AssignmentConfig) gitURLToWebURL(raw, branch string) (string, error) {
 	raw = strings.TrimSpace(raw)
 
 	if raw == "" {
@@ -23,7 +24,15 @@ func (cfg *AssignmentConfig) gitURLToWebURL(raw string) (string, error) {
 
 	// Bereits Web-URL -> direkt zurückgeben
 	if strings.HasPrefix(raw, "https://") || strings.HasPrefix(raw, "http://") {
-		return raw, nil
+		base := raw
+		if branch == "" {
+			return base, nil
+		}
+		encBranch := url.PathEscape(branch)
+		if !strings.HasSuffix(base, "/") {
+			base += "/"
+		}
+		return base + "-/tree/" + encBranch, nil
 	}
 
 	// Git SSH Form: git@host:path.git
@@ -38,7 +47,12 @@ func (cfg *AssignmentConfig) gitURLToWebURL(raw string) (string, error) {
 		path := rest[i+1:]
 		path = strings.TrimSuffix(path, ".git")
 
-		return "https://" + host + "/" + path, nil
+		base := "https://" + host + "/" + path
+		if branch == "" {
+			return base, nil
+		}
+		encBranch := url.PathEscape(branch)
+		return base + "/-/tree/" + encBranch, nil
 	}
 
 	return "", fmt.Errorf("nicht unterstütztes URL-Format: %q", raw)

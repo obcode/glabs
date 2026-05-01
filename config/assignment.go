@@ -9,6 +9,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+func GetCourseURL(course string) {
+	fmt.Printf("%s/%s\n", viper.GetString("gitlab.host"), coursePath(course))
+}
+
 func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...string) *AssignmentConfig {
 	if !viper.IsSet(course) {
 		log.Fatal().
@@ -147,11 +151,17 @@ func (cfg *AssignmentConfig) RepoNameForGroup(group *Group) string {
 	return cfg.RepoNameWithSuffix(group.Name)
 }
 
-func assignmentPath(course, assignment string) string {
+func coursePath(course string) string {
 	path := viper.GetString(course + ".coursepath")
 	if semesterpath := viper.GetString(course + ".semesterpath"); len(semesterpath) > 0 {
 		path += "/" + semesterpath
 	}
+
+	return path
+}
+
+func assignmentPath(course, assignment string) string {
+	path := coursePath(course)
 
 	assignmentpath := path
 	if group := viper.GetString(course + "." + assignment + ".assignmentpath"); len(group) > 0 {

@@ -22,7 +22,7 @@ func (c *Client) Update(assignmentCfg *config.AssignmentConfig) {
 	var starterrepo *git.SourceRepo
 
 	if assignmentCfg.Startercode != nil {
-		starterrepo, err = git.PrepareSourceRepo(assignmentCfg.Startercode.URL, assignmentCfg.Startercode.FromBranch)
+		starterrepo, err = git.PrepareSourceRepo(assignmentCfg.Startercode.URL, assignmentCfg.Startercode.FromBranch, assignmentCfg.Startercode.Template, assignmentCfg.Startercode.TemplateMessage)
 
 		if err != nil {
 			fmt.Println(err)

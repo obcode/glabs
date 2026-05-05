@@ -126,12 +126,19 @@ func TestIssues_DefaultsAndLegacyFallback(t *testing.T) {
 	if !reflect.DeepEqual(i.IssueNumbers, []int{1}) {
 		t.Fatalf("IssueNumbers = %#v, want [1]", i.IssueNumbers)
 	}
+	if i.IncludeChildTasks {
+		t.Fatalf("IncludeChildTasks = %v, want false", i.IncludeChildTasks)
+	}
 
 	viper.Set("course.a1.issues.replicateFromStartercode", true)
 	viper.Set("course.a1.issues.issueNumbers", []int{4, 7})
+	viper.Set("course.a1.issues.includeChildTasks", true)
 	i = issues("course.a1")
 	if !reflect.DeepEqual(i.IssueNumbers, []int{4, 7}) {
 		t.Fatalf("IssueNumbers = %#v", i.IssueNumbers)
+	}
+	if !i.IncludeChildTasks {
+		t.Fatalf("IncludeChildTasks = %v, want true", i.IncludeChildTasks)
 	}
 }
 

@@ -178,8 +178,26 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 	// Replicate issues from startercode repo if configured
 	if generated && assignmentCfg.Startercode != nil && assignmentCfg.Issues != nil && assignmentCfg.Issues.ReplicateFromStartercode {
 		starterProject, starterProjectErr := c.getStartercodeProject(assignmentCfg)
+		issueNumbers := assignmentCfg.Issues.IssueNumbers
+		parentByChild := make(map[int]int)
 
-		for _, issueNumber := range assignmentCfg.Issues.IssueNumbers {
+		if starterProjectErr == nil {
+			plan, planErr := c.resolveIssuePlanForReplication(
+				starterProject,
+				assignmentCfg.Issues.IssueNumbers,
+				assignmentCfg.Issues.IncludeChildTasks,
+			)
+			if planErr != nil {
+				starterProjectErr = planErr
+			} else {
+				issueNumbers = plan.OrderedIssues
+				parentByChild = plan.ParentByChild
+			}
+		}
+
+		createdIssueMap := make(map[int]int, len(issueNumbers))
+
+		for _, issueNumber := range issueNumbers {
 			cfg.Suffix = aurora.Sprintf(
 				aurora.Cyan(" ↪ replicating issue #%d from startercode"),
 				aurora.Yellow(issueNumber),
@@ -203,7 +221,9 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 				continue
 			}
 
-			err = c.replicateIssue(starterProject, project, issueNumber)
+			_, isChildTask := parentByChild[issueNumber]
+			createdIssueIID, replicateErr := c.replicateIssue(starterProject, project, issueNumber, isChildTask)
+			err = replicateErr
 			if err != nil {
 				spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
 
@@ -214,9 +234,30 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 				continue
 			}
 
+			createdIssueMap[issueNumber] = createdIssueIID
+
 			err = spinner.Stop()
 			if err != nil {
 				log.Debug().Err(err).Msg("cannot stop spinner")
+			}
+		}
+
+		if starterProjectErr == nil && assignmentCfg.Issues.IncludeChildTasks {
+			for childSource, parentSource := range parentByChild {
+				parentTarget, hasParent := createdIssueMap[parentSource]
+				childTarget, hasChild := createdIssueMap[childSource]
+				if !hasParent || !hasChild {
+					continue
+				}
+
+				if err = c.attachChildTaskToParent(project, parentTarget, childTarget); err != nil {
+					log.Error().Err(err).
+						Int("sourceParentIssue", parentSource).
+						Int("sourceChildIssue", childSource).
+						Int("targetParentIssue", parentTarget).
+						Int("targetChildIssue", childTarget).
+						Msg("cannot attach replicated child task to parent")
+				}
 			}
 		}
 	}

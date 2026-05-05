@@ -41,8 +41,29 @@ func PrepareSourceRepo(url, fromBranch string, singleCommit bool, commitMessage 
 		log.Debug().Err(err).Msg("cannot start spinner")
 	}
 
+	cloneSucceeded := false
+	defer func() {
+		if spinner == nil {
+			return
+		}
+
+		if cloneSucceeded {
+			errs := spinner.Stop()
+			if errs != nil {
+				log.Debug().Err(errs).Msg("cannot stop spinner")
+			}
+			return
+		}
+
+		err := spinner.StopFail()
+		if err != nil {
+			log.Debug().Err(err).Msg("cannot stop spinner")
+		}
+	}()
+
 	auth, err := GetAuth()
 	if err != nil {
+		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
 		fmt.Printf("error: %v", err)
 		return nil, err
 	}
@@ -60,22 +81,12 @@ func PrepareSourceRepo(url, fromBranch string, singleCommit bool, commitMessage 
 	})
 	if err != nil {
 		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-		err := spinner.StopFail()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
 		return nil, err
 	}
 
 	wt, err := repo.Worktree()
 	if err != nil {
 		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-		err := spinner.StopFail()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
 		return nil, err
 	}
 
@@ -84,15 +95,11 @@ func PrepareSourceRepo(url, fromBranch string, singleCommit bool, commitMessage 
 		Force:  true,
 	}); err != nil {
 		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-		err := spinner.StopFail()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
 		return nil, err
 	}
 
 	if !singleCommit {
+		cloneSucceeded = true
 		return &SourceRepo{
 			Repo: repo,
 			Ref:  sourceRef,
@@ -103,33 +110,18 @@ func PrepareSourceRepo(url, fromBranch string, singleCommit bool, commitMessage 
 	headRef, err := repo.Head()
 	if err != nil {
 		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-		err := spinner.StopFail()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
 		return nil, err
 	}
 
 	headCommit, err := repo.CommitObject(headRef.Hash())
 	if err != nil {
 		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-		err := spinner.StopFail()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
 		return nil, err
 	}
 
 	tree, err := headCommit.Tree()
 	if err != nil {
 		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-		err := spinner.StopFail()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
 		return nil, err
 	}
 
@@ -163,32 +155,17 @@ func PrepareSourceRepo(url, fromBranch string, singleCommit bool, commitMessage 
 	encoded := repo.Storer.NewEncodedObject()
 	if err := commit.Encode(encoded); err != nil {
 		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-		err := spinner.StopFail()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
 		return nil, err
 	}
 
 	commitHash, err := repo.Storer.SetEncodedObject(encoded)
 	if err != nil {
 		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-		err := spinner.StopFail()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
 		return nil, err
 	}
 
 	if err := repo.Storer.SetReference(plumbing.NewHashReference(refName, commitHash)); err != nil {
 		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-		err := spinner.StopFail()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
 		return nil, err
 	}
 
@@ -197,11 +174,6 @@ func PrepareSourceRepo(url, fromBranch string, singleCommit bool, commitMessage 
 		Merge: refName,
 	}); err != nil && err != git.ErrBranchExists {
 		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-		err := spinner.StopFail()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
 		return nil, err
 	}
 
@@ -210,21 +182,13 @@ func PrepareSourceRepo(url, fromBranch string, singleCommit bool, commitMessage 
 		Force:  true,
 	}); err != nil {
 		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-		err := spinner.StopFail()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
 		return nil, err
 	}
 
 	if singleCommit {
 		spinner.StopMessage(fmt.Sprintf("using branch '%s' with single commit '%s'", refName.Short(), commitMessage))
 	}
-	errs := spinner.Stop()
-	if errs != nil {
-		log.Debug().Err(err).Msg("cannot stop spinner")
-	}
+	cloneSucceeded = true
 
 	return &SourceRepo{
 		Repo: repo,

@@ -113,6 +113,7 @@ func (cfg *AssignmentConfig) Show() {
 		fieldCandidate(2, "AdditionalBranches"),
 		fieldCandidate(2, "ReplicateFromStartercode"),
 		fieldCandidate(2, "IssueNumbers"),
+		fieldCandidate(2, "IncludeChildTasks"),
 		fieldCandidate(2, "MergeMethod"),
 		fieldCandidate(2, "SquashOption"),
 		fieldCandidate(2, "PipelineMustSucceed"),
@@ -182,8 +183,10 @@ func (cfg *AssignmentConfig) Show() {
 		writeSectionField("ReplicateFromStartercode", cfg.Issues.ReplicateFromStartercode)
 		if cfg.Issues.ReplicateFromStartercode {
 			writeSectionField("IssueNumbers", cfg.Issues.IssueNumbers)
+			writeSectionField("IncludeChildTasks", cfg.Issues.IncludeChildTasks)
 		} else {
 			writeSectionField("IssueNumbers", "not used")
+			writeSectionField("IncludeChildTasks", "not used")
 		}
 	}
 

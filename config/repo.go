@@ -181,6 +181,7 @@ func defaultBranch(rules []BranchRule, fallback string) string {
 func issues(assignmentKey string) *IssueReplication {
 	replicate := viper.GetBool(assignmentKey + ".issues.replicateFromStartercode")
 	numbers := viper.GetIntSlice(assignmentKey + ".issues.issueNumbers")
+	includeChildTasks := viper.GetBool(assignmentKey + ".issues.includeChildTasks")
 
 	// Legacy compatibility for old startercode issue replication config.
 	if !replicate && !viper.IsSet(assignmentKey+".issues") {
@@ -196,7 +197,7 @@ func issues(assignmentKey string) *IssueReplication {
 		numbers = []int{1}
 	}
 
-	return &IssueReplication{ReplicateFromStartercode: true, IssueNumbers: numbers}
+	return &IssueReplication{ReplicateFromStartercode: true, IssueNumbers: numbers, IncludeChildTasks: includeChildTasks}
 }
 
 func clone(assignmentKey, defaultBranch string) *Clone {

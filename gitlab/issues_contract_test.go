@@ -1,6 +1,7 @@
 package gitlab
 
 import (
+	"encoding/json"
 	"net/http"
 	"strings"
 	"testing"
@@ -99,21 +100,25 @@ func TestReplicateIssue_Success(t *testing.T) {
 	source := &gitlabapi.Project{ID: 1, PathWithNamespace: "mpd/startercode/blatt-01"}
 	target := &gitlabapi.Project{ID: 2, PathWithNamespace: "mpd/ss26/blatt-01/team1"}
 
-	if err := client.replicateIssue(source, target, 7); err != nil {
+	if _, err := client.replicateIssue(source, target, 7, false); err != nil {
 		t.Fatalf("replicateIssue() error = %v", err)
 	}
 }
 
 func TestReplicateIssue_GetIssueFails(t *testing.T) {
 	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/issues/7" {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"message":"404 Not Found"}`))
+			return
+		}
 		w.WriteHeader(http.StatusNotFound)
-		_, _ = w.Write([]byte(`{"message":"404 Not Found"}`))
 	})
 
-	source := &gitlabapi.Project{ID: 1}
+	source := &gitlabapi.Project{ID: 1, PathWithNamespace: "mpd/startercode/blatt-01"}
 	target := &gitlabapi.Project{ID: 2}
 
-	err := client.replicateIssue(source, target, 7)
+	_, err := client.replicateIssue(source, target, 7, false)
 	if err == nil {
 		t.Fatal("expected error when loading issue fails")
 	}
@@ -132,11 +137,68 @@ func TestReplicateIssue_CreateIssueFails(t *testing.T) {
 		}
 	})
 
-	source := &gitlabapi.Project{ID: 1}
+	source := &gitlabapi.Project{ID: 1, PathWithNamespace: "mpd/startercode/blatt-01"}
 	target := &gitlabapi.Project{ID: 2}
 
-	err := client.replicateIssue(source, target, 7)
+	_, err := client.replicateIssue(source, target, 7, false)
 	if err == nil {
 		t.Fatal("expected error when creating issue fails")
+	}
+}
+
+func TestResolveIssueNumbersForReplication_WithChildTasks(t *testing.T) {
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/api/v4/projects/1/issues/") {
+			if strings.HasSuffix(r.URL.Path, "/2") {
+				_, _ = w.Write([]byte(`{"id":2002,"iid":2,"title":"Aufgabenstellung","description":"Root"}`))
+				return
+			}
+			if strings.HasSuffix(r.URL.Path, "/5") {
+				_, _ = w.Write([]byte(`{"id":2005,"iid":5,"title":"Teilaufgabe 1","description":"Child 1"}`))
+				return
+			}
+			if strings.HasSuffix(r.URL.Path, "/6") {
+				_, _ = w.Write([]byte(`{"id":2006,"iid":6,"title":"Teilaufgabe 2","description":"Child 2"}`))
+				return
+			}
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		if r.Method != http.MethodPost || r.URL.Path != "/api/graphql" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		var req struct {
+			Variables map[string]any `json:"variables"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		iid, _ := req.Variables["iid"].(string)
+		switch iid {
+		case "2":
+			_, _ = w.Write([]byte(`{"data":{"project":{"issue":{"workItem":{"widgets":[{"children":{"nodes":[{"iid":"5"},{"iid":"6"}]}}]}}}}}`))
+			return
+		case "5", "6":
+			_, _ = w.Write([]byte(`{"data":{"project":{"issue":{"workItem":{"widgets":[]}}}}}`))
+			return
+		}
+
+		w.WriteHeader(http.StatusNotFound)
+	})
+
+	source := &gitlabapi.Project{ID: 1, PathWithNamespace: "mpd/startercode/blatt-07"}
+
+	numbers, err := client.resolveIssueNumbersForReplication(source, []int{2}, true)
+	if err != nil {
+		t.Fatalf("resolveIssueNumbersForReplication() error = %v", err)
+	}
+
+	if len(numbers) != 3 || numbers[0] != 2 || numbers[1] != 5 || numbers[2] != 6 {
+		t.Fatalf("resolved issue numbers = %#v, want [2 5 6]", numbers)
 	}
 }

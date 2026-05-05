@@ -246,6 +246,7 @@ Configure issue replication separately from startercode:
 issues:
   replicateFromStartercode: true
   issueNumbers: [1, 3]
+  includeChildTasks: false
 ```
 
 ### Issue keys
@@ -254,6 +255,7 @@ issues:
 |---|---|---|---|
 | `replicateFromStartercode` | Copy issues from starter project | `false` | Requires `startercode` |
 | `issueNumbers` | Which issue numbers to copy | `[1]` | Used only when replication is enabled |
+| `includeChildTasks` | Expand issueNumbers by linked child tasks (GraphQL) | `false` | Resolves nested child tasks recursively |
 
 **Example: Merge-only development branch**
 

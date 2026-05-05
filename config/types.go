@@ -94,6 +94,7 @@ type BranchRule struct {
 type IssueReplication struct {
 	ReplicateFromStartercode bool
 	IssueNumbers             []int
+	IncludeChildTasks        bool
 }
 
 type Clone struct {

@@ -298,6 +298,66 @@ seeder:
 
 When you run `generate`, you will be prompted for the GPG passphrase if needed.
 
+## Enable Dependency-Proxy for students
+
+GitLab's Dependency-Proxy allows students to pull container images through your GitLab instance 
+without direct access to Docker Hub or other registries. This requires students to have at least 
+**guest** access to the course subgroup.
+
+**Setup:**
+
+1. Add students to your course configuration:
+
+```yaml
+vss:
+  coursepath: vss/semester
+  semesterpath: ob-26ss
+  
+  students:
+    - alice@example.org
+    - bob@example.org
+  
+  groups:
+    grp01:
+      - alice@example.org
+    grp02:
+      - bob@example.org
+```
+
+2. Add all students as guests to the course subgroup:
+
+```sh
+glabs addgroupguests vss
+```
+
+This adds all students and group members with **guest** permissions to `vss/semester/ob-26ss`.
+
+**Verify in GitLab:**
+
+- Navigate to `vss/semester/ob-26ss` subgroup
+- Check **Members** tab
+- Students should appear with **Guest** access level
+
+**Using Dependency-Proxy in Dockerfiles:**
+
+Students can now use the proxy in their Dockerfiles:
+
+```dockerfile
+# Instead of:
+# FROM node:20
+
+# Use:
+FROM ${CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX}/library/node:20
+```
+
+**Notes:**
+
+- Guest access is sufficient for Dependency-Proxy
+- Access level is set to **guest** (principle of least privilege)
+- Newly created memberships/invitations expire automatically after 1 year
+- Only affects the course subgroup, not individual assignment repositories
+- Run after course config is finalized, before students start using containers
+
 ## Show resolved configuration
 
 Debug what glabs actually uses:

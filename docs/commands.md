@@ -141,6 +141,28 @@ glabs archive <course> <assignment> [groups...|students...] [flags]
 
 Archived projects are hidden in GitLab UI but still accessible.
 
+### addgroupguests
+
+Add all students as guests to the course subgroup for Dependency-Proxy access.
+
+```text
+glabs addgroupguests <course>
+```
+
+Adds all students (from both individual `students` and `groups` sections) as guests to the course subgroup 
+(`coursepath/semesterpath`). This enables students to access and use the GitLab Dependency-Proxy feature.
+
+Newly created memberships or invitations get an expiration date of 1 year.
+
+**Use case**: After configuring a course and before students need container registry access:
+
+```sh
+glabs addgroupguests vss    # Adds all VSS students to vss/semester/ob-26ss subgroup
+```
+
+**Access level**: Students are added with **guest** permissions, which is sufficient for Dependency-Proxy access 
+and follows the principle of least privilege.
+
 ### show
 
 Display resolved assignment configuration.

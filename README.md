@@ -93,7 +93,10 @@ glabs protect <course> <assignment> [groups...|students...]
 glabs clone <course> <assignment> [groups...|students...]
 glabs urls <course> <assignment> [groups...|students...]
 glabs report <course> <assignment> [--html|--json]
+glabs addgroupguests <course>         # Enable Dependency-Proxy for students
 ```
+
+For details on all commands, see [docs/commands.md](docs/commands.md) and [docs/workflows.md](docs/workflows.md).
 
 ## User handbook
 

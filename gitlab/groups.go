@@ -3,6 +3,7 @@ package gitlab
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/obcode/glabs/v2/config"
 	"github.com/rs/zerolog/log"
@@ -80,4 +81,132 @@ func (c *Client) createGroup(assignmentCfg *config.AssignmentConfig) (int64, err
 			Msg("cannot create group")
 	}
 	return g.ID, nil
+}
+
+// AddGroupGuests adds all students from an assignment config as guests to the course subgroup
+// (coursepath/semesterpath). This enables students to use the Dependency-Proxy.
+func (c *Client) AddGroupGuests(courseName string) error {
+	courseConfig := config.GetCourseConfig(courseName)
+
+	subgroupPath := config.GetCourseSubgroupPath(courseName)
+	log.Info().
+		Str("course", courseName).
+		Str("subgroupPath", subgroupPath).
+		Msg("adding students as guests to course subgroup")
+
+	groupID, err := c.getGroupIDByFullPath(subgroupPath)
+	if err != nil {
+		return fmt.Errorf("cannot get course subgroup ID: %w", err)
+	}
+
+	studentMap := collectUniqueStudents(courseConfig)
+	if len(studentMap) == 0 {
+		log.Info().Str("course", courseName).Msg("no students found to add to course subgroup")
+		return nil
+	}
+
+	successCount := 0
+	for _, student := range studentMap {
+		userID, err := c.getUserID(student)
+		if err != nil {
+			// Fallback: invite by email (works on instances that disallow user lookup by email)
+			if student.Email != nil {
+				info, inviteErr := c.inviteGroupByEmail(groupID, *student.Email, config.Guest)
+				if inviteErr != nil {
+					log.Warn().Err(inviteErr).Str("email", *student.Email).Msg("cannot invite student to group")
+				} else {
+					log.Debug().Str("email", *student.Email).Str("info", info).Msg(info)
+					successCount++
+				}
+			} else {
+				log.Warn().Err(err).Interface("student", student).Msg("cannot get user ID for student")
+			}
+			continue
+		}
+
+		info, err := c.addGroupMember(groupID, userID, config.Guest)
+		if err != nil {
+			log.Warn().Err(err).Int64("userID", userID).Str("groupPath", subgroupPath).Msg("cannot add student to group")
+			continue
+		}
+
+		log.Debug().Int64("userID", userID).Str("info", info).Msg(info)
+		successCount++
+	}
+
+	fmt.Printf("Added/invited %d students as guests to %s\n", successCount, subgroupPath)
+	return nil
+}
+
+// inviteGroupByEmail sends a group invitation to the given email address
+func (c *Client) inviteGroupByEmail(groupID int64, email string, accessLevel config.AccessLevel) (string, error) {
+	expiresAt := gitlab.ISOTime(time.Now().UTC().AddDate(1, 0, 0))
+	m := &gitlab.InvitesOptions{
+		Email:       &email,
+		AccessLevel: gitlab.Ptr(gitlab.AccessLevelValue(accessLevel)),
+		ExpiresAt:   &expiresAt,
+	}
+	resp, _, err := c.Invites.GroupInvites(groupID, m)
+	if err != nil {
+		return "", err
+	}
+	if resp.Status != "success" {
+		return "", fmt.Errorf("inviting user %s failed with %s", email, resp.Message[email])
+	}
+	return fmt.Sprintf("successfully invited %s", email), nil
+}
+
+// addGroupMember adds a user as a member to a group with the specified access level
+func (c *Client) addGroupMember(groupID, userID int64, accessLevel config.AccessLevel) (string, error) {
+	member, _, _ := c.GroupMembers.GetGroupMember(groupID, userID, nil)
+	if member != nil {
+		if member.AccessLevel == gitlab.OwnerPermissions {
+			return "already owner", nil
+		}
+
+		if member.AccessLevel != gitlab.AccessLevelValue(accessLevel) {
+			e := &gitlab.EditGroupMemberOptions{
+				AccessLevel: gitlab.Ptr(gitlab.AccessLevelValue(accessLevel)),
+			}
+			_, _, err := c.GroupMembers.EditGroupMember(groupID, userID, e)
+			if err != nil {
+				return "", fmt.Errorf("error while trying to change access level: %w", err)
+			}
+
+			return fmt.Sprintf("set accesslevel from %s to %s", config.AccessLevel(member.AccessLevel).String(), accessLevel.String()), nil
+		}
+
+		return fmt.Sprintf("already member with accesslevel %s", config.AccessLevel(member.AccessLevel).String()), nil
+	}
+
+	m := &gitlab.AddGroupMemberOptions{
+		UserID:      gitlab.Ptr(userID),
+		AccessLevel: gitlab.Ptr(gitlab.AccessLevelValue(accessLevel)),
+		ExpiresAt:   gitlab.Ptr(time.Now().UTC().AddDate(1, 0, 0).Format("2006-01-02")),
+	}
+	member, _, err := c.GroupMembers.AddGroupMember(groupID, m)
+	if err != nil {
+		return "", fmt.Errorf("problem while adding member with id %d: %w", userID, err)
+	}
+
+	log.Debug().Int64("groupID", groupID).Msg("granted access to group")
+	return fmt.Sprintf("added successfully with accesslevel %s", config.AccessLevel(member.AccessLevel).String()), nil
+}
+
+// collectUniqueStudents returns a deduplicated map of all students in the course config
+func collectUniqueStudents(courseConfig *config.CourseConfig) map[string]*config.Student {
+	studentMap := make(map[string]*config.Student)
+	for _, student := range courseConfig.Students {
+		if key := config.StudentKey(student); key != "" {
+			studentMap[key] = student
+		}
+	}
+	for _, group := range courseConfig.Groups {
+		for _, member := range group.Members {
+			if key := config.StudentKey(member); key != "" {
+				studentMap[key] = member
+			}
+		}
+	}
+	return studentMap
 }

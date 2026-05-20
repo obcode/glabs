@@ -160,6 +160,12 @@ func coursePath(course string) string {
 	return path
 }
 
+// GetCourseSubgroupPath returns the full path to the course subgroup (coursepath/semesterpath)
+// for use with Dependency-Proxy and other group-level features
+func GetCourseSubgroupPath(course string) string {
+	return coursePath(course)
+}
+
 func assignmentPath(course, assignment string) string {
 	path := coursePath(course)
 

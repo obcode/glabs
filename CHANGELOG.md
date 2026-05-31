@@ -4,11 +4,6 @@
 
 * **changelog:** simplify changelog update message format (919946ef)
 
-#### 📄 Documentation
-
-* **changelog:** update for v2.8.2 [skip ci] (85830e4d)
-
-
 ## 2.8.2 (2026-05-31)
 
 #### 🐞 Bug Fixes

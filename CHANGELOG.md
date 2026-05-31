@@ -4,18 +4,6 @@
 
 * **release:** prepend changelog entries and restore history (6c67ac22)
 
-#### 📄 Documentation
-
-* **changelog:** update for v2.8.1 [skip ci] (feb507a3)
-
-
-# Changelog
-
-This file is generated from GitHub releases and current unreleased commits.
-
-## Unreleased
-
-_No unreleased commits._
 
 ## 2.8.1 (2026-05-31)
 
@@ -24,29 +12,28 @@ _No unreleased commits._
 * **release:** persist changelog updates and enable changelog-file (1c0af52e)
 
 
-
-## [v2.8.0](https://github.com/obcode/glabs/releases/tag/v2.8.0) - 2026-05-20
+## 2.8.0 (2026-05-20)
 
 #### 🎁 Feature
 
 * add 'addgroupguests' command to manage student access for Dependency-Proxy (155c55e2)
 
 
-## [v2.7.0](https://github.com/obcode/glabs/releases/tag/v2.7.0) - 2026-05-05
+## 2.7.0 (2026-05-05)
 
 #### 🎁 Feature
 
 * add support for including child tasks in issue replication (#69) (2e3dea67)
 
 
-## [v2.6.1](https://github.com/obcode/glabs/releases/tag/v2.6.1) - 2026-05-01
+## 2.6.1 (2026-05-01)
 
 #### 🐞 Bug Fixes
 
 * encode also from branch in startercode url (0ff75c99)
 
 
-## [v2.6.0](https://github.com/obcode/glabs/releases/tag/v2.6.0) - 2026-05-01
+## 2.6.0 (2026-05-01)
 
 #### 🎁 Feature
 
@@ -57,21 +44,21 @@ _No unreleased commits._
 * refactor source repo preparation and push logic with new function signatures (bc6ee1ee)
 
 
-## [v2.5.0](https://github.com/obcode/glabs/releases/tag/v2.5.0) - 2026-04-30
+## 2.5.0 (2026-04-30)
 
 #### 🎁 Feature
 
 * use startercode as template with one single commit (#67) (38b1e4c2)
 
 
-## [v2.4.1](https://github.com/obcode/glabs/releases/tag/v2.4.1) - 2026-04-30
+## 2.4.1 (2026-04-30)
 
 #### 🐞 Bug Fixes
 
 * use committer name and email if set in glabs.yaml (#66) (d6879d79)
 
 
-## [v2.4.0](https://github.com/obcode/glabs/releases/tag/v2.4.0) - 2026-04-30
+## 2.4.0 (2026-04-30)
 
 #### 🎁 Feature
 
@@ -82,7 +69,7 @@ _No unreleased commits._
 * add useEmailDomainAsSuffix to example (70f5aa3f)
 
 
-## [v2.3.0](https://github.com/obcode/glabs/releases/tag/v2.3.0) - 2026-04-28
+## 2.3.0 (2026-04-28)
 
 #### 🎁 Feature
 
@@ -94,21 +81,21 @@ _No unreleased commits._
 * update installation command to use v2 module path (72d8d48b)
 
 
-## [v2.2.0](https://github.com/obcode/glabs/releases/tag/v2.2.0) - 2026-04-26
+## 2.2.0 (2026-04-26)
 
 #### 🎁 Feature
 
 * implement merge request approval rules and settings, closes #52 (#60) (caf96a73)
 
 
-## [v2.1.3](https://github.com/obcode/glabs/releases/tag/v2.1.3) - 2026-04-26
+## 2.1.3 (2026-04-26)
 
 #### 🐞 Bug Fixes
 
 * enhance version command to display build information conditionally (#63) (a334911d)
 
 
-## [v2.1.2](https://github.com/obcode/glabs/releases/tag/v2.1.2) - 2026-04-26
+## 2.1.2 (2026-04-26)
 
 #### 🐞 Bug Fixes
 
@@ -119,21 +106,21 @@ _No unreleased commits._
 * go install v2 (#62) (fa1642a3)
 
 
-## [v2.1.1](https://github.com/obcode/glabs/releases/tag/v2.1.1) - 2026-04-25
+## 2.1.1 (2026-04-25)
 
 #### 🐞 Bug Fixes
 
 * branch protection for mergeOnly (#61) (b1b139b5)
 
 
-## [v2.1.0](https://github.com/obcode/glabs/releases/tag/v2.1.0) - 2026-04-23
+## 2.1.0 (2026-04-23)
 
 #### 🎁 Feature
 
 * add additional branch protection flags, closes #51 (#59) (dc396cc3)
 
 
-## [v2.0.0](https://github.com/obcode/glabs/releases/tag/v2.0.0) - 2026-04-23
+## 2.0.0 (2026-04-23)
 
 #### 📣 Breaking Changes
 
@@ -155,14 +142,14 @@ BREAKING CHANGE: branch and issue policy moved from startercode to branches/issu
 ```
 
 
-## [v1.3.0](https://github.com/obcode/glabs/releases/tag/v1.3.0) - 2026-04-23
+## 1.3.0 (2026-04-23)
 
 #### 🎁 Feature
 
 * add merge request checks, see #54 (#57) (5e8abcfe)
 
 
-## [v1.2.0](https://github.com/obcode/glabs/releases/tag/v1.2.0) - 2026-04-23
+## 1.2.0 (2026-04-23)
 
 #### 🎁 Feature
 
@@ -173,14 +160,14 @@ BREAKING CHANGE: branch and issue policy moved from startercode to branches/issu
 * update configuration for merge request options and strategies (#55) (a11d68ba)
 
 
-## [v1.1.1](https://github.com/obcode/glabs/releases/tag/v1.1.1) - 2026-04-23
+## 1.1.1 (2026-04-23)
 
 #### 🐞 Bug Fixes
 
 * releaser (#53) (a913106e)
 
 
-## [v1.1.0](https://github.com/obcode/glabs/releases/tag/v1.1.0) - 2026-04-23
+## 1.1.0 (2026-04-23)
 
 #### Feature
 
@@ -195,7 +182,7 @@ BREAKING CHANGE: branch and issue policy moved from startercode to branches/issu
 * add tests for glabs (#49) (90503d7f)
 
 
-## [v1.0.0](https://github.com/obcode/glabs/releases/tag/v1.0.0) - 2026-04-23
+## 1.0.0 (2026-04-23)
 
 #### ci
 
@@ -206,21 +193,21 @@ BREAKING CHANGE: branch and issue policy moved from startercode to branches/issu
 * Add documentation for glabs commands, configuration, getting started, troubleshooting, and workflows (c37a0e0b)
 
 
-## [v0.29.0](https://github.com/obcode/glabs/releases/tag/v0.29.0) - 2026-04-22
+## 0.29.0 (2026-04-22)
 
 #### 🎁 Feature
 
 * add protectDevBranchMergeOnly option to control dev branch merg… (#46) (b8eea871)
 
 
-## [v0.28.0](https://github.com/obcode/glabs/releases/tag/v0.28.0) - 2026-03-23
+## 0.28.0 (2026-03-23)
 
 #### 🎁 Feature
 
 * add useCoursenameAsPrefix option to customize repository naming convention (#45) (f430c4f6)
 
 
-## [v0.27.0](https://github.com/obcode/glabs/releases/tag/v0.27.0) - 2026-03-12
+## 0.27.0 (2026-03-12)
 
 #### 🎁 Feature
 
@@ -231,14 +218,14 @@ BREAKING CHANGE: branch and issue policy moved from startercode to branches/issu
 * remove replicateIssuesFromStartercode function to streamline issue replication process (a9baccc4)
 
 
-## [v0.26.0](https://github.com/obcode/glabs/releases/tag/v0.26.0) - 2026-03-10
+## 0.26.0 (2026-03-10)
 
 #### 🎁 Feature
 
 * create subgroup aka assignmentpath in assignment-config if not existent (9a607e87)
 
 
-## [v0.25.0](https://github.com/obcode/glabs/releases/tag/v0.25.0) - 2026-01-27
+## 0.25.0 (2026-01-27)
 
 #### 🎁 Feature
 
@@ -249,7 +236,7 @@ BREAKING CHANGE: branch and issue policy moved from startercode to branches/issu
 * git alias for starter code (25ade3da)
 
 
-## [v0.24.1](https://github.com/obcode/glabs/releases/tag/v0.24.1) - 2024-12-10
+## 0.24.1 (2024-12-10)
 
 #### 🐞 Bug Fixes
 
@@ -265,7 +252,7 @@ BREAKING CHANGE: branch and issue policy moved from startercode to branches/issu
 * upgrade deps (fc128416)
 
 
-## [v0.24.0](https://github.com/obcode/glabs/releases/tag/v0.24.0) - 2024-11-05
+## 0.24.0 (2024-11-05)
 
 #### 🎁 Feature
 
@@ -276,28 +263,28 @@ BREAKING CHANGE: branch and issue policy moved from startercode to branches/issu
 * **urls:** assignment url (90e90afd)
 
 
-## [v0.23.0](https://github.com/obcode/glabs/releases/tag/v0.23.0) - 2024-11-04
+## 0.23.0 (2024-11-04)
 
 #### 🎁 Feature
 
 * add ulrs command (6f207073)
 
 
-## [v0.22.0](https://github.com/obcode/glabs/releases/tag/v0.22.0) - 2024-11-04
+## 0.22.0 (2024-11-04)
 
 #### 🎁 Feature
 
 * **clone:** suppress output for piping (a48f63d3)
 
 
-## [v0.21.0](https://github.com/obcode/glabs/releases/tag/v0.21.0) - 2024-11-04
+## 0.21.0 (2024-11-04)
 
 #### 🎁 Feature
 
 * students and groups on the command line are now regexps (bf9fe360)
 
 
-## [v0.20.2](https://github.com/obcode/glabs/releases/tag/v0.20.2) - 2024-11-04
+## 0.20.2 (2024-11-04)
 
 #### 🐞 Bug Fixes
 
@@ -308,12 +295,12 @@ BREAKING CHANGE: branch and issue policy moved from startercode to branches/issu
 * prepare for semantic release (0ab87803)
 
 
-## [v0.20.1](https://github.com/obcode/glabs/releases/tag/v0.20.1) - 2023-09-11
+## 0.20.1 (2023-09-11)
 
 * Add `update` command.
 
 
-## [v0.19.0](https://github.com/obcode/glabs/releases/tag/v0.19.0) - 2023-03-08
+## 0.19.0 (2023-03-08)
 
 * 9259459 fix go releaser
 * 7aa110e upgrade GitHub workflows
@@ -321,14 +308,14 @@ BREAKING CHANGE: branch and issue policy moved from startercode to branches/issu
 * ce7a512 ⬆️ upgrade deps
 
 
-## [v0.18.2](https://github.com/obcode/glabs/releases/tag/v0.18.2) - 2022-11-29
+## 0.18.2 (2022-11-29)
 
 * b87ddbb fix protect branch and add protect command
 * 26510f2 protect command
 * 429e3d6 ⬆️ upgrade dependencies
 
 
-## [v0.18.1](https://github.com/obcode/glabs/releases/tag/v0.18.1) - 2022-10-29
+## 0.18.1 (2022-10-29)
 
 Add release information in the assignment config and see results in the report.
 
@@ -355,32 +342,32 @@ Example:
 ...
 ```
 
-## [v0.18.0](https://github.com/obcode/glabs/releases/tag/v0.18.0) - 2022-10-28
+## 0.18.0 (2022-10-28)
 
 see https://github.com/obcode/glabs#generating-reports-of-assignments
 
-## [v0.17.2](https://github.com/obcode/glabs/releases/tag/v0.17.2) - 2022-10-22
+## 0.17.2 (2022-10-22)
 
 * fcb78be Merge branch 'release/v0.17.2'
 * 530eca5 Merge tag 'v0.17.1' into develop
 * 7a42112 🐛 fix a real stupid bug 🙈
 
 
-## [v0.16.1](https://github.com/obcode/glabs/releases/tag/v0.16.1) - 2022-08-10
+## 0.16.1 (2022-08-10)
 
 - add `setaccess` command to set access for existing projects
 
-## v0.16.1
+## 0.16.1
 
 - just bump versions for GitHub CI actions
 
 
-## [v0.15.0](https://github.com/obcode/glabs/releases/tag/v0.15.0) - 2022-02-21
+## 0.15.0 (2022-02-21)
 
 - delete repos (#21 by @fritterhoff)
 - use development branch (#22)
 
-## [v0.14.0](https://github.com/obcode/glabs/releases/tag/v0.14.0) - 2021-07-05
+## 0.14.0 (2021-07-05)
 
 Thanks to @fritterhoff for this one.
 
@@ -395,7 +382,7 @@ efc4621 Merge tag 'v0.13.0' into develop
 a7aeed9 Replace only @'s
 
 
-## [v0.13.0](https://github.com/obcode/glabs/releases/tag/v0.13.0) - 2021-07-05
+## 0.13.0 (2021-07-05)
 
 Thanks to @fritterhoff for this one.
 
@@ -413,14 +400,14 @@ a7f626d Provide documentation and an example for seeding
 877a930 🛠 master to main in seeder component
 
 
-## [v0.12.0](https://github.com/obcode/glabs/releases/tag/v0.12.0) - 2021-05-09
+## 0.12.0 (2021-05-09)
 
 c62274e :boom: master -> main
 795e213 Merge tag 'v0.11.0' into develop
 97080b8 💥 change default branch to main
 
 
-## [v0.11.0](https://github.com/obcode/glabs/releases/tag/v0.11.0) - 2021-05-07
+## 0.11.0 (2021-05-07)
 
 2afb6a4 :memo: doc for local studs/groupd
 2dbf680 :sparkles: studs/groups per assignment (appends)
@@ -431,7 +418,7 @@ c6f6a38 info from addMember should be green
 86faa98 upgrade golangci-lint to 1.32
 
 
-## [v0.10.0](https://github.com/obcode/glabs/releases/tag/v0.10.0) - 2020-10-31
+## 0.10.0 (2020-10-31)
 
 
 ## Changelog
@@ -442,7 +429,7 @@ b3c3562 add -f to clone command
 
 
 
-## [v0.9.0](https://github.com/obcode/glabs/releases/tag/v0.9.0) - 2020-10-30
+## 0.9.0 (2020-10-30)
 
 Use ssh-agent by default or set `sshprivatekey` in `.glabs.yml`.
 
@@ -459,7 +446,7 @@ dc5b3f1 Use ssh-agent unless gitlab.sshprivatekey is configured
 
 
 
-## [v0.8.1](https://github.com/obcode/glabs/releases/tag/v0.8.1) - 2020-10-27
+## 0.8.1 (2020-10-27)
 
 
 ## Changelog
@@ -470,7 +457,7 @@ c6b7192 add info in Readme about clone
 
 
 
-## [v0.8.0](https://github.com/obcode/glabs/releases/tag/v0.8.0) - 2020-10-27
+## 0.8.0 (2020-10-27)
 
 Clone Repos.
 
@@ -482,7 +469,7 @@ f11e5a9 Merge tag 'v0.7.0' into develop
 
 
 
-## [v0.7.0](https://github.com/obcode/glabs/releases/tag/v0.7.0) - 2020-10-27
+## 0.7.0 (2020-10-27)
 
 Prettier output.
 Changeable access level.
@@ -497,7 +484,7 @@ b39ce6d rename show() to String()
 
 
 
-## [v0.6.0](https://github.com/obcode/glabs/releases/tag/v0.6.0) - 2020-10-22
+## 0.6.0 (2020-10-22)
 
 
 ## Changelog
@@ -509,7 +496,7 @@ b49609f show assignment config
 
 
 
-## [v0.5.0](https://github.com/obcode/glabs/releases/tag/v0.5.0) - 2020-10-21
+## 0.5.0 (2020-10-21)
 
 
 ## Changelog
@@ -525,7 +512,7 @@ ee5f4ae use defaults for golangci-lint
 
 
 
-## [v0.4.0](https://github.com/obcode/glabs/releases/tag/v0.4.0) - 2020-10-20
+## 0.4.0 (2020-10-20)
 
 It is now possible to generate for a subset ob configured groups or for some students only. Students do not need to be in the config file.
 
@@ -537,7 +524,7 @@ It is now possible to generate for a subset ob configured groups or for some stu
 
 
 
-## [v0.3.1](https://github.com/obcode/glabs/releases/tag/v0.3.1) - 2020-10-19
+## 0.3.1 (2020-10-19)
 
 
 ## Changelog
@@ -549,7 +536,7 @@ a9f2fc2 find project if name is prefix, closes #6
 
 
 
-## [v0.3.0](https://github.com/obcode/glabs/releases/tag/v0.3.0) - 2020-10-18
+## 0.3.0 (2020-10-18)
 
 add configuration flag for enabling the GitLab container registry on repo creation
 
@@ -562,7 +549,7 @@ be904a5 Merge branch 'release/v0.3.0'
 
 
 
-## [v0.2.0](https://github.com/obcode/glabs/releases/tag/v0.2.0) - 2020-10-17
+## 0.2.0 (2020-10-17)
 
 - Starter code can now be pushed from a different branch than `master`
 - Starter code can now be pushed from a different branch than `master`
@@ -588,7 +575,7 @@ ae323d8 rename groups (lectures) to courses
 
 
 
-## [v0.1.0](https://github.com/obcode/glabs/releases/tag/v0.1.0) - 2020-10-11
+## 0.1.0 (2020-10-11)
 
 
 ## Changelog

@@ -117,19 +117,34 @@ jobs:
           go test -tags=integration ./gitlab/... -count=1 -v -run '^TestIntegration_'
 
   release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs:
       - golangci
       - test-fast
       - coverage
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
-          persist-credentials: false
+          fetch-depth: 0
+          persist-credentials: true
       - uses: go-semantic-release/action@v1
+        id: semrel
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          changelog-file: CHANGELOG.md
           changelog-generator-opt: "emojis=true"
           allow-initial-development-versions: true
           hooks: goreleaser
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit and push CHANGELOG.md
+        if: steps.semrel.outputs.version != ''
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git diff --cached --quiet || git commit -m "docs(changelog): update for v${{ steps.semrel.outputs.version }} [skip ci]"
+          git push

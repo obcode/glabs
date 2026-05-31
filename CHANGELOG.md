@@ -1,3 +1,14 @@
+## 2.8.2 (2026-05-31)
+
+#### 🐞 Bug Fixes
+
+* **release:** prepend changelog entries and restore history (6c67ac22)
+
+#### 📄 Documentation
+
+* **changelog:** update for v2.8.1 [skip ci] (feb507a3)
+
+
 # Changelog
 
 This file is generated from GitHub releases and current unreleased commits.

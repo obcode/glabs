@@ -27,6 +27,11 @@ func startercode(assignmentKey string) *Startercode {
 		fromBranch = fB
 	}
 
+	tag := ""
+	if t := viper.GetString(assignmentKey + ".startercode.tag"); len(t) > 0 {
+		tag = t
+	}
+
 	template := viper.GetBool(assignmentKey + ".startercode.template")
 
 	templateMessage := "Initial"
@@ -44,6 +49,7 @@ func startercode(assignmentKey string) *Startercode {
 	return &Startercode{
 		URL:                url,
 		FromBranch:         fromBranch,
+		Tag:                tag,
 		Template:           template,
 		TemplateMessage:    templateMessage,
 		ToBranch:           toBranch,

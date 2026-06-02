@@ -76,6 +76,7 @@ type Seeder struct {
 type Startercode struct {
 	URL                string
 	FromBranch         string
+	Tag                string
 	Template           bool
 	TemplateMessage    string
 	ToBranch           string

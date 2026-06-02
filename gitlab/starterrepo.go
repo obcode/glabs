@@ -2,9 +2,11 @@ package gitlab
 
 import (
 	"fmt"
+	"strings"
 
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
 	cfg "github.com/obcode/glabs/v2/config"
 	g "github.com/obcode/glabs/v2/git"
 	"github.com/rs/zerolog/log"
@@ -50,6 +52,36 @@ func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *g.So
 			Str("name", project.Name).Str("url", project.SSHURLToRepo).
 			Msg("cannot push to remote")
 		return fmt.Errorf("cannot push to remote: %w", err)
+	}
+
+	tagName := strings.TrimSpace(assignmentCfg.Startercode.Tag)
+	if tagName != "" {
+		sourceRef, err := from.Repo.Reference(from.Ref, true)
+		if err != nil {
+			return fmt.Errorf("cannot resolve source reference for tag %q: %w", tagName, err)
+		}
+
+		tagRef := plumbing.NewTagReferenceName(tagName)
+		if err := from.Repo.Storer.SetReference(plumbing.NewHashReference(tagRef, sourceRef.Hash())); err != nil {
+			return fmt.Errorf("cannot set local tag %q: %w", tagName, err)
+		}
+
+		tagRefSpec := config.RefSpec(fmt.Sprintf("+%s:%s", tagRef.String(), tagRef.String()))
+		log.Debug().
+			Str("refSpec", string(tagRefSpec)).
+			Str("name", project.Name).
+			Str("toURL", project.SSHURLToRepo).
+			Str("tag", tagName).
+			Msg("pushing startercode tag")
+
+		err = from.Repo.Push(&git.PushOptions{
+			RemoteName: remote.Config().Name,
+			RefSpecs:   []config.RefSpec{tagRefSpec},
+			Auth:       from.Auth,
+		})
+		if err != nil {
+			return fmt.Errorf("cannot push startercode tag %q to remote: %w", tagName, err)
+		}
 	}
 
 	for _, additionalBranch := range assignmentCfg.Startercode.AdditionalBranches {

@@ -73,6 +73,7 @@ mpd:
     startercode:
       url: git@gitlab.example.org:mpd/startercode/blatt-01.git
       fromBranch: startercode
+      # tag: startercode  # optional: sets this tag in generated repos at startercode commit
       template: true
       templateMessage: Initial Commit
 ```

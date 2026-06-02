@@ -17,6 +17,7 @@ import (
 )
 
 func PrepareSourceRepo(url, fromBranch string, singleCommit bool, commitMessage string) (*SourceRepo, error) {
+
 	cfg := yacspin.Config{
 		Frequency: 100 * time.Millisecond,
 		CharSet:   yacspin.CharSets[69],
@@ -125,7 +126,7 @@ func PrepareSourceRepo(url, fromBranch string, singleCommit bool, commitMessage 
 		return nil, err
 	}
 
-	singleCommitBranchName := fmt.Sprintf("orphan-%s-%d", fromBranch, time.Now().UnixNano())
+	singleCommitBranchName := fmt.Sprintf("orphan-%s-%d", sourceRef.Short(), time.Now().UnixNano())
 	refName := plumbing.NewBranchReferenceName(singleCommitBranchName)
 
 	committerName := "glabs"

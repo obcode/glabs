@@ -1,3 +1,10 @@
+## 2.9.0 (2026-06-02)
+
+#### 🎁 Feature
+
+* **startercode:** add optional tag for startercode in generated repositories (#70) (0bb2177d)
+
+
 ## 2.8.3 (2026-05-31)
 
 #### 🐞 Bug Fixes

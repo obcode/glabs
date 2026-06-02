@@ -137,6 +137,22 @@ func TestShow_WithStartercode_WithIssues(t *testing.T) {
 	cfg.Show()
 }
 
+func TestStartercodeURL_UsesFromBranchEvenWhenTagConfigured(t *testing.T) {
+	cfg := &AssignmentConfig{
+		Startercode: &Startercode{
+			URL:        "git@gitlab.example.org:mpd/starter/blatt-01.git",
+			FromBranch: "startercode",
+			Tag:        "v1.0.0",
+		},
+	}
+
+	out := captureStdout(t, func() { cfg.StartercodeURL() })
+	want := "https://gitlab.example.org/mpd/starter/blatt-01/-/tree/startercode\n"
+	if out != want {
+		t.Fatalf("StartercodeURL() = %q, want %q", out, want)
+	}
+}
+
 func TestShow_WithBranches(t *testing.T) {
 	cfg := &AssignmentConfig{
 		Branches: []BranchRule{{Name: "main", Protect: true, Default: true, AllowForcePush: true}, {Name: "develop", MergeOnly: true, CodeOwnerApprovalRequired: true}},

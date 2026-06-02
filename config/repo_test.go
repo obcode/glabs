@@ -19,6 +19,9 @@ func TestStartercodeDefaultsAndReplication(t *testing.T) {
 	if s.FromBranch != "main" || s.ToBranch != "main" {
 		t.Fatalf("unexpected startercode defaults: %#v", s)
 	}
+	if s.Tag != "" {
+		t.Fatalf("startercode tag = %q, want empty", s.Tag)
+	}
 }
 
 func TestStartercodeOverrides(t *testing.T) {
@@ -26,12 +29,16 @@ func TestStartercodeOverrides(t *testing.T) {
 	viper.Set("course.a1.startercode", map[string]string{"url": "git@example.org:starter.git"})
 	viper.Set("course.a1.startercode.url", "git@example.org:starter.git")
 	viper.Set("course.a1.startercode.fromBranch", "template")
+	viper.Set("course.a1.startercode.tag", "v1.2.3")
 	viper.Set("course.a1.startercode.toBranch", "submission")
 	viper.Set("course.a1.startercode.additionalBranches", []string{"release", "demo"})
 
 	s := startercode("course.a1")
 	if s.FromBranch != "template" || s.ToBranch != "submission" {
 		t.Fatalf("startercode branches = %#v", s)
+	}
+	if s.Tag != "v1.2.3" {
+		t.Fatalf("startercode tag = %q, want %q", s.Tag, "v1.2.3")
 	}
 	if !reflect.DeepEqual(s.AdditionalBranches, []string{"release", "demo"}) {
 		t.Fatalf("startercode additional branches = %#v", s.AdditionalBranches)

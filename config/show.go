@@ -109,6 +109,7 @@ func (cfg *AssignmentConfig) Show() {
 		fieldCandidate(0, "Container-Registry"),
 		fieldCandidate(2, "URL"),
 		fieldCandidate(2, "FromBranch"),
+		fieldCandidate(2, "Tag"),
 		fieldCandidate(2, "ToBranch"),
 		fieldCandidate(2, "AdditionalBranches"),
 		fieldCandidate(2, "ReplicateFromStartercode"),
@@ -170,6 +171,7 @@ func (cfg *AssignmentConfig) Show() {
 	} else {
 		writeSectionField("URL", cfg.Startercode.URL)
 		writeSectionField("FromBranch", cfg.Startercode.FromBranch)
+		writeSectionField("Tag", cfg.Startercode.Tag)
 		writeSectionField("Template", cfg.Startercode.Template)
 		writeSectionField("TemplateMessage", cfg.Startercode.TemplateMessage)
 		writeSectionField("ToBranch", cfg.Startercode.ToBranch)

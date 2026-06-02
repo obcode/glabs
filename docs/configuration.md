@@ -183,6 +183,7 @@ Clone from a starter repository to each student repo:
 startercode:
   url: git@gitlab.example.org:mpd/startercode/blatt-01.git
   fromBranch: template       # Clone this branch
+  # tag: startercode         # Optional: create this tag in generated repos at startercode commit
   toBranch: main             # Into this branch
   additionalBranches: []     # Push starter/<branch> to repo/<branch>
 ```
@@ -193,6 +194,7 @@ startercode:
 |---|---|---|---|
 | `url` | SSH URL of starter repo | — | Required if startercode block exists |
 | `fromBranch` | Source branch in starter | `main` | Must exist in starter repo |
+| `tag` | Tag created in generated repos | empty | Marks the pushed startercode commit in each target repo |
 | `toBranch` | Target branch in new repos | `main` | Usually production branch |
 | `additionalBranches` | Additional branches mirrored from starter repo | `[]` | Each `x` maps `starter/x -> repo/x` |
 

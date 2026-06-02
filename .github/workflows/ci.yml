@@ -110,6 +110,25 @@ jobs:
           go-version-file: go.mod
       - name: Download dependencies
         run: go mod download
+      - name: Pre-pull GitLab test image (retry)
+        run: |
+          image="gitlab/gitlab-ce:17.6.1-ce.0"
+          max_attempts=4
+          for attempt in $(seq 1 "$max_attempts"); do
+            echo "Pulling $image (attempt $attempt/$max_attempts)"
+            if docker pull "$image"; then
+              echo "Successfully pulled $image"
+              exit 0
+            fi
+
+            if [ "$attempt" -lt "$max_attempts" ]; then
+              backoff=$((attempt * 10))
+              echo "Pull failed; retrying in ${backoff}s"
+              sleep "$backoff"
+            fi
+          done
+
+          echo "::warning::Could not pre-pull $image after $max_attempts attempts; integration tests will continue and may skip on transient registry/network failures."
       - name: Run integration tests
         env:
           GLABS_RUN_GITLAB_TC: "1"

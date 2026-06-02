@@ -105,11 +105,32 @@ func startGitLabContainer(t *testing.T) (*Client, string) {
 		WaitingFor: wait.ForHTTP("/users/sign_in").WithPort("80/tcp").WithStartupTimeout(25 * time.Minute),
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	var (
+		container testcontainers.Container
+		err       error
+	)
+
+	const maxStartAttempts = 3
+	for attempt := 1; attempt <= maxStartAttempts; attempt++ {
+		container, err = testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+			ContainerRequest: req,
+			Started:          true,
+		})
+		if err == nil {
+			break
+		}
+
+		if !isTransientRegistryStartupError(err) || attempt == maxStartAttempts {
+			break
+		}
+
+		t.Logf("starting gitlab testcontainer failed (attempt %d/%d): %v", attempt, maxStartAttempts, err)
+		time.Sleep(time.Duration(attempt) * 5 * time.Second)
+	}
 	if err != nil {
+		if isTransientRegistryStartupError(err) {
+			t.Skipf("skipping integration test due to transient container registry/network problem: %v", err)
+		}
 		t.Fatalf("starting gitlab testcontainer failed: %v", err)
 	}
 	t.Cleanup(func() {
@@ -134,6 +155,33 @@ func startGitLabContainer(t *testing.T) (*Client, string) {
 	}
 
 	return &Client{apiClient}, baseURL
+}
+
+func isTransientRegistryStartupError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	message := strings.ToLower(err.Error())
+	transientIndicators := []string{
+		"registry-1.docker.io",
+		"client.timeout exceeded while awaiting headers",
+		"request canceled while waiting for connection",
+		"i/o timeout",
+		"tls handshake timeout",
+		"temporary failure in name resolution",
+		"no such host",
+		"connection reset by peer",
+		"net/http: timeout awaiting response headers",
+	}
+
+	for _, indicator := range transientIndicators {
+		if strings.Contains(message, indicator) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // TestIntegration_GitLab_Operations starts one container and exercises Archive,

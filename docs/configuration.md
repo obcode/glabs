@@ -152,6 +152,64 @@ Patterns are **regular expressions**, so:
 | `containerRegistry` | Enable container registry | `false` | Auto-enabled if `release.dockerImages` set |
 | `students` | Override/add assignment-specific students | — | Merged with course-level |
 | `groups` | Override/add assignment-specific groups | — | Merged with course-level |
+| `extends` | Inherit configuration from another assignment | — | See [Inheritance](#assignment-inheritance) |
+
+### Assignment inheritance
+
+Assignments are often nearly identical from one to the next. Instead of
+copy-pasting the whole block, an assignment can inherit from another assignment
+in the same course with `extends` and override only what differs — much like
+subclassing in OOP.
+
+```yaml
+blatt09:
+  assignmentpath: blatt-09
+  description: Blatt 9
+  per: student
+  mergeRequest:
+    mergeMethod: semi_linear
+    squashOption: never
+    pipeline: true
+  startercode:
+    url: git@gitlab.lrz.de:mpd/labs/blatt-09.git
+    fromBranch: startercode
+    template: true
+  branches:
+    - name: main
+      mergeOnly: true
+  deferredBranches:
+    devcontainer:
+      url: git@gitlab.lrz.de:mpd/devcontainer.git
+      fromBranch: main
+      toBranch: devcontainer
+    solution:
+      fromBranch: solution
+      orphanMessage: "Lösungsvorschlag [skip ci]"
+
+blatt10:
+  extends: blatt09          # inherit everything from blatt09 ...
+  assignmentpath: blatt-10  # ... and override only what differs
+  description: Blatt 10
+  startercode:
+    url: git@gitlab.lrz.de:mpd/labs/blatt-10.git   # other startercode fields are inherited
+```
+
+Merge semantics (the child always wins):
+
+- **Maps** (`mergeRequest`, `startercode`, `deferredBranches`, …) are
+  **deep-merged**. In the example above, `blatt10` only sets `startercode.url`;
+  `fromBranch` and `template` are inherited from `blatt09`. The same applies per
+  nested deferred branch — overriding `solution.orphanMessage` keeps the rest of
+  `solution` and the whole `devcontainer` entry.
+- **Scalars and lists** (`description`, `branches`, `issues.issueNumbers`, …)
+  are **replaced wholesale**. To change one entry of a list you must restate the
+  full list.
+
+Notes:
+
+- `extends` refers to another assignment **in the same course** by its key name.
+- Inheritance chains are allowed (`blatt11` → `blatt10` → `blatt09`); values are
+  resolved transitively. Cycles and missing parents are reported as errors.
 
 ### Access level values
 

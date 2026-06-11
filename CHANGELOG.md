@@ -1,3 +1,10 @@
+## 2.11.0 (2026-06-11)
+
+#### 🎁 Feature
+
+* **config:** add assignment inheritance via 'extends' with abstract bases (#72) (1725d0dd)
+
+
 ## 2.10.0 (2026-06-11)
 
 #### 🎁 Feature

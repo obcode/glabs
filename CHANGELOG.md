@@ -1,3 +1,18 @@
+## 2.10.0 (2026-06-11)
+
+#### 🎁 Feature
+
+* **config:** inherit assignment configuration via extends (#71) (8d756fab)
+
+#### 🚧 Chores
+
+* add CLAUDE.md (a801be0f)
+
+#### 🔁 CI
+
+* **integration:** add retry logic for GitLab container startup and pre-pull image (6f26b3c9)
+
+
 ## 2.9.0 (2026-06-02)
 
 #### 🎁 Feature

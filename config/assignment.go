@@ -27,6 +27,10 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 			Msg("configuration for assignment not found")
 	}
 
+	// Resolve `extends` inheritance before reading any fields so the rest of
+	// the config loading sees the merged, effective configuration.
+	resolveAssignmentInheritance(course, assignment)
+
 	assignmentKey := course + "." + assignment
 	per := per(assignmentKey)
 

@@ -211,6 +211,37 @@ Notes:
 - Inheritance chains are allowed (`blatt11` → `blatt10` → `blatt09`); values are
   resolved transitively. Cycles and missing parents are reported as errors.
 
+#### Abstract base assignments
+
+A common pattern is a base entry that holds shared configuration and is only ever
+inherited from, never generated. Mark it with `abstract: true` — much like an
+abstract class. Any command targeting it directly (`generate`, `protect`,
+`clone`, …) is rejected with an error.
+
+```yaml
+defaults:
+  abstract: true          # base only — `glabs generate mpd defaults` is refused
+  per: student
+  mergeRequest:
+    mergeMethod: semi_linear
+    squashOption: never
+    pipeline: true
+  branches:
+    - name: main
+      mergeOnly: true
+
+blatt01:
+  extends: defaults       # inherits everything above
+  assignmentpath: blatt-01
+  description: Blatt 1
+  startercode:
+    url: git@gitlab.lrz.de:mpd/startercode/blatt-01.git
+    fromBranch: template
+```
+
+The `abstract` flag is **not inherited**: `blatt01` above stays a normal,
+generatable assignment.
+
 ### Access level values
 
 | Level | Value | Permissions |

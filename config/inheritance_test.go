@@ -180,6 +180,42 @@ func TestInheritance_NoExtendsIsUnaffected(t *testing.T) {
 	}
 }
 
+func TestAssignmentIsAbstract(t *testing.T) {
+	baseAssignment(t)
+
+	// blatt09 (from baseAssignment) is concrete.
+	if assignmentIsAbstract("mpd", "blatt09") {
+		t.Fatal("blatt09 should not be abstract")
+	}
+
+	// A declared abstract base.
+	viper.Set("mpd.defaults", true)
+	viper.Set("mpd.defaults.abstract", true)
+	viper.Set("mpd.defaults.per", "student")
+	if !assignmentIsAbstract("mpd", "defaults") {
+		t.Fatal("defaults should be abstract")
+	}
+
+	// A child extending an abstract base must NOT itself become abstract:
+	// the flag is read from the own value before inheritance is resolved.
+	viper.Set("mpd.blatt10", true)
+	viper.Set("mpd.blatt10.extends", "defaults")
+	viper.Set("mpd.blatt10.assignmentpath", "blatt-10")
+	if assignmentIsAbstract("mpd", "blatt10") {
+		t.Fatal("blatt10 extends an abstract base but must not be abstract itself")
+	}
+
+	// And after full resolution the abstract flag must not leak into the
+	// effective config.
+	cfg := GetAssignmentConfig("mpd", "blatt10")
+	if cfg.Per != PerStudent {
+		t.Fatalf("Per = %q, want inherited student", cfg.Per)
+	}
+	if viper.GetBool("mpd.blatt10.abstract") {
+		t.Fatal("abstract flag leaked into resolved blatt10 config")
+	}
+}
+
 func TestDeepMerge(t *testing.T) {
 	parent := map[string]any{
 		"a": 1,

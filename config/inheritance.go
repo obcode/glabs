@@ -16,6 +16,19 @@ import (
 //	  assignmentpath: blatt-10   # ... and override only what differs
 const inheritKey = "extends"
 
+// abstractKey marks an assignment as an abstract base that exists only to be
+// inherited from via `extends`. Abstract assignments cannot be operated on
+// directly (generate, protect, clone, …). The flag itself is never inherited.
+const abstractKey = "abstract"
+
+// assignmentIsAbstract reports whether the assignment declares `abstract: true`
+// on itself. It reads the assignment's own value and must be called before
+// resolveAssignmentInheritance writes the merged config back into viper, so an
+// inherited abstract flag never makes a concrete child abstract.
+func assignmentIsAbstract(course, assignment string) bool {
+	return viper.GetBool(course + "." + assignment + "." + abstractKey)
+}
+
 // resolveAssignmentInheritance resolves the `extends` chain for the given
 // assignment and writes the merged, effective configuration back into viper at
 // the assignment key. After this call the rest of the config loading reads the
@@ -35,7 +48,9 @@ func resolveAssignmentInheritance(course, assignment string) {
 	}
 
 	merged := mergedAssignmentMap(course, assignment, map[string]bool{})
+	// Meta keys must never leak into the effective config or be inherited.
 	delete(merged, inheritKey)
+	delete(merged, abstractKey)
 	viper.Set(assignmentKey, merged)
 }
 

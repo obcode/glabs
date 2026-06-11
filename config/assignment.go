@@ -27,6 +27,16 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 			Msg("configuration for assignment not found")
 	}
 
+	// Abstract assignments are bases for `extends` only and must not be used
+	// directly. Checked before resolving inheritance so the (own) flag is read,
+	// not an inherited one.
+	if assignmentIsAbstract(course, assignment) {
+		log.Fatal().
+			Str("course", course).
+			Str("assignment", assignment).
+			Msg("assignment is abstract (a base for 'extends') and cannot be used directly")
+	}
+
 	// Resolve `extends` inheritance before reading any fields so the rest of
 	// the config loading sees the merged, effective configuration.
 	resolveAssignmentInheritance(course, assignment)

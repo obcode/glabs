@@ -1,3 +1,10 @@
+## 2.11.1 (2026-06-16)
+
+#### 🐞 Bug Fixes
+
+* **config:** match GitLab project path slugification for repo URLs and lookup (4e96cad1)
+
+
 ## 2.11.0 (2026-06-11)
 
 #### 🎁 Feature

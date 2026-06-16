@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:gitlab.com)",
+      "WebFetch(domain:api.rubyonrails.org)",
+      "Bash(go mod *)",
+      "Bash(gofmt -w config/slug.go config/slug_test.go config/assignment.go gitlab/projects.go)",
+      "Bash(gofmt -w config/slug.go config/slug_test.go)",
+      "Bash(echo \"exit: $?\")"
+    ]
+  }
+}

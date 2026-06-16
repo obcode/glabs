@@ -62,7 +62,7 @@ func (c *Client) delete(gid int64, name string) {
 			log.Info().Str("project", project.Name).Msg("deleting project")
 			_, err = c.Projects.DeleteProject(project.ID, &gitlab.DeleteProjectOptions{})
 			if err != nil {
-				log.Error().Str("project", name).Msg("deleting project failed")
+				log.Error().Err(err).Str("project", name).Msg("deleting project failed")
 				return
 			}
 			break

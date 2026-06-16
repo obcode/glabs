@@ -153,8 +153,15 @@ func (cfg *AssignmentConfig) RepoBaseName() string {
 	return cfg.Name
 }
 
+// RepoNameWithSuffix returns the project path for an assignment repository.
+// The result is normalized via gitlabProjectPath so it matches the path GitLab
+// derives from the project name: names that are already valid paths are kept
+// as-is, while names containing characters invalid in a path (e.g. "+") are
+// slugified the same way GitLab does. Without this, the printed URL and the
+// search used to locate the project would not match the repository GitLab
+// actually creates.
 func (cfg *AssignmentConfig) RepoNameWithSuffix(suffix string) string {
-	return fmt.Sprintf("%s-%s", cfg.RepoBaseName(), suffix)
+	return gitlabProjectPath(fmt.Sprintf("%s-%s", cfg.RepoBaseName(), suffix))
 }
 
 func (cfg *AssignmentConfig) RepoNameForStudent(student *Student) string {

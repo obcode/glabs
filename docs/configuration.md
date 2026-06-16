@@ -100,6 +100,8 @@ Students and groups can be specified by:
 You can mix formats. By default, if using emails, the `@` is replaced with `_at_` in project names (filesystem compatibility), e.g. `mpd-blatt01-alice_at_example.org`.
 If you set `useEmailDomainAsSuffix: false`, only the part before the `@` is used, e.g. `mpd-blatt01-alice`.
 
+When GitLab creates a repository it derives the project **path** from the name. If the name is already a valid path (letters, digits, `_`, `-`, `.`) it is kept as-is — so `mpd-blatt01-alice_at_example.org` keeps its dot and case. If the name contains any other character (for example `+` or a space), GitLab slugifies the **whole** name instead: every run of invalid characters becomes a single `-`, dots also turn into `-`, and the result is lowercased. glabs mirrors this so the printed URL and the path used to find a project match the repository GitLab actually creates — e.g. a name `…fabian+gitinvited_at_hm.edu` is stored at the path `…fabian-gitinvited_at_hm-edu`.
+
 ### Student/Group filtering
 
 When running commands, you can filter:

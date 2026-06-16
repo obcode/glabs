@@ -54,7 +54,12 @@ func (c *Client) generateProject(assignmentCfg *config.AssignmentConfig, name st
 	}
 
 	p := &gitlab.CreateProjectOptions{
-		Name:                             gitlab.Ptr(name),
+		Name: gitlab.Ptr(name),
+		// name is already a valid slug (see AssignmentConfig.RepoNameWithSuffix),
+		// so set Path explicitly to keep GitLab from deriving a different path
+		// from the name and to guarantee it matches the URLs and searches glabs
+		// computes elsewhere.
+		Path:                             gitlab.Ptr(name),
 		Description:                      gitlab.Ptr(assignmentCfg.Description),
 		NamespaceID:                      gitlab.Ptr(inID),
 		MergeRequestsAccessLevel:         gitlab.Ptr(gitlab.EnabledAccessControl),

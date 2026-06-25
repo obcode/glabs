@@ -1,3 +1,10 @@
+## 2.11.2 (2026-06-25)
+
+#### 🐞 Bug Fixes
+
+* **config:** lowercase and slugify group path segments to match GitLab (5560ea55)
+
+
 ## 2.11.1 (2026-06-16)
 
 #### 🐞 Bug Fixes

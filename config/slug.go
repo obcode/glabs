@@ -50,6 +50,37 @@ func gitlabProjectPath(name string) string {
 	return parameterize(name)
 }
 
+// gitlabGroupPath normalizes a full group path (a coursepath/semesterpath/
+// assignmentpath hierarchy, segments joined by "/") the way GitLab stores
+// group and subgroup paths. Unlike project paths, the GitLab web UI derives a
+// *lowercase* path from the group name, so a config value like "SS2024" ends up
+// as the subgroup "ss2024". Each segment is slugified individually so the "/"
+// separators between subgroups are preserved, and the result is lowercased so
+// the path glabs searches for matches the repositories GitLab actually creates.
+func gitlabGroupPath(path string) string {
+	if len(path) == 0 {
+		return path
+	}
+	segments := strings.Split(path, "/")
+	for i, seg := range segments {
+		segments[i] = gitlabGroupPathSegment(seg)
+	}
+	return strings.Join(segments, "/")
+}
+
+// gitlabGroupPathSegment slugifies a single group-path segment and lowercases
+// it. A segment that is already a valid path is kept verbatim apart from
+// lowercasing (so dots, underscores and digits survive); only segments
+// containing characters invalid in a path are run through parameterize.
+func gitlabGroupPathSegment(seg string) string {
+	if projectPathFormatRegex.MatchString(seg) &&
+		!strings.HasSuffix(seg, ".git") &&
+		!strings.HasSuffix(seg, ".atom") {
+		return strings.ToLower(seg)
+	}
+	return parameterize(seg)
+}
+
 // asciiLigatures handles characters that have no NFD decomposition but that
 // Rails' default transliteration still folds to ASCII (e.g. "ß" -> "ss").
 var asciiLigatures = strings.NewReplacer(

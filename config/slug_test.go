@@ -59,6 +59,36 @@ func TestGitlabProjectPath(t *testing.T) {
 	}
 }
 
+func TestGitlabGroupPath(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		// The reported bug: an uppercase semesterpath segment must be lowercased
+		// to match the path GitLab actually stores.
+		{
+			"uppercase semester segment lowercased",
+			"vl-foederierteinformationssysteme/SS2024/repos",
+			"vl-foederierteinformationssysteme/ss2024/repos",
+		},
+		{"already lowercase unchanged", "mpd/ss26", "mpd/ss26"},
+		{"single segment", "SS2024", "ss2024"},
+		{"empty stays empty", "", ""},
+		// Each segment is slugified individually, separators preserved.
+		{"dots within a segment preserved", "course/ws.2024", "course/ws.2024"},
+		{"invalid chars slugified per segment", "course/Team One/SS+24", "course/team-one/ss-24"},
+		{"diacritics folded", "kurs/Müller", "kurs/muller"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := gitlabGroupPath(tt.in); got != tt.want {
+				t.Errorf("gitlabGroupPath(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestRepoNameWithSuffix_SlugifiesEmail(t *testing.T) {
 	cfg := &AssignmentConfig{
 		Course:                "homl",

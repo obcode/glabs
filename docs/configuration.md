@@ -102,6 +102,8 @@ If you set `useEmailDomainAsSuffix: false`, only the part before the `@` is used
 
 When GitLab creates a repository it derives the project **path** from the name. If the name is already a valid path (letters, digits, `_`, `-`, `.`) it is kept as-is — so `mpd-blatt01-alice_at_example.org` keeps its dot and case. If the name contains any other character (for example `+` or a space), GitLab slugifies the **whole** name instead: every run of invalid characters becomes a single `-`, dots also turn into `-`, and the result is lowercased. glabs mirrors this so the printed URL and the path used to find a project match the repository GitLab actually creates — e.g. a name `…fabian+gitinvited_at_hm.edu` is stored at the path `…fabian-gitinvited_at_hm-edu`.
 
+The `coursepath`, `semesterpath` and `assignmentpath` segments form the **group** hierarchy and follow GitLab's group-path rules, which differ from project paths in one way: group paths are always **lowercased** (the web UI derives a lowercase path from the group name). glabs normalizes each segment individually — slugifying invalid characters while preserving the `/` separators — and lowercases the result, so a `semesterpath: SS2024` resolves to the subgroup `ss2024` that GitLab actually creates. Without this, glabs would search for the verbatim `SS2024` path, fail to find it, and ask you to create the subgroup manually.
+
 ### Student/Group filtering
 
 When running commands, you can filter:

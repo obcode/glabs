@@ -178,7 +178,7 @@ func coursePath(course string) string {
 		path += "/" + semesterpath
 	}
 
-	return path
+	return gitlabGroupPath(path)
 }
 
 // GetCourseSubgroupPath returns the full path to the course subgroup (coursepath/semesterpath)
@@ -195,7 +195,7 @@ func assignmentPath(course, assignment string) string {
 		assignmentpath += "/" + group
 	}
 
-	return assignmentpath
+	return gitlabGroupPath(assignmentpath)
 }
 
 func per(assignmentKey string) Per {

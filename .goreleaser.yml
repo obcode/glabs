@@ -1,11 +1,10 @@
-# This is an example goreleaser.yaml file with some sane defaults.
-# Make sure to check the documentation at http://goreleaser.com
+version: 2
+
 before:
     hooks:
-        # You may remove this if you don't use go modules.
         - go mod download
-        # you may remove this if you don't need go generate
         - go generate ./...
+
 builds:
     - id: glabs
       binary: glabs
@@ -23,17 +22,27 @@ builds:
           - CGO_ENABLED=0
       goos:
           - linux
-# archives:
-#   - replacements:
-#       darwin: Darwin
-#       linux: Linux
-#       windows: Windows
-#       386: i386
-#       amd64: x86_64
+
+# One archive per build. glabs ships for all platforms, glabs-web only for
+# linux (it is the server) — bundling both into one archive per platform would
+# leave linux archives with two binaries and the rest with one, which goreleaser
+# rejects. Separate archives keep each binary's archive self-consistent.
+archives:
+    - id: glabs
+      ids:
+          - glabs
+      name_template: "glabs_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    - id: glabs-web
+      ids:
+          - glabs-web
+      name_template: "glabs-web_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
 checksum:
     name_template: "checksums.txt"
+
 snapshot:
-    name_template: "{{ .Tag }}-next"
+    version_template: "{{ .Tag }}-next"
+
 changelog:
     sort: asc
     filters:

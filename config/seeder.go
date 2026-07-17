@@ -2,14 +2,9 @@ package config
 
 import (
 	"fmt"
-	"strings"
-	"syscall"
 
-	"github.com/ProtonMail/go-crypto/openpgp"
-	"github.com/logrusorgru/aurora"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
-	"golang.org/x/term"
 )
 
 func seeder(assignmentKey string) (*Seeder, error) {
@@ -30,27 +25,9 @@ func seeder(assignmentKey string) (*Seeder, error) {
 		toBranch = tB
 	}
 
-	privKeyString := viper.GetString(assignmentKey + ".seeder.signKey")
-	var entity *openpgp.Entity
-	if privKeyString != "" {
-		entities, err := openpgp.ReadArmoredKeyRing(strings.NewReader(privKeyString))
-		if err != nil {
-			return nil, fmt.Errorf("%s: cannot read seeder.signKey as an armored PGP key ring: %w", assignmentKey, err)
-		}
-		if len(entities) == 0 {
-			return nil, fmt.Errorf("%s: seeder.signKey contains no PGP key", assignmentKey)
-		}
-		if entities[0].PrivateKey == nil {
-			return nil, fmt.Errorf("%s: seeder.signKey contains no private key", assignmentKey)
-		}
-		if entities[0].PrivateKey.Encrypted {
-			fmt.Println(aurora.Blue("Passphrase for signing key is required. Please enter it now:"))
-			passphrase, _ := term.ReadPassword(int(syscall.Stdin))
-			if err := entities[0].PrivateKey.Decrypt(passphrase); err != nil {
-				return nil, fmt.Errorf("%s: cannot decrypt seeder.signKey with the given passphrase: %w", assignmentKey, err)
-			}
-		}
-		entity = entities[0]
+	entity, err := parseSignKey(assignmentKey, viper.GetString(assignmentKey+".seeder.signKey"))
+	if err != nil {
+		return nil, err
 	}
 
 	return &Seeder{

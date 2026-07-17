@@ -3,21 +3,22 @@ package git
 import (
 	"fmt"
 	"os"
-	"time"
 
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/logrusorgru/aurora"
 	"github.com/obcode/glabs/v3/config"
-	"github.com/rs/zerolog/log"
-	"github.com/theckman/yacspin"
+	"github.com/obcode/glabs/v3/reporter"
 )
 
-func Clone(cfg *config.AssignmentConfig, noSpinner bool) {
+// Clone clones every student/group repository to disk. It is CLI-only — the web
+// server never writes to a local working directory. --suppress passes a discard
+// reporter so only the machine-readable paths are printed.
+func Clone(rep reporter.Reporter, cfg *config.AssignmentConfig) {
 	auth, err := GetAuth()
 	if err != nil {
-		fmt.Printf("error: %v", err)
+		rep.Printf("error: %v", err)
 		return
 	}
 
@@ -25,11 +26,11 @@ func Clone(cfg *config.AssignmentConfig, noSpinner bool) {
 	case config.PerStudent:
 		for _, stud := range cfg.Students {
 			suffix := cfg.RepoSuffix(stud)
-			clone(localpath(cfg, suffix), cfg.Clone.Branch, ProjectRepoUrl(cfg, suffix), auth, cfg.Clone.Force, noSpinner)
+			clone(rep, localpath(cfg, suffix), cfg.Clone.Branch, ProjectRepoUrl(cfg, suffix), auth, cfg.Clone.Force)
 		}
 	case config.PerGroup:
 		for _, grp := range cfg.Groups {
-			clone(localpath(cfg, grp.Name), cfg.Clone.Branch, ProjectRepoUrl(cfg, grp.Name), auth, cfg.Clone.Force, noSpinner)
+			clone(rep, localpath(cfg, grp.Name), cfg.Clone.Branch, ProjectRepoUrl(cfg, grp.Name), auth, cfg.Clone.Force)
 		}
 	}
 }
@@ -45,83 +46,34 @@ func localpath(cfg *config.AssignmentConfig, suffix string) string {
 	return fmt.Sprintf("%s/%s", cfg.Clone.LocalPath, cfg.RepoNameWithSuffix(suffix))
 }
 
-func clone(localpath, branch, cloneurl string, auth transport.AuthMethod, force bool, noSpinner bool) {
-	cfg := yacspin.Config{
-		Frequency: 100 * time.Millisecond,
-		CharSet:   yacspin.CharSets[69],
-		Suffix: aurora.Sprintf(aurora.Cyan(" cloning %s to %s branch %s"),
-			aurora.Yellow(cloneurl),
-			aurora.Yellow(localpath),
-			aurora.Yellow(branch),
-		),
-		SuffixAutoColon:   true,
-		StopCharacter:     "✓",
-		StopColors:        []string{"fgGreen"},
-		StopFailMessage:   "error",
-		StopFailCharacter: "✗",
-		StopFailColors:    []string{"fgRed"},
-	}
-
-	var spinner *yacspin.Spinner
-	var err error
-
-	if !noSpinner {
-		spinner, err = yacspin.New(cfg)
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot create spinner")
-		}
-		err = spinner.Start()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot start spinner")
-		}
-	}
+func clone(rep reporter.Reporter, localpath, branch, cloneurl string, auth transport.AuthMethod, force bool) {
+	task := rep.Task(aurora.Sprintf(aurora.Cyan(" cloning %s to %s branch %s"),
+		aurora.Yellow(cloneurl),
+		aurora.Yellow(localpath),
+		aurora.Yellow(branch),
+	))
 
 	if force {
-		if !noSpinner {
-			spinner.Message(" trying to remove folder if it exists")
-		}
-
-		err := os.RemoveAll(localpath)
-		if err != nil {
-			if !noSpinner {
-				spinner.StopFailMessage(fmt.Sprintf("error when trying to remove %s: %v", localpath, err))
-
-				err := spinner.StopFail()
-				if err != nil {
-					log.Debug().Err(err).Msg("cannot stop spinner")
-				}
-			}
+		task.Update(" trying to remove folder if it exists")
+		if err := os.RemoveAll(localpath); err != nil {
+			task.Fail(fmt.Sprintf("error when trying to remove %s: %v", localpath, err))
 			return
 		}
-		if !noSpinner {
-			spinner.Message(" cloning")
-		}
+		task.Update(" cloning")
 	}
 
-	_, err = git.PlainClone(localpath, false, &git.CloneOptions{
+	_, err := git.PlainClone(localpath, false, &git.CloneOptions{
 		Auth:          auth,
 		URL:           cloneurl,
 		ReferenceName: plumbing.ReferenceName("refs/heads/" + branch),
 	})
-
 	if err != nil {
-		if !noSpinner {
-			spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-			err := spinner.StopFail()
-			if err != nil {
-				log.Debug().Err(err).Msg("cannot stop spinner")
-			}
-		}
+		task.Fail(fmt.Sprintf("problem: %v", err))
 		return
 	}
 
+	task.Done("")
+	// Always printed, even under --suppress: this is the machine-readable output
+	// meant for piping.
 	fmt.Println(localpath)
-
-	if !noSpinner {
-		errs := spinner.Stop()
-		if errs != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
-	}
 }

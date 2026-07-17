@@ -11,13 +11,13 @@ import (
 	r "github.com/obcode/glabs/v3/gitlab/report"
 )
 
-func (c *Client) Report(assignmentCfg *config.AssignmentConfig, templateFile *string, output *string) {
-	report := c.report(assignmentCfg)
+func (c *Client) Report(assignmentCfg *config.AssignmentConfig, templateFile *string, output *string) error {
+	report, err := c.report(assignmentCfg)
+	if err != nil {
+		return err
+	}
 
-	var (
-		tmpl *template.Template
-		err  error
-	)
+	var tmpl *template.Template
 	if templateFile != nil {
 		tmpl, err = template.ParseFiles(*templateFile)
 	} else {
@@ -25,78 +25,83 @@ func (c *Client) Report(assignmentCfg *config.AssignmentConfig, templateFile *st
 	}
 
 	if err != nil {
-		panicFunc(err)
+		return err
 	}
 
 	if output != nil {
 		os.Remove(*output) //nolint
 		f, err := os.Create(*output)
 		if err != nil {
-			panicFunc(err)
+			return err
 		}
 		defer f.Close() //nolint
 		err = tmpl.Execute(f, report)
 		if err != nil {
-			panicFunc(err)
+			return err
 		}
 	} else {
 		err = tmpl.Execute(os.Stdout, report)
 		if err != nil {
-			panicFunc(err)
+			return err
 		}
 	}
-
+	return nil
 }
 
-func (c *Client) ReportHTML(assignmentCfg *config.AssignmentConfig, templateFile *string, output *string) {
-	report := c.report(assignmentCfg)
+func (c *Client) ReportHTML(assignmentCfg *config.AssignmentConfig, templateFile *string, output *string) error {
+	report, err := c.report(assignmentCfg)
+	if err != nil {
+		return err
+	}
 
-	var (
-		tmpl *htmlTemplate.Template
-		err  error
-	)
+	var tmpl *htmlTemplate.Template
 	if templateFile != nil {
 		tmpl, err = htmlTemplate.ParseFiles(*templateFile)
 	} else {
 		tmpl, err = htmlTemplate.New("html").Parse(r.HTMLTemplate)
 	}
 	if err != nil {
-		panicFunc(err)
+		return err
 	}
 
 	if output != nil {
 		os.Remove(*output) //nolint
 		f, err := os.Create(*output)
 		if err != nil {
-			panicFunc(err)
+			return err
 		}
 		defer f.Close() //nolint
 		err = tmpl.Execute(f, report)
 		if err != nil {
-			panicFunc(err)
+			return err
 		}
 	} else {
 		err = tmpl.Execute(os.Stdout, report)
 		if err != nil {
-			panicFunc(err)
+			return err
 		}
 	}
+	return nil
 }
 
-func (c *Client) ReportJSON(assignmentCfg *config.AssignmentConfig, output *string) {
-	report := c.report(assignmentCfg)
+func (c *Client) ReportJSON(assignmentCfg *config.AssignmentConfig, output *string) error {
+	report, err := c.report(assignmentCfg)
+	if err != nil {
+		return err
+	}
 
 	json, err := json.MarshalIndent(report, "", "  ")
 	if err != nil {
-		panicFunc(err)
+		return err
 	}
 
 	if output != nil {
 		err := os.WriteFile(*output, json, 0644)
 		if err != nil {
-			panicFunc(err)
+			return err
 		}
 	} else {
 		fmt.Println(string(json))
 	}
+	return nil
 }

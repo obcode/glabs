@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/obcode/glabs/v3/config"
+	"github.com/obcode/glabs/v3/reporter"
 	gitlabapi "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
@@ -58,7 +59,7 @@ func newTestClient(t *testing.T, idUsers map[int]string, searchUsers map[string]
 		t.Fatalf("creating gitlab test client failed: %v", err)
 	}
 
-	return &Client{apiClient}
+	return &Client{Client: apiClient, rep: reporter.NewDiscardReporter()}
 }
 
 func TestCheckDupsInGroups_NoDuplicates(t *testing.T) {

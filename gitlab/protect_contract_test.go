@@ -13,7 +13,6 @@ import (
 // ---- ProtectToBranch (top-level) --------------------------------------------
 
 func TestProtectToBranch_GroupNotFound_Exits(t *testing.T) {
-	defer withExitCapture(t)()
 
 	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
@@ -26,11 +25,12 @@ func TestProtectToBranch_GroupNotFound_Exits(t *testing.T) {
 		Per:      config.PerStudent,
 		Branches: []config.BranchRule{{Name: "main", Protect: true}},
 	}
-	assertExitCode(t, 1, func() { client.ProtectToBranch(cfg) })
+	if err := client.ProtectToBranch(cfg); err == nil {
+		t.Fatal("expected an error")
+	}
 }
 
 func TestProtectToBranch_InvalidPer_Exits(t *testing.T) {
-	defer withExitCapture(t)()
 
 	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet && r.URL.Path == "/api/v4/groups" {
@@ -46,7 +46,9 @@ func TestProtectToBranch_InvalidPer_Exits(t *testing.T) {
 		Per:      config.PerFailed,
 		Branches: []config.BranchRule{{Name: "main", Protect: true}},
 	}
-	assertExitCode(t, 1, func() { client.ProtectToBranch(cfg) })
+	if err := client.ProtectToBranch(cfg); err == nil {
+		t.Fatal("expected an error")
+	}
 }
 
 // ---- protectToBranchPerStudent ----------------------------------------------

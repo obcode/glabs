@@ -28,14 +28,16 @@ var (
 			if len(Level) > 0 {
 				assignmentConfig.SetAccessLevel(Level)
 			}
-			assignmentConfig.Show()
+			fmt.Println(assignmentConfig.Show())
 			fmt.Println(aurora.Magenta("Config okay? Press 'Enter' to continue or 'Ctrl-C' to stop ..."))
 			fmt.Scanln() //nolint:errcheck
 			c, err := gitlab.NewClientFromViper()
 			if err != nil {
 				er(err)
 			}
-			c.Setaccess(assignmentConfig)
+			if err := c.Setaccess(assignmentConfig); err != nil {
+				er(err)
+			}
 		},
 	}
 	Level string

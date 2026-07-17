@@ -28,14 +28,16 @@ var (
 			if len(ProtectBranch) > 0 {
 				assignmentConfig.SetProtectToBranch(ProtectBranch)
 			}
-			assignmentConfig.Show()
+			fmt.Println(assignmentConfig.Show())
 			fmt.Println(aurora.Magenta("Config okay? Press 'Enter' to continue or 'Ctrl-C' to stop ..."))
 			fmt.Scanln() //nolint:errcheck
 			c, err := gitlab.NewClientFromViper()
 			if err != nil {
 				er(err)
 			}
-			c.ProtectToBranch(assignmentConfig)
+			if err := c.ProtectToBranch(assignmentConfig); err != nil {
+				er(err)
+			}
 		},
 	}
 	ProtectBranch string

@@ -116,7 +116,7 @@ func TestShow_WithStartercode_AdditionalBranches(t *testing.T) {
 			AdditionalBranches: []string{"solution", "startercode"},
 		},
 	}
-	out := captureStdout(t, func() { cfg.Show() })
+	out := cfg.Show()
 	if !strings.Contains(out, "AdditionalBranches") || !strings.Contains(out, "solution") {
 		t.Fatalf("Show() output does not contain startercode additional branches: %q", out)
 	}
@@ -157,7 +157,7 @@ func TestShow_WithBranches(t *testing.T) {
 	cfg := &AssignmentConfig{
 		Branches: []BranchRule{{Name: "main", Protect: true, Default: true, AllowForcePush: true}, {Name: "develop", MergeOnly: true, CodeOwnerApprovalRequired: true}},
 	}
-	out := captureStdout(t, func() { cfg.Show() })
+	out := cfg.Show()
 	ansiPattern := regexp.MustCompile(`\x1b\[[0-9;]*m`)
 	plain := ansiPattern.ReplaceAllString(out, "")
 	if !strings.Contains(out, "Branches:") || !strings.Contains(out, "develop") {
@@ -235,7 +235,7 @@ func TestShow_OutputContainsCourseName(t *testing.T) {
 		Course: "mpd",
 		Name:   "blatt01",
 	}
-	out := captureStdout(t, func() { cfg.Show() })
+	out := cfg.Show()
 	if !strings.Contains(out, "mpd") {
 		t.Fatalf("Show() output does not contain course name %q: %q", "mpd", out)
 	}
@@ -253,7 +253,7 @@ func TestShow_PerStudent_ListsStudents(t *testing.T) {
 			{Username: &bob, Raw: "bob"},
 		},
 	}
-	out := captureStdout(t, func() { cfg.Show() })
+	out := cfg.Show()
 	if !strings.Contains(out, "alice") {
 		t.Fatalf("Show(PerStudent) output does not contain student alice: %q", out)
 	}
@@ -274,7 +274,7 @@ func TestShow_PerGroup_ListsGroups(t *testing.T) {
 			{Name: "team2", Members: []*Student{{Username: &alice, Raw: "carol"}}},
 		},
 	}
-	out := captureStdout(t, func() { cfg.Show() })
+	out := cfg.Show()
 	if !strings.Contains(out, "team1") {
 		t.Fatalf("Show(PerGroup) output does not contain team1: %q", out)
 	}
@@ -292,7 +292,7 @@ func TestShow_WithMergeMethod(t *testing.T) {
 	cfg := &AssignmentConfig{
 		MergeRequest: &MergeRequest{MergeMethod: SemiLinearHistory},
 	}
-	out := captureStdout(t, func() { cfg.Show() })
+	out := cfg.Show()
 	if !strings.Contains(out, "MergeRequest:") {
 		t.Fatalf("Show() output does not contain MergeRequest header: %q", out)
 	}
@@ -308,7 +308,7 @@ func TestShow_WithSquashOption(t *testing.T) {
 	cfg := &AssignmentConfig{
 		MergeRequest: &MergeRequest{MergeMethod: MergeCommit, SquashOption: SquashAlways},
 	}
-	out := captureStdout(t, func() { cfg.Show() })
+	out := cfg.Show()
 	if !strings.Contains(out, "SquashOption:") {
 		t.Fatalf("Show() output does not contain SquashOption key: %q", out)
 	}
@@ -328,7 +328,7 @@ func TestShow_WithMergeChecks(t *testing.T) {
 			StatusChecksMustSucceed:       true,
 		},
 	}
-	out := captureStdout(t, func() { cfg.Show() })
+	out := cfg.Show()
 	if !strings.Contains(out, "PipelineMustSucceed:") || !strings.Contains(out, "true") {
 		t.Fatalf("Show() output does not contain PipelineMustSucceed=true: %q", out)
 	}
@@ -356,7 +356,7 @@ func TestShow_WithMergeRequestApprovals(t *testing.T) {
 			}},
 		},
 	}
-	out := captureStdout(t, func() { cfg.Show() })
+	out := cfg.Show()
 	ansiPattern := regexp.MustCompile(`\x1b\[[0-9;]*m`)
 	plain := ansiPattern.ReplaceAllString(out, "")
 	if !strings.Contains(out, "Approvals:") {
@@ -400,7 +400,7 @@ func TestShow_WithMergeRequestApprovals_OmitsEmptyUsersAndGroups(t *testing.T) {
 			}},
 		},
 	}
-	out := captureStdout(t, func() { cfg.Show() })
+	out := cfg.Show()
 	if strings.Contains(out, "usernames") {
 		t.Fatalf("Show() output should omit empty usernames field for approval rule: %q", out)
 	}
@@ -430,7 +430,7 @@ func TestShow_WithMergeRequestApprovalSettings(t *testing.T) {
 			},
 		},
 	}
-	out := captureStdout(t, func() { cfg.Show() })
+	out := cfg.Show()
 	if !strings.Contains(out, "Approvals:") || !strings.Contains(out, "Settings:") {
 		t.Fatalf("Show() output does not contain nested approvals settings block: %q", out)
 	}
@@ -447,7 +447,7 @@ func TestShow_WithUndefinedApprovalsBlocks(t *testing.T) {
 		MergeRequest: &MergeRequest{},
 	}
 
-	out := captureStdout(t, func() { cfg.Show() })
+	out := cfg.Show()
 	if !strings.Contains(out, "Approvals:") || !strings.Contains(out, "Settings:") || !strings.Contains(out, "Rules:") {
 		t.Fatalf("Show() output does not contain nested approvals headers: %q", out)
 	}
@@ -468,7 +468,7 @@ func TestShow_MergeRequestValuesAlign(t *testing.T) {
 		},
 	}
 
-	out := captureStdout(t, func() { cfg.Show() })
+	out := cfg.Show()
 	ansiPattern := regexp.MustCompile(`\x1b\[[0-9;]*m`)
 	plain := ansiPattern.ReplaceAllString(out, "")
 	lines := strings.Split(plain, "\n")
@@ -527,7 +527,7 @@ func TestShow_NoFmtArtifacts(t *testing.T) {
 		Clone: &Clone{LocalPath: ".", Branch: "main", Force: false},
 	}
 
-	out := captureStdout(t, func() { cfg.Show() })
+	out := cfg.Show()
 	if strings.Contains(out, "%!") {
 		t.Fatalf("Show() output contains fmt artifacts: %q", out)
 	}

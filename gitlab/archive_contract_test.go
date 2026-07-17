@@ -19,7 +19,6 @@ func projectJSONStr(id int64, name, pathNS string) string {
 // -- Archive ------------------------------------------------------------------
 
 func TestArchive_GroupNotFound_Exits(t *testing.T) {
-	defer withExitCapture(t)()
 
 	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
@@ -33,11 +32,12 @@ func TestArchive_GroupNotFound_Exits(t *testing.T) {
 		Per:         config.PerStudent,
 		Startercode: &config.Startercode{ToBranch: "main"},
 	}
-	assertExitCode(t, 1, func() { client.Archive(cfg, false) })
+	if err := client.Archive(cfg, false); err == nil {
+		t.Fatal("expected an error")
+	}
 }
 
 func TestArchive_InvalidPer_Exits(t *testing.T) {
-	defer withExitCapture(t)()
 
 	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet && r.URL.Path == "/api/v4/groups" {
@@ -53,7 +53,9 @@ func TestArchive_InvalidPer_Exits(t *testing.T) {
 		Per:         config.PerFailed,
 		Startercode: &config.Startercode{ToBranch: "main"},
 	}
-	assertExitCode(t, 1, func() { client.Archive(cfg, false) })
+	if err := client.Archive(cfg, false); err == nil {
+		t.Fatal("expected an error")
+	}
 }
 
 // -- archivePerStudent --------------------------------------------------------

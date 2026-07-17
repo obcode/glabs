@@ -456,8 +456,13 @@ func normalizeMergeRequestApprovalConfigKeys(value any) any {
 	case map[string]any:
 		normalized := make(map[string]any, len(typed))
 		for key, item := range typed {
-			switch key {
-			case "required_approvals", "approvalsRequired":
+			// Fold case before comparing. viper lowercases every key it loads,
+			// so by the time an alias reaches this table it reads
+			// `approvalsrequired`, never `approvalsRequired` — which meant that
+			// spelling matched nothing and the rule silently ended up requiring
+			// 0 approvals instead of the configured number.
+			switch strings.ToLower(key) {
+			case "required_approvals", "approvalsrequired":
 				key = "requiredApprovals"
 			}
 			normalized[key] = normalizeMergeRequestApprovalConfigKeys(item)

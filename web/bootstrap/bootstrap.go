@@ -15,6 +15,7 @@ import (
 	"github.com/obcode/glabs/v3/web/app"
 	"github.com/obcode/glabs/v3/web/db"
 	"github.com/obcode/glabs/v3/web/graph"
+	"github.com/obcode/glabs/v3/web/secrets"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -60,8 +61,20 @@ func Serve() error {
 	if err := database_.EnsureCourseIndexes(ctx); err != nil {
 		return err
 	}
+	if err := database_.EnsureUserSecretIndexes(ctx); err != nil {
+		return err
+	}
 
-	a := app.New(database_)
+	// The KEK for per-user secrets (GitLab PATs). It lives only in the config, never
+	// in the database. A malformed key disables token storage (fail-closed); an
+	// empty key leaves the sealer nil, so the config editor still works and only
+	// token operations are unavailable.
+	sealer, err := secrets.NewSealer(viper.GetString("secrets.key"))
+	if err != nil {
+		log.Error().Err(err).Msg("invalid secrets.key — storing GitLab tokens is disabled until it is fixed")
+	}
+
+	a := app.New(database_, sealer)
 	if err := seedUsers(ctx, database_); err != nil {
 		return err
 	}

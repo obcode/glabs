@@ -31,6 +31,13 @@ type Finding struct {
 	Severity FindingSeverity `json:"severity"`
 }
 
+// Whether the current user has stored a GitLab token, and when it was last set.
+// The token itself is never returned by any query.
+type GitLabTokenStatus struct {
+	Set       bool       `json:"set"`
+	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
+}
+
 type Mutation struct {
 }
 

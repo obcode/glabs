@@ -7,9 +7,11 @@ package app
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/obcode/glabs/v3/web/db"
 	"github.com/obcode/glabs/v3/web/graph/model"
+	"github.com/obcode/glabs/v3/web/secrets"
 	"github.com/spf13/viper"
 )
 
@@ -23,14 +25,21 @@ type store interface {
 	CourseOf(ctx context.Context, owner, name string) (*db.StoredCourse, error)
 	SaveCourse(ctx context.Context, course *db.StoredCourse) error
 	DeleteCourse(ctx context.Context, owner, name string) error
+	GetUserSecret(ctx context.Context, owner string) (*db.UserSecret, error)
+	SaveUserGitLabToken(ctx context.Context, owner string, sealed secrets.SealedValue, updatedAt time.Time) error
+	DeleteUserGitLabToken(ctx context.Context, owner string) error
 }
 
 type App struct {
 	db store
+	// sealer encrypts per-user secrets at rest. It is nil when no secrets.key is
+	// configured, in which case token operations fail closed rather than storing
+	// a token in plaintext.
+	sealer *secrets.Sealer
 }
 
-func New(database *db.DB) *App {
-	return &App{db: database}
+func New(database *db.DB, sealer *secrets.Sealer) *App {
+	return &App{db: database, sealer: sealer}
 }
 
 // GetUserByEmail looks up a user for the auth middleware's allowlist check.

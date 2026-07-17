@@ -1,0 +1,74 @@
+# Synthetic fixture. The real course files are all lowercase throughout, so they
+# cannot detect a change in case handling. This one pins the exact behaviour on
+# the three axes where viper's case rules are load-bearing:
+#
+#   1. field names   -- viper is case-insensitive, `frombranch` == `fromBranch`
+#   2. map keys      -- viper LOWERCASES them, so `Grp01` becomes `grp01`; these
+#                       are data, not field names, and they end up in repo names
+#   3. list values   -- NOT touched by viper; they reach gitlabProjectPath as-is
+#
+# The golden records the derived repo names, because that is where a regression
+# would actually bite: a group silently renamed grp01 -> Grp01 is a *different*
+# GitLab project.
+casecourse:
+  coursepath: CaseCourse/Semester # gitlabGroupPath lowercases each segment
+  semesterpath: SS2026
+  useCoursenameAsPrefix: true
+  useEmailDomainAsSuffix: false
+
+  # Field names spelled all-lowercase and in legacy snake_case.
+  mixedfields:
+    assignmentpath: Blatt-01
+    description: Mixed-case field names
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:case/startercode.git
+      frombranch: template # lowercase spelling of fromBranch
+      tobranch: main # lowercase spelling of toBranch
+      templatemessage: Init # lowercase spelling of templateMessage
+    branches:
+      - name: main
+        mergeonly: true # lowercase spelling of mergeOnly
+        default: true
+      - name: startercode
+        protect: true
+        allow_force_push: true # snake_case alias of allowForcePush
+
+  # Upper-case map keys: deferredBranches names.
+  upperkeys:
+    assignmentpath: blatt-02
+    description: Upper-case map keys
+    per: group
+    startercode:
+      url: git@gitlab.lrz.de:case/startercode.git
+      fromBranch: template
+      toBranch: main
+    deferredBranches:
+      DevContainer:
+        url: git@gitlab.lrz.de:case/devcontainer.git
+        fromBranch: main
+        toBranch: DevContainer
+        orphan: true
+        orphanMessage: DevContainer snapshot
+
+  # Student identities that exercise both gitlabProjectPath branches: names that
+  # are already valid project paths survive verbatim (including their case),
+  # names containing an invalid char are parameterized (which also lowercases).
+  slugs:
+    assignmentpath: blatt-03
+    description: Project path slugification
+    per: student
+
+  students:
+    - plain@example.edu
+    - dotted.name@example.edu
+    - Upper.Case@example.edu # valid path -> kept verbatim, NOT lowercased
+    - plus+tag@example.edu # '+' invalid -> parameterized -> lowercased
+    - under_score@example.edu
+
+  groups:
+    Grp01: # viper lowercases the key -> grp01
+      - plain@example.edu
+      - Upper.Case@example.edu
+    grp02:
+      - dotted.name@example.edu

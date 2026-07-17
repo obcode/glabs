@@ -1,0 +1,666 @@
+{
+  "course": "algdati",
+  "name": "blatt3",
+  "useCoursenameAsPrefix": false,
+  "useEmailDomainAsSuffix": true,
+  "path": "algdati/semester/ob-25ws/blatt-3",
+  "url": "https://gitlab.lrz.de/algdati/semester/ob-25ws/blatt-3",
+  "repoBaseName": "blatt3",
+  "per": "group",
+  "description": "Blatt 3, Algorithmen und Datenstrukturen I, WS 25/26",
+  "containerRegistry": false,
+  "accessLevel": "developer",
+  "accessLevelValue": 30,
+  "mergeRequest": {
+    "MergeMethod": "merge",
+    "SquashOption": "default_off",
+    "PipelineMustSucceed": false,
+    "SkippedPipelinesAreSuccessful": false,
+    "AllThreadsMustBeResolved": false,
+    "StatusChecksMustSucceed": false,
+    "Approvals": null,
+    "ApprovalSettings": null
+  },
+  "branches": [
+    {
+      "Name": "main",
+      "Protect": true,
+      "MergeOnly": false,
+      "Default": true,
+      "AllowForcePush": false,
+      "CodeOwnerApprovalRequired": false
+    },
+    {
+      "Name": "develop",
+      "Protect": false,
+      "MergeOnly": false,
+      "Default": true,
+      "AllowForcePush": false,
+      "CodeOwnerApprovalRequired": false
+    }
+  ],
+  "issues": {
+    "ReplicateFromStartercode": false,
+    "IssueNumbers": null,
+    "IncludeChildTasks": false
+  },
+  "startercode": {
+    "URL": "git@gitlab.lrz.de:algdati/startercode/startercodeBlatt3.git",
+    "FromBranch": "template",
+    "Tag": "",
+    "Template": false,
+    "TemplateMessage": "Initial",
+    "ToBranch": "main",
+    "AdditionalBranches": null
+  },
+  "clone": {
+    "LocalPath": "/tmp/glabs/algdati/25ws/blatt3",
+    "Branch": "develop",
+    "Force": false
+  },
+  "release": {
+    "MergeRequest": {
+      "SourceBranch": "develop",
+      "TargetBranch": "main",
+      "HasPipeline": true
+    },
+    "DockerImages": null
+  },
+  "seeder": null,
+  "deferredBranches": {},
+  "students": null,
+  "groups": [
+    {
+      "name": "grp00",
+      "repoName": "blatt3-grp00",
+      "members": [
+        {
+          "raw": "s135.t135@example.edu",
+          "email": "s135.t135@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s135.t135_at_example.edu",
+          "repoName": "blatt3-s135.t135_at_example.edu"
+        },
+        {
+          "raw": "s161.t161@example.edu",
+          "email": "s161.t161@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s161.t161_at_example.edu",
+          "repoName": "blatt3-s161.t161_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp01",
+      "repoName": "blatt3-grp01",
+      "members": [
+        {
+          "raw": "s025.t025@example.edu",
+          "email": "s025.t025@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s025.t025_at_example.edu",
+          "repoName": "blatt3-s025.t025_at_example.edu"
+        },
+        {
+          "raw": "s110.t110@example.edu",
+          "email": "s110.t110@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s110.t110_at_example.edu",
+          "repoName": "blatt3-s110.t110_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp02",
+      "repoName": "blatt3-grp02",
+      "members": [
+        {
+          "raw": "s073.t073@example.edu",
+          "email": "s073.t073@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s073.t073_at_example.edu",
+          "repoName": "blatt3-s073.t073_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp03",
+      "repoName": "blatt3-grp03",
+      "members": [
+        {
+          "raw": "s065.t065@example.edu",
+          "email": "s065.t065@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s065.t065_at_example.edu",
+          "repoName": "blatt3-s065.t065_at_example.edu"
+        },
+        {
+          "raw": "s186.t186@example.edu",
+          "email": "s186.t186@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s186.t186_at_example.edu",
+          "repoName": "blatt3-s186.t186_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp05",
+      "repoName": "blatt3-grp05",
+      "members": [
+        {
+          "raw": "s098.t098@example.edu",
+          "email": "s098.t098@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s098.t098_at_example.edu",
+          "repoName": "blatt3-s098.t098_at_example.edu"
+        },
+        {
+          "raw": "s181.t181@example.edu",
+          "email": "s181.t181@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s181.t181_at_example.edu",
+          "repoName": "blatt3-s181.t181_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp06",
+      "repoName": "blatt3-grp06",
+      "members": [
+        {
+          "raw": "s156.t156@example.edu",
+          "email": "s156.t156@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s156.t156_at_example.edu",
+          "repoName": "blatt3-s156.t156_at_example.edu"
+        },
+        {
+          "raw": "s208.t208@example.edu",
+          "email": "s208.t208@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s208.t208_at_example.edu",
+          "repoName": "blatt3-s208.t208_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp07",
+      "repoName": "blatt3-grp07",
+      "members": [
+        {
+          "raw": "s031.t031@example.edu",
+          "email": "s031.t031@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s031.t031_at_example.edu",
+          "repoName": "blatt3-s031.t031_at_example.edu"
+        },
+        {
+          "raw": "s199.t199@example.edu",
+          "email": "s199.t199@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s199.t199_at_example.edu",
+          "repoName": "blatt3-s199.t199_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp08",
+      "repoName": "blatt3-grp08",
+      "members": [
+        {
+          "raw": "s079.t079@example.edu",
+          "email": "s079.t079@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s079.t079_at_example.edu",
+          "repoName": "blatt3-s079.t079_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp10",
+      "repoName": "blatt3-grp10",
+      "members": [
+        {
+          "raw": "s179.t179@example.edu",
+          "email": "s179.t179@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s179.t179_at_example.edu",
+          "repoName": "blatt3-s179.t179_at_example.edu"
+        },
+        {
+          "raw": "s201.t201@example.edu",
+          "email": "s201.t201@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s201.t201_at_example.edu",
+          "repoName": "blatt3-s201.t201_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp11",
+      "repoName": "blatt3-grp11",
+      "members": [
+        {
+          "raw": "s095.t095@example.edu",
+          "email": "s095.t095@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s095.t095_at_example.edu",
+          "repoName": "blatt3-s095.t095_at_example.edu"
+        },
+        {
+          "raw": "s172.t172@example.edu",
+          "email": "s172.t172@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s172.t172_at_example.edu",
+          "repoName": "blatt3-s172.t172_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp12",
+      "repoName": "blatt3-grp12",
+      "members": [
+        {
+          "raw": "s093.t093@example.edu",
+          "email": "s093.t093@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s093.t093_at_example.edu",
+          "repoName": "blatt3-s093.t093_at_example.edu"
+        },
+        {
+          "raw": "s148.t148@example.edu",
+          "email": "s148.t148@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s148.t148_at_example.edu",
+          "repoName": "blatt3-s148.t148_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp13",
+      "repoName": "blatt3-grp13",
+      "members": [
+        {
+          "raw": "s105.t105@example.edu",
+          "email": "s105.t105@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s105.t105_at_example.edu",
+          "repoName": "blatt3-s105.t105_at_example.edu"
+        },
+        {
+          "raw": "s124.t124@example.edu",
+          "email": "s124.t124@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s124.t124_at_example.edu",
+          "repoName": "blatt3-s124.t124_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp14",
+      "repoName": "blatt3-grp14",
+      "members": [
+        {
+          "raw": "s072.t072@example.edu",
+          "email": "s072.t072@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s072.t072_at_example.edu",
+          "repoName": "blatt3-s072.t072_at_example.edu"
+        },
+        {
+          "raw": "s188.t188@example.edu",
+          "email": "s188.t188@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s188.t188_at_example.edu",
+          "repoName": "blatt3-s188.t188_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp15",
+      "repoName": "blatt3-grp15",
+      "members": [
+        {
+          "raw": "s193@example.edu",
+          "email": "s193@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s193_at_example.edu",
+          "repoName": "blatt3-s193_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp16",
+      "repoName": "blatt3-grp16",
+      "members": [
+        {
+          "raw": "s173.t173@example.edu",
+          "email": "s173.t173@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s173.t173_at_example.edu",
+          "repoName": "blatt3-s173.t173_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp18",
+      "repoName": "blatt3-grp18",
+      "members": [
+        {
+          "raw": "s063.t063@example.edu",
+          "email": "s063.t063@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s063.t063_at_example.edu",
+          "repoName": "blatt3-s063.t063_at_example.edu"
+        },
+        {
+          "raw": "s138.t138@example.edu",
+          "email": "s138.t138@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s138.t138_at_example.edu",
+          "repoName": "blatt3-s138.t138_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp20",
+      "repoName": "blatt3-grp20",
+      "members": [
+        {
+          "raw": "s217.t217@example.edu",
+          "email": "s217.t217@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s217.t217_at_example.edu",
+          "repoName": "blatt3-s217.t217_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp21",
+      "repoName": "blatt3-grp21",
+      "members": [
+        {
+          "raw": "s210.t210@example.edu",
+          "email": "s210.t210@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s210.t210_at_example.edu",
+          "repoName": "blatt3-s210.t210_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp22",
+      "repoName": "blatt3-grp22",
+      "members": [
+        {
+          "raw": "s220@example.edu",
+          "email": "s220@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s220_at_example.edu",
+          "repoName": "blatt3-s220_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp23",
+      "repoName": "blatt3-grp23",
+      "members": [
+        {
+          "raw": "s018.t018@example.edu",
+          "email": "s018.t018@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s018.t018_at_example.edu",
+          "repoName": "blatt3-s018.t018_at_example.edu"
+        },
+        {
+          "raw": "s174.t174@example.edu",
+          "email": "s174.t174@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s174.t174_at_example.edu",
+          "repoName": "blatt3-s174.t174_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp25",
+      "repoName": "blatt3-grp25",
+      "members": [
+        {
+          "raw": "s015.t015@example.edu",
+          "email": "s015.t015@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s015.t015_at_example.edu",
+          "repoName": "blatt3-s015.t015_at_example.edu"
+        },
+        {
+          "raw": "s113.t113@example.edu",
+          "email": "s113.t113@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s113.t113_at_example.edu",
+          "repoName": "blatt3-s113.t113_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp31",
+      "repoName": "blatt3-grp31",
+      "members": [
+        {
+          "raw": "s024.t024@example.edu",
+          "email": "s024.t024@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s024.t024_at_example.edu",
+          "repoName": "blatt3-s024.t024_at_example.edu"
+        },
+        {
+          "raw": "s164.t164@example.edu",
+          "email": "s164.t164@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s164.t164_at_example.edu",
+          "repoName": "blatt3-s164.t164_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp33",
+      "repoName": "blatt3-grp33",
+      "members": [
+        {
+          "raw": "s038.t038@example.edu",
+          "email": "s038.t038@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s038.t038_at_example.edu",
+          "repoName": "blatt3-s038.t038_at_example.edu"
+        },
+        {
+          "raw": "s068.t068@example.edu",
+          "email": "s068.t068@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s068.t068_at_example.edu",
+          "repoName": "blatt3-s068.t068_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp34",
+      "repoName": "blatt3-grp34",
+      "members": [
+        {
+          "raw": "s219.t219@example.edu",
+          "email": "s219.t219@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s219.t219_at_example.edu",
+          "repoName": "blatt3-s219.t219_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp35",
+      "repoName": "blatt3-grp35",
+      "members": [
+        {
+          "raw": "s149.t149@example.edu",
+          "email": "s149.t149@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s149.t149_at_example.edu",
+          "repoName": "blatt3-s149.t149_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp36",
+      "repoName": "blatt3-grp36",
+      "members": [
+        {
+          "raw": "s116.t116@example.edu",
+          "email": "s116.t116@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s116.t116_at_example.edu",
+          "repoName": "blatt3-s116.t116_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp37",
+      "repoName": "blatt3-grp37",
+      "members": [
+        {
+          "raw": "s009@example.edu",
+          "email": "s009@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s009_at_example.edu",
+          "repoName": "blatt3-s009_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp38",
+      "repoName": "blatt3-grp38",
+      "members": [
+        {
+          "raw": "s101.t101@example.edu",
+          "email": "s101.t101@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s101.t101_at_example.edu",
+          "repoName": "blatt3-s101.t101_at_example.edu"
+        },
+        {
+          "raw": "s118.t118@example.edu",
+          "email": "s118.t118@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s118.t118_at_example.edu",
+          "repoName": "blatt3-s118.t118_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp39",
+      "repoName": "blatt3-grp39",
+      "members": [
+        {
+          "raw": "s046@example.edu",
+          "email": "s046@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s046_at_example.edu",
+          "repoName": "blatt3-s046_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp40",
+      "repoName": "blatt3-grp40",
+      "members": [
+        {
+          "raw": "s141@example.edu",
+          "email": "s141@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s141_at_example.edu",
+          "repoName": "blatt3-s141_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp41",
+      "repoName": "blatt3-grp41",
+      "members": [
+        {
+          "raw": "s007.t007@example.edu",
+          "email": "s007.t007@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s007.t007_at_example.edu",
+          "repoName": "blatt3-s007.t007_at_example.edu"
+        },
+        {
+          "raw": "s014.t014@example.edu",
+          "email": "s014.t014@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s014.t014_at_example.edu",
+          "repoName": "blatt3-s014.t014_at_example.edu"
+        }
+      ]
+    },
+    {
+      "name": "grp42",
+      "repoName": "blatt3-grp42",
+      "members": [
+        {
+          "raw": "s023@example.edu",
+          "email": "s023@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "s023_at_example.edu",
+          "repoName": "blatt3-s023_at_example.edu"
+        }
+      ]
+    }
+  ]
+}

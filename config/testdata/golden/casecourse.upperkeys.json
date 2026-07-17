@@ -1,0 +1,103 @@
+{
+  "course": "casecourse",
+  "name": "upperkeys",
+  "useCoursenameAsPrefix": true,
+  "useEmailDomainAsSuffix": false,
+  "path": "casecourse/semester/ss2026/blatt-02",
+  "url": "https://gitlab.lrz.de/casecourse/semester/ss2026/blatt-02",
+  "repoBaseName": "casecourse-upperkeys",
+  "per": "group",
+  "description": "Upper-case map keys",
+  "containerRegistry": false,
+  "accessLevel": "developer",
+  "accessLevelValue": 30,
+  "mergeRequest": {
+    "MergeMethod": "merge",
+    "SquashOption": "default_off",
+    "PipelineMustSucceed": false,
+    "SkippedPipelinesAreSuccessful": false,
+    "AllThreadsMustBeResolved": false,
+    "StatusChecksMustSucceed": false,
+    "Approvals": null,
+    "ApprovalSettings": null
+  },
+  "branches": [
+    {
+      "Name": "main",
+      "Protect": false,
+      "MergeOnly": false,
+      "Default": true,
+      "AllowForcePush": false,
+      "CodeOwnerApprovalRequired": false
+    }
+  ],
+  "issues": {
+    "ReplicateFromStartercode": false,
+    "IssueNumbers": null,
+    "IncludeChildTasks": false
+  },
+  "startercode": {
+    "URL": "git@gitlab.lrz.de:case/startercode.git",
+    "FromBranch": "template",
+    "Tag": "",
+    "Template": false,
+    "TemplateMessage": "Initial",
+    "ToBranch": "main",
+    "AdditionalBranches": null
+  },
+  "clone": {
+    "LocalPath": ".",
+    "Branch": "main",
+    "Force": false
+  },
+  "release": null,
+  "seeder": null,
+  "deferredBranches": {
+    "devcontainer": {
+      "URL": "git@gitlab.lrz.de:case/devcontainer.git",
+      "FromBranch": "main",
+      "ToBranch": "DevContainer",
+      "Orphan": true,
+      "OrphanMessage": "DevContainer snapshot"
+    }
+  },
+  "students": null,
+  "groups": [
+    {
+      "name": "grp01",
+      "repoName": "casecourse-upperkeys-grp01",
+      "members": [
+        {
+          "raw": "Upper.Case@example.edu",
+          "email": "Upper.Case@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "Upper.Case",
+          "repoName": "casecourse-upperkeys-Upper.Case"
+        },
+        {
+          "raw": "plain@example.edu",
+          "email": "plain@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "plain",
+          "repoName": "casecourse-upperkeys-plain"
+        }
+      ]
+    },
+    {
+      "name": "grp02",
+      "repoName": "casecourse-upperkeys-grp02",
+      "members": [
+        {
+          "raw": "dotted.name@example.edu",
+          "email": "dotted.name@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "dotted.name",
+          "repoName": "casecourse-upperkeys-dotted.name"
+        }
+      ]
+    }
+  ]
+}

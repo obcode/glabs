@@ -1,0 +1,179 @@
+{
+  "course": "fun",
+  "name": "blatt1",
+  "useCoursenameAsPrefix": false,
+  "useEmailDomainAsSuffix": true,
+  "path": "fun/semester/ob-25ws/blatt-1",
+  "url": "https://gitlab.lrz.de/fun/semester/ob-25ws/blatt-1",
+  "repoBaseName": "blatt1",
+  "per": "student",
+  "description": "Blatt 1, Funktionale Programmierung, WS 25/26",
+  "containerRegistry": false,
+  "accessLevel": "developer",
+  "accessLevelValue": 30,
+  "mergeRequest": {
+    "MergeMethod": "merge",
+    "SquashOption": "default_off",
+    "PipelineMustSucceed": false,
+    "SkippedPipelinesAreSuccessful": false,
+    "AllThreadsMustBeResolved": false,
+    "StatusChecksMustSucceed": false,
+    "Approvals": null,
+    "ApprovalSettings": null
+  },
+  "branches": [
+    {
+      "Name": "main",
+      "Protect": false,
+      "MergeOnly": false,
+      "Default": true,
+      "AllowForcePush": false,
+      "CodeOwnerApprovalRequired": false
+    }
+  ],
+  "issues": {
+    "ReplicateFromStartercode": false,
+    "IssueNumbers": null,
+    "IncludeChildTasks": false
+  },
+  "startercode": {
+    "URL": "git@gitlab.lrz.de:fun/startercode/startercode01.git",
+    "FromBranch": "25ws-2",
+    "Tag": "",
+    "Template": false,
+    "TemplateMessage": "Initial",
+    "ToBranch": "main",
+    "AdditionalBranches": null
+  },
+  "clone": {
+    "LocalPath": ".",
+    "Branch": "main",
+    "Force": false
+  },
+  "release": null,
+  "seeder": null,
+  "deferredBranches": {},
+  "students": [
+    {
+      "raw": "s005@example.edu",
+      "email": "s005@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "s005_at_example.edu",
+      "repoName": "blatt1-s005_at_example.edu"
+    },
+    {
+      "raw": "s057@example.edu",
+      "email": "s057@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "s057_at_example.edu",
+      "repoName": "blatt1-s057_at_example.edu"
+    },
+    {
+      "raw": "s058.t058@example.edu",
+      "email": "s058.t058@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "s058.t058_at_example.edu",
+      "repoName": "blatt1-s058.t058_at_example.edu"
+    },
+    {
+      "raw": "s073.t073@example.edu",
+      "email": "s073.t073@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "s073.t073_at_example.edu",
+      "repoName": "blatt1-s073.t073_at_example.edu"
+    },
+    {
+      "raw": "s077.t077@example.edu",
+      "email": "s077.t077@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "s077.t077_at_example.edu",
+      "repoName": "blatt1-s077.t077_at_example.edu"
+    },
+    {
+      "raw": "s082@example.edu",
+      "email": "s082@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "s082_at_example.edu",
+      "repoName": "blatt1-s082_at_example.edu"
+    },
+    {
+      "raw": "s086.t086@example.edu",
+      "email": "s086.t086@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "s086.t086_at_example.edu",
+      "repoName": "blatt1-s086.t086_at_example.edu"
+    },
+    {
+      "raw": "s087.t087@example.edu",
+      "email": "s087.t087@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "s087.t087_at_example.edu",
+      "repoName": "blatt1-s087.t087_at_example.edu"
+    },
+    {
+      "raw": "s104.t104@example.edu",
+      "email": "s104.t104@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "s104.t104_at_example.edu",
+      "repoName": "blatt1-s104.t104_at_example.edu"
+    },
+    {
+      "raw": "s115.t115@example.edu",
+      "email": "s115.t115@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "s115.t115_at_example.edu",
+      "repoName": "blatt1-s115.t115_at_example.edu"
+    },
+    {
+      "raw": "s120.t120@example.edu",
+      "email": "s120.t120@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "s120.t120_at_example.edu",
+      "repoName": "blatt1-s120.t120_at_example.edu"
+    },
+    {
+      "raw": "s140.t140@example.edu",
+      "email": "s140.t140@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "s140.t140_at_example.edu",
+      "repoName": "blatt1-s140.t140_at_example.edu"
+    },
+    {
+      "raw": "s153.t153@example.edu",
+      "email": "s153.t153@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "s153.t153_at_example.edu",
+      "repoName": "blatt1-s153.t153_at_example.edu"
+    },
+    {
+      "raw": "s159@example.edu",
+      "email": "s159@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "s159_at_example.edu",
+      "repoName": "blatt1-s159_at_example.edu"
+    },
+    {
+      "raw": "s190@example.edu",
+      "email": "s190@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "s190_at_example.edu",
+      "repoName": "blatt1-s190_at_example.edu"
+    }
+  ],
+  "groups": null
+}

@@ -1,0 +1,82 @@
+{
+  "course": "casecourse",
+  "name": "slugs",
+  "useCoursenameAsPrefix": true,
+  "useEmailDomainAsSuffix": false,
+  "path": "casecourse/semester/ss2026/blatt-03",
+  "url": "https://gitlab.lrz.de/casecourse/semester/ss2026/blatt-03",
+  "repoBaseName": "casecourse-slugs",
+  "per": "student",
+  "description": "Project path slugification",
+  "containerRegistry": false,
+  "accessLevel": "developer",
+  "accessLevelValue": 30,
+  "mergeRequest": {
+    "MergeMethod": "merge",
+    "SquashOption": "default_off",
+    "PipelineMustSucceed": false,
+    "SkippedPipelinesAreSuccessful": false,
+    "AllThreadsMustBeResolved": false,
+    "StatusChecksMustSucceed": false,
+    "Approvals": null,
+    "ApprovalSettings": null
+  },
+  "branches": [],
+  "issues": {
+    "ReplicateFromStartercode": false,
+    "IssueNumbers": null,
+    "IncludeChildTasks": false
+  },
+  "startercode": null,
+  "clone": {
+    "LocalPath": ".",
+    "Branch": "main",
+    "Force": false
+  },
+  "release": null,
+  "seeder": null,
+  "deferredBranches": {},
+  "students": [
+    {
+      "raw": "Upper.Case@example.edu",
+      "email": "Upper.Case@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "Upper.Case",
+      "repoName": "casecourse-slugs-Upper.Case"
+    },
+    {
+      "raw": "dotted.name@example.edu",
+      "email": "dotted.name@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "dotted.name",
+      "repoName": "casecourse-slugs-dotted.name"
+    },
+    {
+      "raw": "plain@example.edu",
+      "email": "plain@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "plain",
+      "repoName": "casecourse-slugs-plain"
+    },
+    {
+      "raw": "plus+tag@example.edu",
+      "email": "plus+tag@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "plus+tag",
+      "repoName": "casecourse-slugs-plus-tag"
+    },
+    {
+      "raw": "under_score@example.edu",
+      "email": "under_score@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "under_score",
+      "repoName": "casecourse-slugs-under_score"
+    }
+  ],
+  "groups": null
+}

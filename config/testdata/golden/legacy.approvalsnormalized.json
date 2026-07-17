@@ -1,0 +1,95 @@
+{
+  "course": "legacy",
+  "name": "approvalsnormalized",
+  "useCoursenameAsPrefix": true,
+  "useEmailDomainAsSuffix": false,
+  "path": "legacy/semester/ss2026/blatt-04",
+  "url": "https://gitlab.lrz.de/legacy/semester/ss2026/blatt-04",
+  "repoBaseName": "legacy-approvalsnormalized",
+  "per": "group",
+  "description": "Approvals normalization",
+  "containerRegistry": false,
+  "accessLevel": "developer",
+  "accessLevelValue": 30,
+  "mergeRequest": {
+    "MergeMethod": "merge",
+    "SquashOption": "default_off",
+    "PipelineMustSucceed": false,
+    "SkippedPipelinesAreSuccessful": false,
+    "AllThreadsMustBeResolved": false,
+    "StatusChecksMustSucceed": false,
+    "Approvals": [
+      {
+        "Name": "padded",
+        "Branch": "",
+        "Branches": [
+          "main"
+        ],
+        "Usernames": [
+          "obcode"
+        ],
+        "Groups": [],
+        "MultiMemberGroupsOnly": false,
+        "RequiredApprovals": 0
+      }
+    ],
+    "ApprovalSettings": null
+  },
+  "branches": [
+    {
+      "Name": "main",
+      "Protect": false,
+      "MergeOnly": false,
+      "Default": true,
+      "AllowForcePush": false,
+      "CodeOwnerApprovalRequired": false
+    }
+  ],
+  "issues": {
+    "ReplicateFromStartercode": false,
+    "IssueNumbers": null,
+    "IncludeChildTasks": false
+  },
+  "startercode": {
+    "URL": "git@gitlab.lrz.de:legacy/startercode.git",
+    "FromBranch": "template",
+    "Tag": "",
+    "Template": false,
+    "TemplateMessage": "Initial",
+    "ToBranch": "main",
+    "AdditionalBranches": null
+  },
+  "clone": {
+    "LocalPath": ".",
+    "Branch": "main",
+    "Force": false
+  },
+  "release": null,
+  "seeder": null,
+  "deferredBranches": {},
+  "students": null,
+  "groups": [
+    {
+      "name": "grp01",
+      "repoName": "legacy-approvalsnormalized-grp01",
+      "members": [
+        {
+          "raw": "a@example.edu",
+          "email": "a@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "a",
+          "repoName": "legacy-approvalsnormalized-a"
+        },
+        {
+          "raw": "b.two@example.edu",
+          "email": "b.two@example.edu",
+          "username": null,
+          "id": null,
+          "repoSuffix": "b.two",
+          "repoName": "legacy-approvalsnormalized-b.two"
+        }
+      ]
+    }
+  ]
+}

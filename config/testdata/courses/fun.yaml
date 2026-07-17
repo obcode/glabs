@@ -1,0 +1,77 @@
+fun:
+  coursepath: fun/semester
+  semesterpath: ob-25ws
+
+  blatt1:
+    assignmentpath: blatt-1
+    description: Blatt 1, Funktionale Programmierung, WS 25/26
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:fun/startercode/startercode01.git
+      fromBranch: 25ws-2
+    # accesslevel: guest
+
+  blatt2:
+    assignmentpath: blatt-2
+    description: Blatt 2, Funktionale Programmierung, WS 25/26
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:fun/startercode/startercode02.git
+      fromBranch: 25ws
+    # accesslevel: guest
+
+  blatt3:
+    assignmentpath: blatt-3
+    description: Blatt 3, Funktionale Programmierung, WS 25/26
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:fun/startercode/startercode03.git
+      fromBranch: 25ws
+
+  projekt:
+    assignmentpath: projekte
+    description: Projekt, Funktionale Programmierung, WS 25/26
+    per: group
+    startercode:
+      url: git@gitlab.lrz.de:fun/startercode/startercodeProjekt.git
+      fromBranch: main
+    clone:
+      localpath: /tmp/glabs/fun/25ws/projekte
+      branch: main
+      clone: true
+
+  students:
+    # Student 161
+    - s073.t073@example.edu
+    - s140.t140@example.edu
+    - s057@example.edu
+    - s082@example.edu
+    - s153.t153@example.edu
+    - s086.t086@example.edu
+    - s077.t077@example.edu
+    - s005@example.edu
+    - s104.t104@example.edu
+    - s159@example.edu
+    - s120.t120@example.edu
+    - s190@example.edu
+    - s087.t087@example.edu
+    - s115.t115@example.edu
+    - s058.t058@example.edu
+
+  groups:
+    grp00:
+      - s161.t161@example.edu
+    grp01:
+      - s086.t086@example.edu
+      - s058.t058@example.edu
+    grp02:
+      - s140.t140@example.edu
+      - s077.t077@example.edu
+      - s087.t087@example.edu
+    grp03:
+      - s057@example.edu
+      - s082@example.edu
+    grp04:
+      - s153.t153@example.edu
+      - s120.t120@example.edu
+      - s115.t115@example.edu

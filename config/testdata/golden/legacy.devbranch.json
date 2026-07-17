@@ -1,0 +1,93 @@
+{
+  "course": "legacy",
+  "name": "devbranch",
+  "useCoursenameAsPrefix": true,
+  "useEmailDomainAsSuffix": false,
+  "path": "legacy/semester/ss2026/blatt-01",
+  "url": "https://gitlab.lrz.de/legacy/semester/ss2026/blatt-01",
+  "repoBaseName": "legacy-devbranch",
+  "per": "student",
+  "description": "Legacy startercode branch keys",
+  "containerRegistry": false,
+  "accessLevel": "developer",
+  "accessLevelValue": 30,
+  "mergeRequest": {
+    "MergeMethod": "merge",
+    "SquashOption": "default_off",
+    "PipelineMustSucceed": false,
+    "SkippedPipelinesAreSuccessful": false,
+    "AllThreadsMustBeResolved": false,
+    "StatusChecksMustSucceed": false,
+    "Approvals": null,
+    "ApprovalSettings": null
+  },
+  "branches": [
+    {
+      "Name": "main",
+      "Protect": true,
+      "MergeOnly": false,
+      "Default": true,
+      "AllowForcePush": false,
+      "CodeOwnerApprovalRequired": false
+    },
+    {
+      "Name": "develop",
+      "Protect": false,
+      "MergeOnly": true,
+      "Default": true,
+      "AllowForcePush": false,
+      "CodeOwnerApprovalRequired": false
+    },
+    {
+      "Name": "extra",
+      "Protect": false,
+      "MergeOnly": false,
+      "Default": false,
+      "AllowForcePush": false,
+      "CodeOwnerApprovalRequired": false
+    }
+  ],
+  "issues": {
+    "ReplicateFromStartercode": false,
+    "IssueNumbers": null,
+    "IncludeChildTasks": false
+  },
+  "startercode": {
+    "URL": "git@gitlab.lrz.de:legacy/startercode.git",
+    "FromBranch": "template",
+    "Tag": "",
+    "Template": false,
+    "TemplateMessage": "Initial",
+    "ToBranch": "main",
+    "AdditionalBranches": [
+      "extra"
+    ]
+  },
+  "clone": {
+    "LocalPath": ".",
+    "Branch": "main",
+    "Force": false
+  },
+  "release": null,
+  "seeder": null,
+  "deferredBranches": {},
+  "students": [
+    {
+      "raw": "a@example.edu",
+      "email": "a@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "a",
+      "repoName": "legacy-devbranch-a"
+    },
+    {
+      "raw": "b.two@example.edu",
+      "email": "b.two@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "b.two",
+      "repoName": "legacy-devbranch-b.two"
+    }
+  ],
+  "groups": null
+}

@@ -29,11 +29,11 @@ builds:
 # rejects. Separate archives keep each binary's archive self-consistent.
 archives:
     - id: glabs
-      ids:
+      builds:
           - glabs
       name_template: "glabs_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     - id: glabs-web
-      ids:
+      builds:
           - glabs-web
       name_template: "glabs-web_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 

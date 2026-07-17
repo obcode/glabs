@@ -18,7 +18,10 @@ var checkCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		viper.Set("show-success", true)
-		c := gitlab.NewClient()
+		c, err := gitlab.NewClientFromViper()
+		if err != nil {
+			er(err)
+		}
 		if len(args) == 1 {
 			cfg, err := config.GetCourseConfig(args[0])
 			if err != nil {

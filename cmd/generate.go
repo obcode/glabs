@@ -28,7 +28,10 @@ A student needs to exist on GitLab, a group needs to exist in the configuration 
 		assignmentConfig.Show()
 		fmt.Println(aurora.Magenta("Config okay? Press 'Enter' to continue or 'Ctrl-C' to stop ..."))
 		fmt.Scanln() //nolint:errcheck
-		c := gitlab.NewClient()
+		c, err := gitlab.NewClientFromViper()
+		if err != nil {
+			er(err)
+		}
 		c.Generate(assignmentConfig)
 	},
 }

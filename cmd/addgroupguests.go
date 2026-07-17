@@ -66,7 +66,10 @@ Example:
 		fmt.Println(aurora.Magenta("Add these students as guests to the subgroup? Press 'Enter' to continue or 'Ctrl-C' to stop ..."))
 		fmt.Scanln() //nolint:errcheck
 
-		c := gitlab.NewClient()
+		c, err := gitlab.NewClientFromViper()
+		if err != nil {
+			er(err)
+		}
 		err = c.AddGroupGuests(courseName)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)

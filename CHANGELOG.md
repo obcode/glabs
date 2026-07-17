@@ -1,3 +1,10 @@
+## 2.12.1 (2026-07-17)
+
+#### 🐞 Bug Fixes
+
+* **config:** honour the approvalsRequired alias regardless of key case (#77) (38af851f)
+
+
 ## 2.12.0 (2026-07-17)
 
 #### 🎁 Feature

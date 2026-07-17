@@ -25,6 +25,15 @@ func (cfg *AssignmentConfig) SetAccessLevel(level string) {
 	cfg.AccessLevel = accesslevel
 }
 
+// matchesPattern reports whether value matches the regexp pattern. An invalid
+// pattern matches nothing rather than erroring: these come from the CLI's
+// positional arguments, where a plain name is the common case and a typo should
+// simply select no repositories.
+func matchesPattern(pattern, value string) bool {
+	ok, err := regexp.MatchString(pattern, value)
+	return ok && err == nil
+}
+
 func accessLevel(assignmentKey string) AccessLevel {
 	accesslevelIdentifier := viper.GetString(assignmentKey + ".accesslevel")
 
@@ -58,7 +67,7 @@ func students(per Per, course, assignment string, onlyForStudentsOrGroups ...str
 		onlyForStudents := make([]string, 0, len(onlyForStudentsOrGroups))
 		for _, onlyStudent := range onlyForStudentsOrGroups {
 			for _, student := range studs {
-				if ok, err := regexp.MatchString(onlyStudent, student); ok && err == nil {
+				if matchesPattern(onlyStudent, student) {
 					onlyForStudents = append(onlyForStudents, student)
 				}
 			}

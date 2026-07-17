@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/logrusorgru/aurora"
-	"github.com/obcode/glabs/v2/config"
+	"github.com/obcode/glabs/v3/config"
 	"github.com/rs/zerolog/log"
 	"github.com/theckman/yacspin"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
@@ -68,7 +68,7 @@ func (c *Client) protectBranchForMemberCount(assignmentCfg *config.AssignmentCon
 
 	log.Debug().
 		Str("name", project.Name).
-		Str("toURL", project.SSHURLToRepo).
+		Str("toURL", project.HTTPURLToRepo).
 		Interface("branches", assignmentCfg.Branches).
 		Msg("protecting branch")
 
@@ -163,7 +163,7 @@ func (c *Client) protectSingleBranch(
 		if err != nil {
 			log.Debug().Err(err).
 				Str("name", project.Name).
-				Str("toURL", project.SSHURLToRepo).
+				Str("toURL", project.HTTPURLToRepo).
 				Str("branch", branch.Name).
 				Msg("cannot update protected branch")
 			return fmt.Errorf("error while trying to update protected branch %s: %w", branch.Name, err)
@@ -175,7 +175,7 @@ func (c *Client) protectSingleBranch(
 	if !isProtectedBranchNotFoundError(err) {
 		log.Debug().Err(err).
 			Str("name", project.Name).
-			Str("toURL", project.SSHURLToRepo).
+			Str("toURL", project.HTTPURLToRepo).
 			Str("branch", branch.Name).
 			Msg("cannot read protected branch")
 		return fmt.Errorf("error while trying to read protected branch %s: %w", branch.Name, err)
@@ -198,7 +198,7 @@ func (c *Client) recreateProtectedBranch(
 	if err != nil && !isProtectedBranchNotFoundError(err) {
 		log.Debug().Err(err).
 			Str("name", project.Name).
-			Str("toURL", project.SSHURLToRepo).
+			Str("toURL", project.HTTPURLToRepo).
 			Str("branch", branch.Name).
 			Msg("cannot unprotect branch")
 		return fmt.Errorf("error while trying to unprotect branch %s: %w", branch.Name, err)
@@ -217,7 +217,7 @@ func (c *Client) recreateProtectedBranch(
 	if err != nil {
 		log.Debug().Err(err).
 			Str("name", project.Name).
-			Str("toURL", project.SSHURLToRepo).
+			Str("toURL", project.HTTPURLToRepo).
 			Str("branch", branch.Name).
 			Msg("error while protecting branch")
 		return fmt.Errorf("error while trying to protect branch %s: %w", branch.Name, err)

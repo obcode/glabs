@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/logrusorgru/aurora"
-	"github.com/obcode/glabs/v2/config"
+	"github.com/obcode/glabs/v3/config"
 	"github.com/rs/zerolog/log"
 	"github.com/theckman/yacspin"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
@@ -115,7 +115,7 @@ func (c *Client) archive(assignmentCfg *config.AssignmentConfig, project *gitlab
 			return ""
 		}()).
 		Str("name", project.Name).
-		Str("toURL", project.SSHURLToRepo).
+		Str("toURL", project.HTTPURLToRepo).
 		Msg("protecting branch")
 
 	var err error
@@ -124,7 +124,7 @@ func (c *Client) archive(assignmentCfg *config.AssignmentConfig, project *gitlab
 		if err != nil {
 			log.Debug().Err(err).
 				Str("name", project.Name).
-				Str("toURL", project.SSHURLToRepo).
+				Str("toURL", project.HTTPURLToRepo).
 				Msg("cannot unarchive project")
 
 			if spin {
@@ -140,7 +140,7 @@ func (c *Client) archive(assignmentCfg *config.AssignmentConfig, project *gitlab
 		if err != nil {
 			log.Debug().Err(err).
 				Str("name", project.Name).
-				Str("toURL", project.SSHURLToRepo).
+				Str("toURL", project.HTTPURLToRepo).
 				Msg("cannot archive project")
 
 			if spin {

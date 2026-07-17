@@ -11,6 +11,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/logrusorgru/aurora"
+	"github.com/obcode/glabs/v3/config"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"github.com/theckman/yacspin"
@@ -62,7 +63,16 @@ func PrepareSourceRepo(url, fromBranch string, singleCommit bool, commitMessage 
 		}
 	}()
 
-	auth, err := GetAuth()
+	// The starter-code (or deferred-branch) URL may be written in SSH notation
+	// (git@host:path.git); glabs clones over HTTPS with the token, so normalize
+	// it first, then pick the credential based on its host.
+	cloneURL, err := config.HTTPSCloneURL(url)
+	if err != nil {
+		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
+		return nil, err
+	}
+
+	auth, err := AuthForURL(cloneURL)
 	if err != nil {
 		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
 		fmt.Printf("error: %v", err)
@@ -75,7 +85,7 @@ func PrepareSourceRepo(url, fromBranch string, singleCommit bool, commitMessage 
 	sourceRef := plumbing.NewBranchReferenceName(fromBranch)
 
 	repo, err := git.Clone(storer, fs, &git.CloneOptions{
-		URL:           url,
+		URL:           cloneURL,
 		ReferenceName: sourceRef,
 		SingleBranch:  true,
 		Auth:          auth,

@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/logrusorgru/aurora/v4"
-	"github.com/obcode/glabs/v2/config"
+	"github.com/obcode/glabs/v3/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

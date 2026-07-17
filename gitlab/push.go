@@ -3,8 +3,8 @@ package gitlab
 import (
 	"fmt"
 
-	"github.com/obcode/glabs/v2/config"
-	"github.com/obcode/glabs/v2/git"
+	"github.com/obcode/glabs/v3/config"
+	"github.com/obcode/glabs/v3/git"
 )
 
 func (c *Client) Push(assignmentCfg *config.AssignmentConfig, branchname string) error {

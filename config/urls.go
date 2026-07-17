@@ -16,46 +16,56 @@ func (cfg *AssignmentConfig) StartercodeURL() {
 }
 
 func (cfg *AssignmentConfig) gitURLToWebURL(raw, branch string) (string, error) {
+	base, err := gitURLToHTTPSBase(raw)
+	if err != nil {
+		return "", err
+	}
+	if branch == "" {
+		return base, nil
+	}
+	if !strings.HasSuffix(base, "/") {
+		base += "/"
+	}
+	return base + "-/tree/" + url.PathEscape(branch), nil
+}
+
+// HTTPSCloneURL turns a starter-code or repository URL into the HTTPS clone URL
+// glabs talks to. The SSH form `git@host:path.git` stays valid *notation* in a
+// course file — it is what people paste out of GitLab — but glabs clones and
+// pushes over HTTPS with a PAT, so every URL is normalized to https here.
+func HTTPSCloneURL(raw string) (string, error) {
+	base, err := gitURLToHTTPSBase(raw)
+	if err != nil {
+		return "", err
+	}
+	if !strings.HasSuffix(base, ".git") {
+		base += ".git"
+	}
+	return base, nil
+}
+
+// gitURLToHTTPSBase accepts either an https URL (returned as-is, minus any .git)
+// or the SSH form git@host:path[.git], and returns https://host/path.
+func gitURLToHTTPSBase(raw string) (string, error) {
 	raw = strings.TrimSpace(raw)
-
 	if raw == "" {
-		return "", fmt.Errorf("leere URL")
+		return "", fmt.Errorf("empty URL")
 	}
 
-	// Bereits Web-URL -> direkt zurückgeben
 	if strings.HasPrefix(raw, "https://") || strings.HasPrefix(raw, "http://") {
-		base := raw
-		if branch == "" {
-			return base, nil
-		}
-		encBranch := url.PathEscape(branch)
-		if !strings.HasSuffix(base, "/") {
-			base += "/"
-		}
-		return base + "-/tree/" + encBranch, nil
+		return strings.TrimSuffix(raw, ".git"), nil
 	}
 
-	// Git SSH Form: git@host:path.git
 	if strings.HasPrefix(raw, "git@") {
 		rest := strings.TrimPrefix(raw, "git@")
-		i := strings.Index(rest, ":")
-		if i < 0 {
-			return "", fmt.Errorf("ungültige SSH-URL: %q", raw)
+		host, path, found := strings.Cut(rest, ":")
+		if !found {
+			return "", fmt.Errorf("invalid SSH URL: %q", raw)
 		}
-
-		host := rest[:i]
-		path := rest[i+1:]
-		path = strings.TrimSuffix(path, ".git")
-
-		base := "https://" + host + "/" + path
-		if branch == "" {
-			return base, nil
-		}
-		encBranch := url.PathEscape(branch)
-		return base + "/-/tree/" + encBranch, nil
+		return "https://" + host + "/" + strings.TrimSuffix(path, ".git"), nil
 	}
 
-	return "", fmt.Errorf("nicht unterstütztes URL-Format: %q", raw)
+	return "", fmt.Errorf("unsupported URL format: %q", raw)
 }
 
 func (cfg *AssignmentConfig) Urls(assignment bool) {

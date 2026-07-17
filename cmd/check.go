@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/obcode/glabs/v2/config"
-	"github.com/obcode/glabs/v2/gitlab"
+	"github.com/obcode/glabs/v3/config"
+	"github.com/obcode/glabs/v3/gitlab"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

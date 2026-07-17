@@ -12,8 +12,9 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
-	cfg "github.com/obcode/glabs/v2/config"
-	g "github.com/obcode/glabs/v2/git"
+	"github.com/logrusorgru/aurora"
+	cfg "github.com/obcode/glabs/v3/config"
+	g "github.com/obcode/glabs/v3/git"
 	"github.com/rs/zerolog/log"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
@@ -24,6 +25,12 @@ func localpath(cfg *cfg.AssignmentConfig, project string) string {
 
 func (c *Client) runSeeder(assignmentCfg *cfg.AssignmentConfig, project *gitlab.Project) error {
 
+	// Deprecated. The seeder runs an arbitrary command from the config file; in a
+	// shared/web context that is remote code execution, so it will not be offered
+	// there and is slated for removal from the CLI too. No course file uses it.
+	fmt.Fprintln(os.Stderr, aurora.Yellow(
+		"warning: the seeder is deprecated and will be removed in a future release"))
+
 	path := localpath(assignmentCfg, project.Name)
 
 	err := os.Mkdir(path, 0755)
@@ -33,10 +40,16 @@ func (c *Client) runSeeder(assignmentCfg *cfg.AssignmentConfig, project *gitlab.
 		return err
 	}
 	path, _ = filepath.Abs(path)
-	args := assignmentCfg.Seeder.Args
-	for index, item := range assignmentCfg.Seeder.Args {
+
+	// Copy rather than write back into assignmentCfg.Seeder.Args: the same config
+	// is reused for every project in the per-student/per-group loop, and
+	// substituting %s in place would consume the placeholder after the first one.
+	args := make([]string, len(assignmentCfg.Seeder.Args))
+	for i, item := range assignmentCfg.Seeder.Args {
 		if strings.Count(item, "%s") == 1 {
-			args[index] = fmt.Sprintf(item, path)
+			args[i] = fmt.Sprintf(item, path)
+		} else {
+			args[i] = item
 		}
 	}
 
@@ -143,13 +156,13 @@ func push(assignmentCfg *cfg.AssignmentConfig, repo *git.Repository, wtree *git.
 
 	conf := &config.RemoteConfig{
 		Name: project.Name,
-		URLs: []string{project.SSHURLToRepo},
+		URLs: []string{project.HTTPURLToRepo},
 	}
 
 	remote, err := repo.CreateRemote(conf)
 	if err != nil {
 		log.Debug().Err(err).
-			Str("name", project.Name).Str("url", project.SSHURLToRepo).
+			Str("name", project.Name).Str("url", project.HTTPURLToRepo).
 			Msg("cannot create remote")
 		return fmt.Errorf("cannot create remote: %w", err)
 	}
@@ -160,7 +173,7 @@ func push(assignmentCfg *cfg.AssignmentConfig, repo *git.Repository, wtree *git.
 	log.Debug().
 		Str("refSpec", string(refSpec)).
 		Str("name", project.Name).
-		Str("toURL", project.SSHURLToRepo).
+		Str("toURL", project.HTTPURLToRepo).
 		Str("toBranch", assignmentCfg.Seeder.ToBranch).
 		Msg("pushing seeded repository")
 
@@ -172,7 +185,7 @@ func push(assignmentCfg *cfg.AssignmentConfig, repo *git.Repository, wtree *git.
 	err = repo.Push(pushOpts)
 	if err != nil {
 		log.Debug().Err(err).
-			Str("name", project.Name).Str("url", project.SSHURLToRepo).
+			Str("name", project.Name).Str("url", project.HTTPURLToRepo).
 			Msg("cannot push to remote")
 		return fmt.Errorf("cannot push to remote: %w", err)
 	}

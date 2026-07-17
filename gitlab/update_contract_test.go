@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/obcode/glabs/v2/config"
+	"github.com/obcode/glabs/v3/config"
 )
 
 // ---- Update (top-level) -----------------------------------------------------

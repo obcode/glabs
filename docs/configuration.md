@@ -18,8 +18,6 @@ gitlab:
   host: https://gitlab.example.org
   token: <personal-access-token>
 
-sshprivatekey: /path/to/private/key
-
 coursesfilepath: /absolute/path/to/course-configs
 courses:
   - mpd
@@ -31,14 +29,15 @@ courses:
 | Key | Purpose | Required | Default |
 |---|---|---|---|
 | `gitlab.host` | Base URL of your GitLab instance | Yes | — |
-| `gitlab.token` | Personal access token with API scope | Yes | — |
-| `sshprivatekey` | Path to unencrypted SSH key for git operations | No | System default SSH key |
+| `gitlab.token` | Personal access token, scopes `api` and `write_repository` | Yes | — |
 | `coursesfilepath` | Directory containing course config files | Yes | — |
 | `courses` | List of course file basenames to load | Yes | — |
 
 ### Notes
 
-- **sshprivatekey**: Only needed if default SSH key doesn't work
+- **gitlab.token**: used for both the API and git. It needs `write_repository` in
+  addition to `api`, because glabs pushes over HTTPS. Since glabs v3 there is no
+  separate SSH key.
 - **coursesfilepath**: Must be absolute path
 - **courses**: Filenames without extension (glabs adds .yaml/.yml/etc)
 

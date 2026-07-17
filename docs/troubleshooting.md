@@ -75,25 +75,23 @@ invalid API token
 glabs check <course>  # Validates token access
 ```
 
-### SSH key issues (startercode)
+### Git operations fail (startercode, push, clone)
+
+Since glabs v3, all git operations go over HTTPS with `gitlab.token` — there is
+no SSH key. Starter-code URLs may still be written in SSH notation
+(`git@gitlab.lrz.de:...`); glabs normalizes them to HTTPS.
 
 **Symptoms:**
 ```
-Permission denied (publickey)
-ssh: connect to host gitlab.lrz.de port 22: Connection refused
+authentication required
+403 Forbidden
 ```
 
 **Checks:**
-- SSH key loaded: `ssh-add -l`
-- Key has permission to read starter repo
-- URL is SSH format: `git@gitlab.lrz.de:...` (not https)
-- Can clone manually: `git clone git@gitlab.lrz.de:...`
-
-**Configure custom key:**
-```yaml
-# main config
-sshprivatekey: /path/to/id_rsa
-```
+- `gitlab.token` is set and not expired
+- The token has both the `api` **and** `write_repository` scopes — pushing needs
+  `write_repository`, which a token with only `api` does not have
+- The token's user can read the starter repo and write the target group
 
 ## Repository generation
 

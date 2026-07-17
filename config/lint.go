@@ -140,6 +140,7 @@ func lintAssignment(course *CourseSource, name string, a *AssignmentSource) []Fi
 	}
 
 	if a.Seeder != nil {
+		add("seeder", "the seeder is deprecated and will be removed; it is not available in the web app", SeverityDeprecated)
 		if a.Seeder.Cmd == "" {
 			add("seeder.cmd", "seeder without a cmd", SeverityProblem)
 		}

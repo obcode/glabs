@@ -3,14 +3,13 @@ package git
 import (
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/logrusorgru/aurora"
-	"github.com/obcode/glabs/v2/config"
+	"github.com/obcode/glabs/v3/config"
 	"github.com/rs/zerolog/log"
 	"github.com/theckman/yacspin"
 )
@@ -35,17 +34,18 @@ func Clone(cfg *config.AssignmentConfig, noSpinner bool) {
 	}
 }
 
+// ProjectRepoUrl is the HTTPS clone URL for a student's or group's repository.
+// cfg.URL is already https://host/coursepath, so the repository URL is just that
+// plus the repo name; glabs clones it over HTTPS with the token.
 func ProjectRepoUrl(cfg *config.AssignmentConfig, suffix string) string {
-	return fmt.Sprintf("%s/%s-%s",
-		strings.Replace(strings.Replace(cfg.URL, "https://", "git@", 1), "/", ":", 1),
-		cfg.RepoBaseName(), suffix)
+	return fmt.Sprintf("%s/%s-%s.git", cfg.URL, cfg.RepoBaseName(), suffix)
 }
 
 func localpath(cfg *config.AssignmentConfig, suffix string) string {
 	return fmt.Sprintf("%s/%s", cfg.Clone.LocalPath, cfg.RepoNameWithSuffix(suffix))
 }
 
-func clone(localpath, branch, cloneurl string, auth ssh.AuthMethod, force bool, noSpinner bool) {
+func clone(localpath, branch, cloneurl string, auth transport.AuthMethod, force bool, noSpinner bool) {
 	cfg := yacspin.Config{
 		Frequency: 100 * time.Millisecond,
 		CharSet:   yacspin.CharSets[69],

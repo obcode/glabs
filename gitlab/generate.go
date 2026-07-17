@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/logrusorgru/aurora"
-	"github.com/obcode/glabs/v2/config"
-	"github.com/obcode/glabs/v2/git"
+	"github.com/obcode/glabs/v3/config"
+	"github.com/obcode/glabs/v3/git"
 	"github.com/rs/zerolog/log"
 	"github.com/theckman/yacspin"
 )

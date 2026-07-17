@@ -2,7 +2,7 @@ package gitlab
 
 import (
 	"github.com/gookit/color"
-	"github.com/obcode/glabs/v2/config"
+	"github.com/obcode/glabs/v3/config"
 	"github.com/rs/zerolog/log"
 )
 

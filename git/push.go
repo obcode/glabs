@@ -8,7 +8,7 @@ import (
 	gitconfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/logrusorgru/aurora"
-	"github.com/obcode/glabs/v2/config"
+	"github.com/obcode/glabs/v3/config"
 	"github.com/rs/zerolog/log"
 	"github.com/theckman/yacspin"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
@@ -42,7 +42,7 @@ func Push(assignmentCfg *config.AssignmentConfig, projectname string, sourceRepo
 
 	conf := &gitconfig.RemoteConfig{
 		Name: project.Name,
-		URLs: []string{project.SSHURLToRepo},
+		URLs: []string{project.HTTPURLToRepo},
 	}
 
 	remote, err := sourceRepo.Repo.CreateRemote(conf)
@@ -54,7 +54,7 @@ func Push(assignmentCfg *config.AssignmentConfig, projectname string, sourceRepo
 			log.Debug().Err(err).Msg("cannot stop spinner")
 		}
 		log.Debug().Err(err).
-			Str("name", project.Name).Str("url", project.SSHURLToRepo).
+			Str("name", project.Name).Str("url", project.HTTPURLToRepo).
 			Msg("cannot create remote")
 		return fmt.Errorf("cannot create remote: %w", err)
 	}

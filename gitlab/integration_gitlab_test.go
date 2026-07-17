@@ -12,7 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/obcode/glabs/v2/config"
+	"github.com/obcode/glabs/v3/config"
+	g "github.com/obcode/glabs/v3/git"
+	"github.com/spf13/viper"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	gitlabapi "gitlab.com/gitlab-org/api/client-go/v2"
@@ -24,6 +26,12 @@ const (
 	runIntegrationEnv  = "GLABS_RUN_GITLAB_TC"
 	gitLabRootPassword = "zXq7!Rp3@Wk9#Tm2vL"
 )
+
+func resetViper(t *testing.T) {
+	t.Helper()
+	viper.Reset()
+	t.Cleanup(viper.Reset)
+}
 
 func requireIntegrationEnabled(t *testing.T) {
 	t.Helper()
@@ -42,7 +50,7 @@ func createRootToken(ctx context.Context, t *testing.T, c testcontainers.Contain
 		"user = User.find_by_username('root')",
 		"token = user.personal_access_tokens.find_by(name: 'glabs-integration-token')",
 		"token&.revoke!",
-		"token = user.personal_access_tokens.create!(name: 'glabs-integration-token', scopes: [:api], expires_at: 365.days.from_now)",
+		"token = user.personal_access_tokens.create!(name: 'glabs-integration-token', scopes: [:api, :write_repository], expires_at: 365.days.from_now)",
 		fmt.Sprintf("token.set_token('%s')", gitLabRootToken),
 		"token.save!",
 		"puts token.token",
@@ -282,6 +290,75 @@ func TestIntegration_GitLab_Operations(t *testing.T) {
 		}
 		if proj.Archived {
 			t.Fatal("expected project to be unarchived after Archive(unarchive=true)")
+		}
+	})
+
+	// ── Sub-test: git transport over HTTPS with the PAT ──────────────────────
+	// This is the proof for the v3 breaking change: git now speaks HTTPS with
+	// the token instead of SSH with a key. It clones a source project and pushes
+	// it to a target, then reads the file back through the API.
+	t.Run("GitTransportOverHTTPS", func(t *testing.T) {
+		resetViper(t)
+		// createRootToken sets the token value to this constant, and the scope now
+		// includes write_repository.
+		viper.Set("gitlab.token", gitLabRootToken)
+		viper.Set("gitlab.host", baseURL)
+		t.Cleanup(viper.Reset)
+
+		// A source project with a committed file on main.
+		srcName := "transport-src"
+		initReadme := true
+		srcProject, _, err := client.Projects.CreateProject(&gitlabapi.CreateProjectOptions{
+			Name:                 &srcName,
+			NamespaceID:          &parent.ID,
+			InitializeWithReadme: &initReadme,
+		})
+		if err != nil {
+			t.Fatalf("creating source project failed: %v", err)
+		}
+
+		// GitLab's external_url inside the container is http://localhost (port 80),
+		// but the test reaches it on the mapped port, so project.HTTPURLToRepo
+		// points at the wrong port. Build the reachable URL from baseURL instead.
+		gitURL := func(p *gitlabapi.Project) string { return baseURL + "/" + p.PathWithNamespace + ".git" }
+
+		// Clone it over HTTPS+PAT — proves the clone side of the transport.
+		sourceRepo, err := g.PrepareSourceRepo(gitURL(srcProject), "main", false, "")
+		if err != nil {
+			t.Fatalf("PrepareSourceRepo over HTTPS failed: %v", err)
+		}
+
+		// An empty target project to push into.
+		dstName := "transport-dst"
+		emptyReadme := false
+		dstProject, _, err := client.Projects.CreateProject(&gitlabapi.CreateProjectOptions{
+			Name:                 &dstName,
+			NamespaceID:          &parent.ID,
+			InitializeWithReadme: &emptyReadme,
+		})
+		if err != nil {
+			t.Fatalf("creating destination project failed: %v", err)
+		}
+		dstProject.HTTPURLToRepo = gitURL(dstProject)
+
+		cfg := &config.AssignmentConfig{
+			Course: "it", Name: "transport",
+			URL:         baseURL + "/" + dstProject.PathWithNamespace,
+			Startercode: &config.Startercode{ToBranch: "main"},
+		}
+		// Push over HTTPS+PAT — proves the push side of the transport.
+		if err := g.Push(cfg, dstProject.Name, sourceRepo, "main", true, dstProject); err != nil {
+			t.Fatalf("Push over HTTPS failed: %v", err)
+		}
+
+		// The README the source was initialized with must now be in the target.
+		file, _, err := client.RepositoryFiles.GetFile(dstProject.ID, "README.md",
+			&gitlabapi.GetFileOptions{Ref: gitlabapi.Ptr("main")})
+		if err != nil {
+			t.Fatalf("reading pushed file back failed: %v", err)
+		}
+		if file.FileName != "README.md" {
+			t.Errorf("pushed file = %q, want README.md", file.FileName)
 		}
 	})
 

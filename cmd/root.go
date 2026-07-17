@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/mitchellh/go-homedir"
-	"github.com/obcode/glabs/v2/config"
+	"github.com/obcode/glabs/v3/config"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -93,7 +93,7 @@ func initConfig() {
 // findCourseFile locates a course file by name under coursesfilepath, accepting
 // the extensions viper used to search for.
 func findCourseFile(course string) (string, error) {
-	dir := viper.GetString("coursesfilepath")
+	dir := expandPath(viper.GetString("coursesfilepath"))
 	for _, ext := range []string{".yaml", ".yml"} {
 		path := filepath.Join(dir, course+ext)
 		if _, err := os.Stat(path); err == nil {
@@ -102,4 +102,17 @@ func findCourseFile(course string) (string, error) {
 	}
 	return "", fmt.Errorf("cannot find a course file for %q: looked for %s.yaml and %s.yml in %q",
 		course, course, course, dir)
+}
+
+// expandPath resolves ~, $HOME and other environment variables in a path read
+// from the config file. viper's config-path loader did this implicitly; course
+// files no longer go through it, so a value like "$HOME/courses" has to be
+// expanded here — otherwise it is taken literally and the directory is not found.
+func expandPath(path string) string {
+	if path == "~" || strings.HasPrefix(path, "~/") {
+		if home, err := homedir.Dir(); err == nil {
+			path = home + path[1:]
+		}
+	}
+	return os.ExpandEnv(path)
 }

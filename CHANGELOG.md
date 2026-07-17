@@ -1,3 +1,18 @@
+## 2.12.0 (2026-07-17)
+
+#### 🎁 Feature
+
+* **config:** add typed source schema with config lint/fmt/migrate (#76) (632c1dfc)
+
+#### 🔎 Tests
+
+* **config:** pin resolved config with golden tests (#73) (6c62e301)
+
+#### 🔀 Code Refactoring
+
+* **config:** return errors instead of exiting the process (#75) (2e74799a)
+
+
 ## 2.11.2 (2026-06-25)
 
 #### 🐞 Bug Fixes

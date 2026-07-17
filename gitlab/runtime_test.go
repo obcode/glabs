@@ -28,15 +28,6 @@ func withExitCapture(t *testing.T) func() {
 	}
 }
 
-func withPanicCapture(t *testing.T, fn func(v interface{})) func() {
-	t.Helper()
-	origPanic := panicFunc
-	panicFunc = fn
-	return func() {
-		panicFunc = origPanic
-	}
-}
-
 func assertExitCode(t *testing.T, expected int, fn func()) {
 	t.Helper()
 	defer func() {
@@ -102,26 +93,33 @@ func TestProtectToBranch_UsesExitSeamForInvalidPer(t *testing.T) {
 	})
 }
 
-func TestNewClient_UsesPanicSeamOnInvalidBaseURL(t *testing.T) {
-	triggered := false
-	defer withPanicCapture(t, func(v interface{}) {
-		triggered = true
-		panic(v)
-	})()
+func TestNewClientReturnsErrorOnInvalidBaseURL(t *testing.T) {
+	_, err := NewClient(WithHost("://invalid-base-url"), WithToken("token"))
+	if err == nil {
+		t.Fatal("expected an error for an invalid GitLab base URL")
+	}
+}
+
+func TestNewClientRequiresHostAndToken(t *testing.T) {
+	if _, err := NewClient(WithToken("token")); err == nil {
+		t.Error("NewClient without a host succeeded, want an error")
+	}
+	if _, err := NewClient(WithHost("https://gitlab.example.org")); err == nil {
+		t.Error("NewClient without a token succeeded, want an error")
+	}
+}
+
+func TestNewClientFromViper(t *testing.T) {
 	viper.Reset()
 	defer viper.Reset()
-	viper.Set("gitlab.host", "://invalid-base-url")
-	viper.Set("gitlab.token", "token")
+	viper.Set("gitlab.host", "https://gitlab.example.org")
+	viper.Set("gitlab.token", "glpat-secret")
 
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("expected panic on invalid GitLab base URL")
-		}
-		if !triggered {
-			t.Fatal("expected panic to pass through panicFunc seam")
-		}
-	}()
-
-	_ = NewClient()
+	c, err := NewClientFromViper()
+	if err != nil {
+		t.Fatalf("NewClientFromViper: %v", err)
+	}
+	if c == nil || c.Client == nil {
+		t.Fatal("NewClientFromViper returned an empty client")
+	}
 }

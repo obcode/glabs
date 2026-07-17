@@ -67,7 +67,10 @@ var (
 			if err != nil {
 				er(err)
 			}
-			c := gitlab.NewClient()
+			c, err := gitlab.NewClientFromViper()
+			if err != nil {
+				er(err)
+			}
 			if Json {
 				c.ReportJSON(assignmentConfig, output)
 			} else if Html {

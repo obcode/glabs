@@ -28,7 +28,10 @@ var (
 			assignmentConfig.Show()
 			fmt.Println(aurora.Magenta("Config okay? Press 'Enter' to continue or 'Ctrl-C' to stop ..."))
 			fmt.Scanln() //nolint:errcheck
-			c := gitlab.NewClient()
+			c, err := gitlab.NewClientFromViper()
+			if err != nil {
+				er(err)
+			}
 			c.Archive(assignmentConfig, unarchive)
 		},
 	}

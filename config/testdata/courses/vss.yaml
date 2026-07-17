@@ -34,7 +34,6 @@ vss:
     clone:
       localpath: /tmp/glabs/vss/26ss/blatt0
       branch: develop
-      clone: true
 
 # glabs report vss blatt1 --html -o vss-blatt1.html
   blatt1:
@@ -65,7 +64,6 @@ vss:
     clone:
       localpath: /tmp/glabs/vss/26ss/blatt1
       branch: develop
-      clone: true
     # accesslevel: guest
     release:
       mergeRequest:
@@ -118,18 +116,17 @@ vss:
     clone:
       localpath: /tmp/glabs/vss/26ss/blatt2
       branch: main
-      clone: true
     # accesslevel: guest
     release:
       mergeRequest:
         pipeline: true
-        dockerImages:
-          - service/customer
-          - service/order
-          - service/payment
-          - service/shipment
-          - service/stock
-          - service/supplier
+      dockerImages:
+        - service/customer
+        - service/order
+        - service/payment
+        - service/shipment
+        - service/stock
+        - service/supplier
 
   students:
     - s161.t161@example.edu

@@ -233,71 +233,78 @@ func containsAll(s string, subs ...string) bool {
 	return true
 }
 
-// The schema must claim every key the real course files use. This is the
-// completeness guard, and it is what makes the round-trip test meaningful: a
-// round trip would happily pass while dropping a field the decoder never knew
-// about, because it would be absent on both sides.
+// realCourseFixtures are the mirrors of actual course files. The synthetic
+// fixtures (casecourse, legacy) deliberately carry odd config and are excluded.
+var realCourseFixtures = []string{"mpd", "vss", "algdati", "fundc", "fun"}
+
+// The schema must claim every key the real course files use, with no exceptions.
+// This is the completeness guard, and it is what makes the round-trip test
+// meaningful: a round trip would happily pass while dropping a field the decoder
+// never knew about, because it would be absent on both sides.
 //
-// Anything reported here is a key the loader silently ignores. Today exactly
-// two classes exist, both pre-existing bugs frozen by the goldens:
-//
-//   - `clone.clone` — a stray key present in every real course file. It does
-//     nothing; the clone command has no such option.
-//   - `vss.blatt2.release.mergeRequest.dockerImages` — the images are nested
-//     under mergeRequest, but config/release.go:47 reads release.dockerImages,
-//     so all six are ignored.
-//
-// A new entry means either a genuine typo in a course file or a field missing
-// from the schema. Both are worth failing over.
+// Anything reported here is a key the loader silently ignores — either a schema
+// gap or a genuine typo in a course file. There used to be two classes of the
+// latter (`clone.clone` in every file, and dockerImages nested one level too
+// deep in vss/blatt2); both are fixed, which is why this allows nothing.
 func TestSchemaClaimsEveryKeyInRealFixtures(t *testing.T) {
 	t.Parallel()
 
-	knownUnclaimed := map[string]bool{
-		"vss.blatt2.release.mergeRequest.dockerImages": true,
-	}
-
-	paths, err := filepath.Glob(filepath.Join("testdata", "courses", "*.yaml"))
-	if err != nil {
-		t.Fatalf("globbing fixtures: %v", err)
-	}
-
-	for _, path := range paths {
-		data, err := os.ReadFile(path)
-		if err != nil {
-			t.Fatalf("reading fixture: %v", err)
-		}
-		_, result, err := DecodeCourse(data)
-		if err != nil {
-			t.Fatalf("%s: %v", path, err)
-		}
-
+	for _, name := range realCourseFixtures {
+		_, result := decodeFixture(t, name)
 		for _, key := range result.UnknownKeys {
-			if strings.HasSuffix(key, ".clone.clone") || knownUnclaimed[key] {
-				continue
-			}
-			t.Errorf("%s: key %q is claimed by no field — schema gap or a typo in the fixture",
-				filepath.Base(path), key)
+			t.Errorf("%s.yaml: key %q is claimed by no field — schema gap or a typo in the fixture",
+				name, key)
 		}
 	}
 }
 
-func TestDecodeReportsUnknownAndLegacyKeys(t *testing.T) {
+// decodeYAML decodes an inline course document. Used where a fixture would have
+// to carry deliberately broken config that the completeness guard would then
+// flag.
+func decodeYAML(t *testing.T, doc string) (*CourseSource, *DecodeResult) {
+	t.Helper()
+	course, result, err := DecodeCourse([]byte(doc))
+	if err != nil {
+		t.Fatalf("DecodeCourse: %v", err)
+	}
+	return course, result
+}
+
+// Unknown keys are the reason lint exists: the loader ignores them silently, so
+// they look exactly like settings that work. Both cases below were real, and
+// both were live in the course files until `glabs config lint` surfaced them.
+func TestDecodeReportsUnknownKeys(t *testing.T) {
 	t.Parallel()
 
-	// vss.yaml carries `clone.clone: true`, which no field claims, and puts
-	// dockerImages under mergeRequest where nothing reads it. Both are silently
-	// ignored by the loader; lint must surface them, with the assignment named.
-	_, result := decodeFixture(t, "vss")
+	_, result := decodeYAML(t, `
+demo:
+  coursepath: demo/semester
+  blatt1:
+    assignmentpath: blatt-1
+    clone:
+      localpath: /tmp/demo
+      clone: true               # no such option; a `+"`clone:`"+` block alone enables cloning
+    release:
+      mergeRequest:
+        pipeline: true
+        dockerImages:           # belongs under release:, not under release.mergeRequest:
+          - service/one
+`)
+
 	for _, want := range []string{
-		"vss.blatt0.clone.clone",
-		"vss.blatt2.release.mergeRequest.dockerImages",
+		"demo.blatt1.clone.clone",
+		"demo.blatt1.release.mergeRequest.dockerImages",
 	} {
 		if !contains(result.UnknownKeys, want) {
 			t.Errorf("UnknownKeys = %v, want it to contain %q", result.UnknownKeys, want)
 		}
 	}
+}
 
-	_, result = decodeFixture(t, "legacy")
+func TestDecodeReportsLegacyKeys(t *testing.T) {
+	t.Parallel()
+
+	_, result := decodeFixture(t, "legacy")
 	if len(result.LegacyKeys) == 0 {
 		t.Fatal("LegacyKeys is empty, want the deprecated approvals spellings reported")
 	}
@@ -313,17 +320,12 @@ func TestDecodeReportsUnknownAndLegacyKeys(t *testing.T) {
 	}
 }
 
-// The typed decoder accepts `approvalsRequired`, which the viper-based loader
-// silently ignores: viper lowercases keys to `approvalsrequired` before the
-// alias table in config/assignment.go:443 compares them against the camelCase
-// spelling, so that case never matches and the rule ends up requiring 0
-// approvals instead of the configured number.
-//
-// This is a deliberate divergence and the only known one. It means the golden
-// for legacy.approvalslist will change when Resolve() replaces the viper path.
-// Fix the viper path first, in its own commit with its own golden diff, so the
-// resolver swap itself stays a zero-diff proof.
-func TestDecodeAcceptsAliasViperMissed(t *testing.T) {
+// `approvalsRequired` used to be dead: viper lowercases keys to
+// `approvalsrequired` before the alias table sees them, so the camelCase entry
+// matched nothing and the rule silently required 0 approvals. Both loaders now
+// fold case, so both accept it — asserted here and, for the viper path, by the
+// legacy.approvalslist golden.
+func TestDecodeAcceptsApprovalsRequiredAlias(t *testing.T) {
 	t.Parallel()
 
 	course, _ := decodeFixture(t, "legacy")

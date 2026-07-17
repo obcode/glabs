@@ -38,7 +38,6 @@ algdati:
     clone:
       localpath: /tmp/glabs/algdati/25ws/blatt3
       branch: develop
-      clone: true
     release:
       mergeRequest:
         pipeline: true
@@ -55,7 +54,6 @@ algdati:
     clone:
       localpath: /tmp/glabs/algdati/25ws/blatt4
       branch: develop
-      clone: true
     release:
       mergeRequest:
         pipeline: true

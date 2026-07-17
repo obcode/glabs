@@ -1,0 +1,22 @@
+"""
+An authenticated user of glabs-web. Identity comes from the auth proxy; there
+are no roles — each user manages only their own courses.
+"""
+type User {
+  email: String!
+  name: String!
+}
+
+"""Version and build metadata for the running server."""
+type ServerInfo {
+  version: String!
+  commit: String!
+  date: String!
+}
+
+type Query {
+  "The currently authenticated user."
+  me: User!
+  "Version and build metadata."
+  serverInfo: ServerInfo!
+}

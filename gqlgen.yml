@@ -1,0 +1,31 @@
+# gqlgen configuration for glabs-web (the GraphQL server). The CLI is unaffected.
+schema:
+  - web/graph/*.graphqls
+
+exec:
+  filename: web/graph/generated/generated.go
+  package: generated
+
+model:
+  filename: web/graph/model/models_gen.go
+  package: model
+
+resolver:
+  layout: follow-schema
+  dir: web/graph
+  package: graph
+
+# Bind to hand-written model types (User carries bson tags for MongoDB) instead
+# of regenerating them.
+autobind:
+  - "github.com/obcode/glabs/v3/web/graph/model"
+
+models:
+  ID:
+    model:
+      - github.com/99designs/gqlgen/graphql.ID
+      - github.com/99designs/gqlgen/graphql.Int64
+  Int:
+    model:
+      - github.com/99designs/gqlgen/graphql.Int
+      - github.com/99designs/gqlgen/graphql.Int64

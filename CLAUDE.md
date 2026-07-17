@@ -40,7 +40,19 @@ Three layers, separated by package:
 
 2. **`config/`** — loads and resolves YAML config into typed structs (see `config/types.go`, especially `AssignmentConfig`). This package owns all viper access and config interpretation; the rest of the code consumes the resulting structs. `Student`/`Group` resolution, access levels, URLs, seeder/release/startercode settings are all built here.
 
-3. **`gitlab/`** and **`git/`** — the action layer. `gitlab/` wraps the GitLab API client (`gitlab.com/gitlab-org/api/client-go/v2`) via the `Client` type and performs GitLab-side operations (groups, projects, branches, protect, issues, approvals, reports). `git/` handles local git operations (clone, push, prepare source repo from starter code) using `go-git`.
+3. **`gitlab/`** and **`git/`** — the action layer. `gitlab/` wraps the GitLab API client (`gitlab.com/gitlab-org/api/client-go/v2`) via the `Client` type and performs GitLab-side operations (groups, projects, branches, protect, issues, approvals, reports). `git/` handles local git operations (clone, push, prepare source repo from starter code) using `go-git`. Both report progress through the `reporter` package (a `ConsoleReporter` on the CLI) and return errors rather than exiting.
+
+### Two binaries, one module
+
+`.` builds the `glabs` CLI. `./cmd/glabs-web` builds `glabs-web`, the GraphQL server behind glabs.cs.hm.edu, which shares the core packages above and adds a web layer under `web/` (see `web/README.md`):
+
+- `web/bootstrap` — flags, config, Mongo, then starts the server
+- `web/graph` — gqlgen schema, resolvers, HTTP server, auth middleware
+- `web/app` — the core the resolvers delegate to; holds the database
+- `web/db` — MongoDB (mongo-driver **v2**, unlike the deprecated v1 plexams uses)
+- `web/principal` — the authenticated user in the request context
+
+Import rule: `web/` may import the core packages, never the reverse, and `web/` never imports `cmd/`. Resolvers stay thin (auth gate + delegate to `web/app`). Regenerate GraphQL code with `go generate ./cmd/glabs-web` after editing `web/graph/*.graphqls`; `gqlgen.yml` is at the repo root. Auth is fail-closed on a proxy-injected `X-Remote-User` header; `auth.enabled: false` uses a local dev user.
 
 ### Config loading model
 

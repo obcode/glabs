@@ -7,12 +7,22 @@ before:
         # you may remove this if you don't need go generate
         - go generate ./...
 builds:
-    - env:
+    - id: glabs
+      binary: glabs
+      main: .
+      env:
           - CGO_ENABLED=0
       goos:
           - linux
           - windows
           - darwin
+    - id: glabs-web
+      binary: glabs-web
+      main: ./cmd/glabs-web
+      env:
+          - CGO_ENABLED=0
+      goos:
+          - linux
 # archives:
 #   - replacements:
 #       darwin: Darwin

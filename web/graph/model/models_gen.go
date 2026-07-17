@@ -2,6 +2,38 @@
 
 package model
 
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"strconv"
+	"time"
+)
+
+// A course as stored for the current user. Each user sees only their own courses;
+// there is no way to reach another user's course.
+type Course struct {
+	Name         string `json:"name"`
+	CoursePath   string `json:"coursePath"`
+	SemesterPath string `json:"semesterPath"`
+	// The names of the assignments in this course, sorted.
+	AssignmentNames []string  `json:"assignmentNames"`
+	StudentCount    int       `json:"studentCount"`
+	GroupCount      int       `json:"groupCount"`
+	ImportedAt      time.Time `json:"importedAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
+}
+
+// One lint finding: configuration that does not do what it looks like it does.
+type Finding struct {
+	Path     string          `json:"path"`
+	Message  string          `json:"message"`
+	Severity FindingSeverity `json:"severity"`
+}
+
+type Mutation struct {
+}
+
 type Query struct {
 }
 
@@ -10,4 +42,61 @@ type ServerInfo struct {
 	Version string `json:"version"`
 	Commit  string `json:"commit"`
 	Date    string `json:"date"`
+}
+
+type FindingSeverity string
+
+const (
+	// The setting is present but has no effect.
+	FindingSeverityProblem FindingSeverity = "PROBLEM"
+	// It works, but the spelling or shape is obsolete.
+	FindingSeverityDeprecated FindingSeverity = "DEPRECATED"
+)
+
+var AllFindingSeverity = []FindingSeverity{
+	FindingSeverityProblem,
+	FindingSeverityDeprecated,
+}
+
+func (e FindingSeverity) IsValid() bool {
+	switch e {
+	case FindingSeverityProblem, FindingSeverityDeprecated:
+		return true
+	}
+	return false
+}
+
+func (e FindingSeverity) String() string {
+	return string(e)
+}
+
+func (e *FindingSeverity) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = FindingSeverity(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid FindingSeverity", str)
+	}
+	return nil
+}
+
+func (e FindingSeverity) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *FindingSeverity) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e FindingSeverity) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }

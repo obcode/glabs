@@ -86,7 +86,10 @@ func (c *Client) createGroup(assignmentCfg *config.AssignmentConfig) (int64, err
 // AddGroupGuests adds all students from an assignment config as guests to the course subgroup
 // (coursepath/semesterpath). This enables students to use the Dependency-Proxy.
 func (c *Client) AddGroupGuests(courseName string) error {
-	courseConfig := config.GetCourseConfig(courseName)
+	courseConfig, err := config.GetCourseConfig(courseName)
+	if err != nil {
+		return err
+	}
 
 	subgroupPath := config.GetCourseSubgroupPath(courseName)
 	log.Info().

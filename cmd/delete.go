@@ -20,7 +20,10 @@ var deleteCmd = &cobra.Command{
 You can specify students or groups in order to delete only for these.`,
 	Args: cobra.MinimumNArgs(2), //nolint:gomnd
 	Run: func(cmd *cobra.Command, args []string) {
-		assignmentConfig := config.GetAssignmentConfig(args[0], args[1], args[2:]...)
+		assignmentConfig, err := config.GetAssignmentConfig(args[0], args[1], args[2:]...)
+		if err != nil {
+			er(err)
+		}
 		assignmentConfig.Show()
 		fmt.Println(aurora.Magenta("Do you really want to delete the repos? Press 'Enter' to continue or 'Ctrl-C' to stop ..."))
 		fmt.Scanln() //nolint:errcheck

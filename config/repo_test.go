@@ -12,7 +12,7 @@ func TestStartercodeDefaultsAndReplication(t *testing.T) {
 	viper.Set("course.a1.startercode", map[string]string{"url": "git@example.org:starter.git"})
 	viper.Set("course.a1.startercode.url", "git@example.org:starter.git")
 
-	s := startercode("course.a1")
+	s := mustStartercode(t, "course.a1")
 	if s == nil {
 		t.Fatal("startercode should not be nil")
 	}
@@ -33,7 +33,7 @@ func TestStartercodeOverrides(t *testing.T) {
 	viper.Set("course.a1.startercode.toBranch", "submission")
 	viper.Set("course.a1.startercode.additionalBranches", []string{"release", "demo"})
 
-	s := startercode("course.a1")
+	s := mustStartercode(t, "course.a1")
 	if s.FromBranch != "template" || s.ToBranch != "submission" {
 		t.Fatalf("startercode branches = %#v", s)
 	}
@@ -55,7 +55,7 @@ func TestBranches_DefaultsAndLegacyFallback(t *testing.T) {
 	viper.Set("course.a1.startercode.protectToBranch", true)
 	viper.Set("course.a1.startercode.protectDevBranchMergeOnly", true)
 
-	b := branches("course.a1", startercode("course.a1"))
+	b := mustBranches(t, "course.a1", mustStartercode(t, "course.a1"))
 	if len(b) != 3 {
 		t.Fatalf("len(branches) = %d, want 3", len(b))
 	}
@@ -77,7 +77,7 @@ func TestBranches_ExplicitConfig(t *testing.T) {
 		{"name": "dev", "default": true, "mergeOnly": true, "codeOwnerApprovalRequired": true},
 	})
 
-	b := branches("course.a1", nil)
+	b := mustBranches(t, "course.a1", nil)
 	if len(b) != 2 {
 		t.Fatalf("len(branches) = %d, want 2", len(b))
 	}
@@ -97,7 +97,7 @@ func TestBranches_MergesAdditionalBranchFlags(t *testing.T) {
 		{"name": "main", "codeOwnerApprovalRequired": true},
 	})
 
-	b := branches("course.a1", nil)
+	b := mustBranches(t, "course.a1", nil)
 	if len(b) != 1 {
 		t.Fatalf("len(branches) = %d, want 1", len(b))
 	}
@@ -113,7 +113,7 @@ func TestBranches_LegacySnakeCaseAdditionalBranchFlags(t *testing.T) {
 		{"name": "main", "code_owner_approval_required": true},
 	})
 
-	b := branches("course.a1", nil)
+	b := mustBranches(t, "course.a1", nil)
 	if len(b) != 1 {
 		t.Fatalf("len(branches) = %d, want 1", len(b))
 	}

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/go-viper/mapstructure/v2"
@@ -8,18 +9,17 @@ import (
 	"github.com/spf13/viper"
 )
 
-func startercode(assignmentKey string) *Startercode {
+func startercode(assignmentKey string) (*Startercode, error) {
 	startercodeMap := viper.GetStringMapString(assignmentKey + ".startercode")
 
 	if len(startercodeMap) == 0 {
 		log.Debug().Str("assignmemtKey", assignmentKey).Msg("no startercode provided")
-		return nil
+		return nil, nil
 	}
 
 	url, ok := startercodeMap["url"]
 	if !ok {
-		log.Fatal().Str("assignmemtKey", assignmentKey).Msg("startercode provided without url")
-		return nil
+		return nil, fmt.Errorf("%s: startercode provided without url", assignmentKey)
 	}
 
 	fromBranch := "main"
@@ -54,10 +54,10 @@ func startercode(assignmentKey string) *Startercode {
 		TemplateMessage:    templateMessage,
 		ToBranch:           toBranch,
 		AdditionalBranches: additionalBranches,
-	}
+	}, nil
 }
 
-func branches(assignmentKey string, starter *Startercode) []BranchRule {
+func branches(assignmentKey string, starter *Startercode) ([]BranchRule, error) {
 	var configured []BranchRule
 	raw := normalizeBranchRuleConfigKeys(viper.Get(assignmentKey + ".branches"))
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
@@ -66,10 +66,10 @@ func branches(assignmentKey string, starter *Startercode) []BranchRule {
 		WeaklyTypedInput: true,
 	})
 	if err != nil {
-		log.Fatal().Err(err).Str("assignmentKey", assignmentKey).Msg("cannot create branches decoder")
+		return nil, fmt.Errorf("%s: cannot create branches decoder: %w", assignmentKey, err)
 	}
 	if err := decoder.Decode(raw); err != nil {
-		log.Fatal().Err(err).Str("assignmentKey", assignmentKey).Msg("cannot parse branches config")
+		return nil, fmt.Errorf("%s: cannot parse branches config: %w", assignmentKey, err)
 	}
 
 	rules := make([]BranchRule, 0)
@@ -135,7 +135,7 @@ func branches(assignmentKey string, starter *Startercode) []BranchRule {
 		rules[0].Default = true
 	}
 
-	return rules
+	return rules, nil
 }
 
 func normalizeBranchRuleConfigKeys(value any) any {

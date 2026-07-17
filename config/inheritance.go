@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
 
@@ -40,28 +39,35 @@ func assignmentIsAbstract(course, assignment string) bool {
 //   - scalars and slices (e.g. branches, issueNumbers) are replaced wholesale.
 //
 // Parents may themselves extend other assignments; chains are resolved
-// recursively. Cycles and missing parents are fatal.
-func resolveAssignmentInheritance(course, assignment string) {
+// recursively. Cycles and missing parents are errors.
+//
+// The write-back mutates global viper state from what is nominally a read path,
+// so resolving two assignments concurrently is not safe. This disappears once
+// config loading moves to a typed source schema and resolution becomes a pure
+// function over it; until then callers must resolve one assignment at a time.
+func resolveAssignmentInheritance(course, assignment string) error {
 	assignmentKey := course + "." + assignment
 	if !viper.IsSet(assignmentKey + "." + inheritKey) {
-		return
+		return nil
 	}
 
-	merged := mergedAssignmentMap(course, assignment, map[string]bool{})
+	merged, err := mergedAssignmentMap(course, assignment, map[string]bool{})
+	if err != nil {
+		return err
+	}
 	// Meta keys must never leak into the effective config or be inherited.
 	delete(merged, inheritKey)
 	delete(merged, abstractKey)
 	viper.Set(assignmentKey, merged)
+	return nil
 }
 
 // mergedAssignmentMap returns the assignment's configuration map with all parent
 // configuration (via `extends`) merged in. The child's own values win.
-func mergedAssignmentMap(course, assignment string, seen map[string]bool) map[string]any {
+func mergedAssignmentMap(course, assignment string, seen map[string]bool) (map[string]any, error) {
 	if seen[assignment] {
-		log.Fatal().
-			Str("course", course).
-			Str("assignment", assignment).
-			Msg("cyclic 'extends' inheritance detected in assignment configuration")
+		return nil, fmt.Errorf("course %s, assignment %s: cyclic 'extends' inheritance detected in assignment configuration",
+			course, assignment)
 	}
 	seen[assignment] = true
 
@@ -69,29 +75,27 @@ func mergedAssignmentMap(course, assignment string, seen map[string]bool) map[st
 
 	parentRaw, ok := own[inheritKey]
 	if !ok {
-		return own
+		return own, nil
 	}
 
 	parent, ok := parentRaw.(string)
 	if !ok || strings.TrimSpace(parent) == "" {
-		log.Fatal().
-			Str("course", course).
-			Str("assignment", assignment).
-			Msg("'extends' must be the name of another assignment in the same course")
+		return nil, fmt.Errorf("course %s, assignment %s: 'extends' must be the name of another assignment in the same course",
+			course, assignment)
 	}
 	parent = strings.TrimSpace(parent)
 
 	if !viper.IsSet(course + "." + parent) {
-		log.Fatal().
-			Str("course", course).
-			Str("assignment", assignment).
-			Str("extends", parent).
-			Msg("assignment referenced by 'extends' not found")
+		return nil, fmt.Errorf("course %s, assignment %s: assignment %q referenced by 'extends' not found",
+			course, assignment, parent)
 	}
 
-	parentMap := mergedAssignmentMap(course, parent, seen)
+	parentMap, err := mergedAssignmentMap(course, parent, seen)
+	if err != nil {
+		return nil, err
+	}
 
-	return deepMerge(parentMap, own)
+	return deepMerge(parentMap, own), nil
 }
 
 // deepMerge returns a new map with child merged onto parent. Nested maps are

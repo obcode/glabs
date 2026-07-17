@@ -173,6 +173,70 @@ glabs show <course> <assignment> [groups...|students...]
 
 Shows how glabs interprets your config after merging course-level and assignment-level settings. Useful for debugging.
 
+### config
+
+Inspect and maintain course configuration files. These subcommands read the
+course file as written, without resolving it — they never talk to GitLab and
+never need a token.
+
+#### config lint
+
+```text
+glabs config lint [course...]
+```
+
+Reports configuration that does not do what it looks like it does. With no
+arguments, lints every course in the `courses:` list.
+
+This matters because glabs ignores unknown keys **silently**: a typo is
+indistinguishable from a setting that works. Two real examples it catches:
+
+```text
+problem  vss.blatt2.release.mergeRequest.dockerImages
+    no such configuration key; it is silently ignored (dockerImages belongs
+    under `release:`, not under `release.mergeRequest:`)
+problem  vss.blatt0.clone.clone
+    no such configuration key; it is silently ignored (the clone command has no
+    such option; configuring `clone:` at all is what enables it)
+```
+
+Findings come in two severities:
+
+| Severity | Meaning |
+|---|---|
+| `problem` | The setting is present and has no effect — a typo, or a key superseded by a newer block. |
+| `deprecated` | It still works, but the spelling or shape is obsolete. `glabs config migrate` fixes these. |
+
+Exits non-zero if any `problem` was found, so it can gate a pre-commit hook or CI.
+
+#### config fmt
+
+```text
+glabs config fmt <course> [course...] [-w|--write]
+```
+
+Rewrites a course file in canonical form. Prints to stdout by default; `-w`
+writes back in place.
+
+#### config migrate
+
+```text
+glabs config migrate <course> [course...] [-w|--write]
+```
+
+Rewrites a course file, upgrading deprecated key spellings (`required_approvals`
+→ `requiredApprovals`) and polymorphic blocks (a bare `approvals:` list →
+`approvals.rules:`).
+
+It does **not** resolve superseded settings. If a file has both
+`startercode.devBranch` and a `branches:` block, migrate keeps both and `lint`
+tells you which one wins — deciding that is a judgement call, not a rewrite.
+
+> **Both `fmt` and `migrate` rebuild the file from the parsed configuration, so
+> comments and key order are not preserved.** The meaning is preserved (verified
+> against every course file), but the diff will be large. Review it before
+> committing, and keep your course files in version control.
+
 ### version
 
 Print glabs version.

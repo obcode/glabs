@@ -1,0 +1,198 @@
+algdati:
+  coursepath: algdati/semester
+  semesterpath: ob-25ws
+
+  blatt1:
+    assignmentpath: blatt-1
+    description: Blatt 1, Algorithmen und Datenstrukturen I, WS 25/26
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:algdati/startercode/startercodeBlatt1.git
+      fromBranch: template
+
+  blatt2-1:
+    assignmentpath: blatt-2-1
+    description: Blatt 2, Algorithmen und Datenstrukturen I, WS 25/26
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:algdati/startercode/startercodeBlatt2.git
+      fromBranch: template
+
+  blatt2-2:
+    assignmentpath: blatt-2-2
+    description: Blatt 2, Algorithmen und Datenstrukturen I, WS 25/26
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:algdati/startercode/startercodeBlatt2-2.git
+      fromBranch: template
+
+  blatt3:
+    assignmentpath: blatt-3
+    description: Blatt 3, Algorithmen und Datenstrukturen I, WS 25/26
+    per: group
+    startercode:
+      url: git@gitlab.lrz.de:algdati/startercode/startercodeBlatt3.git
+      fromBranch: template
+      devBranch: develop
+      protectToBranch: true
+    clone:
+      localpath: /tmp/glabs/algdati/25ws/blatt3
+      branch: develop
+      clone: true
+    release:
+      mergeRequest:
+        pipeline: true
+
+  blatt4:
+    assignmentpath: blatt-4
+    description: Blatt 4, Algorithmen und Datenstrukturen I, WS 25/26
+    per: group
+    startercode:
+      url: git@gitlab.lrz.de:algdati/startercode/startercodeblatt04.git
+      fromBranch: template
+      devBranch: develop
+      protectToBranch: true
+    clone:
+      localpath: /tmp/glabs/algdati/25ws/blatt4
+      branch: develop
+      clone: true
+    release:
+      mergeRequest:
+        pipeline: true
+
+  students:
+    - s161.t161@example.edu
+    - s217.t217@example.edu
+    - s068.t068@example.edu
+    - s016@example.edu
+    - s073.t073@example.edu
+    - s116.t116@example.edu
+    - s024.t024@example.edu
+    - s110.t110@example.edu
+    - s188.t188@example.edu
+    - s063.t063@example.edu
+    - s162.t162@example.edu
+    - s101.t101@example.edu
+    - s065.t065@example.edu
+    - s018.t018@example.edu
+    - s156.t156@example.edu
+    - s141@example.edu
+    - s149.t149@example.edu
+    - s095.t095@example.edu
+    - s181.t181@example.edu
+    - s179.t179@example.edu
+    - s093.t093@example.edu
+    - s124.t124@example.edu
+    - s015.t015@example.edu
+    - s177.t177@example.edu
+    - s046@example.edu
+    - s118.t118@example.edu
+    - s164.t164@example.edu
+    - s201.t201@example.edu
+    - s113.t113@example.edu
+    - s208.t208@example.edu
+    - s025.t025@example.edu
+    - s031.t031@example.edu
+    - s173.t173@example.edu
+    - s105.t105@example.edu
+    - s210.t210@example.edu
+    - s172.t172@example.edu
+    - s009@example.edu
+    - s193@example.edu
+    - s186.t186@example.edu
+    - s148.t148@example.edu
+    - s079.t079@example.edu
+    - s199.t199@example.edu
+    - s138.t138@example.edu
+    - s038.t038@example.edu
+    - s072.t072@example.edu
+    - s098.t098@example.edu
+    - s174.t174@example.edu
+    - s220@example.edu
+    - s187.t187@example.edu
+    - s014.t014@example.edu
+    - s007.t007@example.edu
+
+  groups:
+    grp00:
+      - s161.t161@example.edu
+      - s135.t135@example.edu
+    grp01:
+      - s110.t110@example.edu # Student 110
+      - s025.t025@example.edu # Student 025
+    grp02:
+      - s073.t073@example.edu # Student 073
+    grp03:
+      - s065.t065@example.edu # Student 065
+      - s186.t186@example.edu # Student 186
+    grp05:
+      - s181.t181@example.edu # Student 181
+      - s098.t098@example.edu # Student 098
+    grp06:
+      - s156.t156@example.edu # Student 156
+      - s208.t208@example.edu # Student 208
+    grp07:
+      - s031.t031@example.edu # Student 031
+      - s199.t199@example.edu # Student 199
+    grp08:
+      - s079.t079@example.edu # Student 079
+    grp10:
+      - s179.t179@example.edu # Student 179
+      - s201.t201@example.edu # Student 201
+    grp11:
+      - s095.t095@example.edu # Student 095
+      - s172.t172@example.edu # Student 172
+    grp12:
+      - s093.t093@example.edu # Student 093
+      - s148.t148@example.edu # Student 148
+    grp13:
+      - s124.t124@example.edu # Student 124
+      - s105.t105@example.edu # Student 105
+    grp14:
+      - s188.t188@example.edu # Student 188
+      - s072.t072@example.edu # Student 072
+    grp15:
+      - s193@example.edu # Student 193
+    grp16:
+      - s173.t173@example.edu # Student 173
+    grp18:
+      - s063.t063@example.edu # Student 063
+      - s138.t138@example.edu # Student 138
+    grp20:
+      - s217.t217@example.edu # Student 217
+    grp21:
+      - s210.t210@example.edu # Student 210
+    grp22:
+      - s220@example.edu # Student 220
+    grp23:
+      - s018.t018@example.edu # Student 018
+      - s174.t174@example.edu # Student 174
+    grp25:
+      - s015.t015@example.edu # Student 015
+      - s113.t113@example.edu # Student 113
+    grp31:
+      - s024.t024@example.edu # Student 024
+      - s164.t164@example.edu # Student 164
+    grp33:
+      - s068.t068@example.edu # Student 068
+      - s038.t038@example.edu # Student 038
+    grp34:
+      - s219.t219@example.edu # Student 219
+    grp35:
+      - s149.t149@example.edu # Student 149
+    grp36:
+      - s116.t116@example.edu # Student 116
+    grp37:
+      - s009@example.edu # Student 009
+    grp38:
+      - s101.t101@example.edu # Student 101
+      - s118.t118@example.edu # Student 118
+    grp39:
+      - s046@example.edu # Student 046
+    grp40:
+      - s141@example.edu # Student 141
+    grp41:
+      - s014.t014@example.edu
+      - s007.t007@example.edu
+    grp42:
+      - s023@example.edu # Student 023

@@ -1,0 +1,263 @@
+mpd:
+  coursepath: mpd/semester
+  semesterpath: ob-26ss
+  useCoursenameAsPrefix: true
+  useEmailDomainAsSuffix: false
+
+  # Basis-Konfiguration, von der alle Assignments erben (extends: defaults).
+  # `abstract: true` macht dies zu einer reinen Basis: `glabs generate mpd
+  # defaults` (oder protect/clone/…) wird hart abgelehnt.
+  defaults:
+    abstract: true
+    per: student
+    mergeRequest:
+      mergeMethod: semi_linear
+      squashOption: never
+      pipeline: true
+      skippedPipelinesAreSuccessful: true
+      allThreadsMustBeResolved: true
+      statusChecksMustSucceed: true
+    branches:
+      - name: main
+        mergeOnly: true
+    issues:
+      replicateFromStartercode: true
+      issueNumbers: [1]
+
+  # ---------------------------------------------------------------------------
+  # Frühe Blätter (Template-Familie): startercode aus Branch `template`,
+  # keine deferredBranches. blatt02–05 erben sequenziell und ändern nur
+  # url + description.
+  # ---------------------------------------------------------------------------
+  blatt01:
+    extends: defaults
+    assignmentpath: blatt-01
+    description: Blatt 1, Moderne Programmierkonzepte und Datenstrukturen
+    startercode:
+      url: git@gitlab.lrz.de:mpd/startercode/blatt-01.git
+      fromBranch: template
+      toBranch: main
+
+  blatt02:
+    extends: blatt01
+    assignmentpath: blatt-02
+    description: Blatt 2, Moderne Programmierkonzepte und Datenstrukturen
+    startercode:
+      url: git@gitlab.lrz.de:mpd/startercode/blatt-02.git
+
+  blatt03:
+    extends: blatt02
+    assignmentpath: blatt-03
+    description: Blatt 3, Moderne Programmierkonzepte und Datenstrukturen
+    startercode:
+      url: git@gitlab.lrz.de:mpd/startercode/blatt-03.git
+
+  blatt04:
+    extends: blatt03
+    assignmentpath: blatt-04
+    description: Blatt 4, Moderne Programmierkonzepte und Datenstrukturen
+    startercode:
+      url: git@gitlab.lrz.de:mpd/startercode/blatt-04.git
+
+  blatt05:
+    extends: blatt04
+    assignmentpath: blatt-05
+    description: Blatt 5, Moderne Programmierkonzepte und Datenstrukturen
+    startercode:
+      url: git@gitlab.lrz.de:mpd/startercode/blatt-05.git
+
+  # ---------------------------------------------------------------------------
+  # blatt06: startercode aus Branch `startercode` als Template, mit
+  # Lösungs-Branch und lokalem clone. Eigenständig (kein passender Vorgänger).
+  # ---------------------------------------------------------------------------
+  blatt06:
+    extends: defaults
+    assignmentpath: blatt-06
+    description: Blatt 6, Moderne Programmierkonzepte und Datenstrukturen
+    startercode:
+      url: git@gitlab.lrz.de:mpd/startercode/blatt-06.git
+      fromBranch: startercode
+      template: true
+      templateMessage: Initial Commit
+    deferredBranches:
+      #   devcontainer:
+      #     url: git@gitlab.lrz.de:mpd/devcontainer.git
+      #     fromBranch: main
+      #     toBranch: devcontainer
+      solution:
+        # url: git@gitlab.lrz.de:mpd/startercode/blatt-06.git
+        fromBranch: main
+        toBranch: solution
+        orphan: true
+        orphanMessage: Lösungsvorschlag [skip ci]
+    clone:
+      localpath: /tmp/glabs/mpd/26ss/blatt1
+      clone: true
+
+  # ---------------------------------------------------------------------------
+  # blatt07 + mockexam: devcontainer + (nicht-orphan) Lösungs-Branch,
+  # Issues inkl. Child-Tasks. mockexam erbt von blatt07.
+  # ---------------------------------------------------------------------------
+  # glabs generate mpd blatt07
+  # glabs protect mpd blatt07
+  # glabs push mpd blatt07 devcontainer
+  blatt07:
+    extends: defaults
+    assignmentpath: blatt-07
+    description: Blatt 7, Moderne Programmierkonzepte und Datenstrukturen
+    startercode:
+      url: git@gitlab.lrz.de:mpd/startercode/blatt-07.git
+      fromBranch: startercode
+      # template: true
+      # templateMessage: Initial Commit
+    issues:
+      issueNumbers: [2]
+      includeChildTasks: true
+    deferredBranches:
+      devcontainer:
+        url: git@gitlab.lrz.de:mpd/devcontainer.git
+        fromBranch: main
+        toBranch: devcontainer
+        orphan: true
+        orphanMessage: "publish: devcontainer [skip ci]"
+      solution:
+        # url: git@gitlab.lrz.de:mpd/startercode/blatt-07.git
+        fromBranch: solution
+        # toBranch: solution
+        orphan: false
+        # orphanMessage: Lösungsvorschlag
+
+  # glabs generate mpd mockexam
+  # glabs protect mpd mockexam
+  # glabs push mpd mockexam devcontainer
+  # glabs push mpd mockexam solution
+  mockexam:
+    extends: blatt07
+    assignmentpath: mockexam
+    description: Probeprüfung, Moderne Programmierkonzepte und Datenstrukturen
+    startercode:
+      url: git@gitlab.lrz.de:mpd/labs/mockexam.git
+    issues:
+      issueNumbers: [1]
+
+  # ---------------------------------------------------------------------------
+  # Moderne Familie (blatt08 → blatt09 → blatt10): Template aus `startercode`,
+  # devcontainer + orphan-Lösungs-Branch, Issues inkl. Child-Tasks.
+  # blatt09/10 ändern nur url (+ tag) + description.
+  # ---------------------------------------------------------------------------
+  # glabs generate mpd blatt08
+  # glabs protect mpd blatt08
+  # glabs push mpd blatt08 devcontainer
+  # glabs push mpd blatt08 solution
+  blatt08:
+    extends: defaults
+    assignmentpath: blatt-08
+    description: Blatt 8, Moderne Programmierkonzepte und Datenstrukturen
+    startercode:
+      url: git@gitlab.lrz.de:mpd/labs/blatt-08.git
+      fromBranch: startercode
+      template: true
+      templateMessage: "Startercode [skip ci]"
+    issues:
+      includeChildTasks: true
+    deferredBranches:
+      devcontainer:
+        url: git@gitlab.lrz.de:mpd/devcontainer.git
+        fromBranch: main
+        toBranch: devcontainer
+        orphan: true
+        orphanMessage: "DevContainer [skip ci]"
+      solution:
+        # url: git@gitlab.lrz.de:mpd/labs/blatt-08.git
+        fromBranch: solution
+        # toBranch: solution
+        orphan: true
+        orphanMessage: "Lösungsvorschlag [skip ci]"
+
+  # glabs generate mpd blatt09
+  # glabs protect mpd blatt09
+  # glabs push mpd blatt09 devcontainer
+  # glabs push mpd blatt09 solution
+  blatt09:
+    extends: blatt08
+    assignmentpath: blatt-09
+    description: Blatt 9, Moderne Programmierkonzepte und Datenstrukturen
+    startercode:
+      url: git@gitlab.lrz.de:mpd/labs/blatt-09.git
+      tag: startercode
+
+  # glabs generate mpd blatt10
+  # glabs protect mpd blatt10
+  # glabs push mpd blatt10 devcontainer
+  # glabs push mpd blatt10 solution
+  blatt10:
+    extends: blatt09
+    assignmentpath: blatt-10
+    description: Blatt 10, Moderne Programmierkonzepte und Datenstrukturen
+    startercode:
+      url: git@gitlab.lrz.de:mpd/labs/blatt-10.git
+
+  # glabs generate mpd blatt11
+  # glabs protect mpd blatt11
+  # glabs push mpd blatt11 devcontainer
+  # glabs push mpd blatt11 solution
+  blatt11:
+    extends: blatt10
+    assignmentpath: blatt-11
+    description: Blatt 11, Moderne Programmierkonzepte und Datenstrukturen
+    startercode:
+      url: git@gitlab.lrz.de:mpd/labs/blatt-11.git
+
+  # glabs generate mpd blatt12
+  # glabs protect mpd blatt12
+  # glabs push mpd blatt12 devcontainer
+  # glabs push mpd blatt12 solution
+  blatt12:
+    extends: blatt11
+    assignmentpath: blatt-12
+    description: Blatt 12, Moderne Programmierkonzepte und Datenstrukturen
+    startercode:
+      url: git@gitlab.lrz.de:mpd/labs/blatt-12.git
+
+  students:
+    - s161.t161@example.edu
+    - s069.t069@example.edu
+    - s168.t168@example.edu
+    - s171.t171@example.edu
+    - s076.t076@example.edu
+    - s002.t002@example.edu
+    - s176.t176@example.edu
+    - s170.t170@example.edu
+    - s221.t221@example.edu
+    - s157.t157@example.edu
+    - s202.t202@example.edu
+    - s139.t139@example.edu
+    - s180.t180@example.edu
+    - s051.t051@example.edu
+    - s042.t042@example.edu
+    - s183.t183@example.edu
+    - s099.t099@example.edu
+    - s146.t146@example.edu
+    - s147.t147@example.edu
+    - s102.t102@example.edu
+    - s121.t121@example.edu
+    - s061.t061@example.edu
+    - s216.t216@example.edu
+    - s145@example.edu
+    - s158.t158@example.edu
+    - s130.t130@example.edu
+    - s195.t195@example.edu
+    - s037.t037@example.edu
+    - s218.t218@example.edu
+    - s131.t131@example.edu
+    - s020.t020@example.edu
+    - s178.t178@example.edu
+    - s192.t192@example.edu
+    - s100.t100@example.edu
+    - s012.t012@example.edu
+    - s197.t197@example.edu
+    - s126.t126@example.edu
+    - s028.t028@example.edu
+    - s182.t182@example.edu
+    - s074.t074@example.edu
+    - s213.t213@example.edu

@@ -1,0 +1,304 @@
+vss:
+  coursepath: vss/semester
+  semesterpath: ob-26ss
+  useCoursenameAsPrefix: true
+  useEmailDomainAsSuffix: false
+
+  # collaborative-working-with-gitlab:
+  #   assignmentpath: supplementary-material
+  #   description: "Explorative Methods and Data Visualization - Illustration of how to use GitLab for collaborative projects."
+  #   per: group
+  #   startercode:
+  #     url: git@gitlab.lrz.de:vss/startercode/startercodeB0.git
+  #     fromBranch: main
+  #   branches:
+  #     - name: main
+  #       mergeOnly: true
+  #   issues:
+  #     replicateFromStartercode: true
+  #     issueNumbers: [1, 2, 3]
+
+  blatt0:
+    assignmentpath: blatt-0
+    description: Blatt 0, Verteilte Softwaresysteme, SS 26
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:vss/startercode/startercodeB0.git
+      fromBranch: template
+      toBranch: main
+    branches:
+      - name: main
+        default: true
+      - name: startercode
+        protect: true
+    clone:
+      localpath: /tmp/glabs/vss/26ss/blatt0
+      branch: develop
+      clone: true
+
+# glabs report vss blatt1 --html -o vss-blatt1.html
+  blatt1:
+    assignmentpath: blatt-1
+    description: Blatt 1, Verteilte Softwaresysteme, SS 26
+    per: group
+    containerRegistry: true
+    startercode:
+      url: git@gitlab.lrz.de:vss/startercode/startercodeB1.git
+      fromBranch: template
+      toBranch: main
+    branches:
+      - name: main
+        mergeOnly: true
+        default: true
+      - name: startercode
+        protect: true
+    issues:
+      replicateFromStartercode: true
+      issueNumbers: [1]
+    mergeRequest:
+      mergeMethod: semi_linear
+      squashOption: never
+      pipeline: true
+      skippedPipelinesAreSuccessful: false
+      allThreadsMustBeResolved: true
+      statusChecksMustSucceed: true
+    clone:
+      localpath: /tmp/glabs/vss/26ss/blatt1
+      branch: develop
+      clone: true
+    # accesslevel: guest
+    release:
+      mergeRequest:
+        pipeline: true
+
+  blatt2:
+    assignmentpath: blatt-2
+    description: Blatt 2, Verteilte Softwaresysteme, SS 26
+    per: group
+    containerRegistry: true
+    startercode:
+      url: git@gitlab.lrz.de:vss/startercode/startercodeB2.git
+      fromBranch: template
+      toBranch: main
+    branches:
+      - name: main
+        mergeOnly: true
+        default: true
+      - name: startercode
+        protect: true
+    issues:
+      replicateFromStartercode: true
+      issueNumbers: [1]
+    mergeRequest:
+      mergeMethod: semi_linear
+      squashOption: never
+      pipeline: true
+      skippedPipelinesAreSuccessful: false
+      statusChecksMustSucceed: true
+      allThreadsMustBeResolved: true
+      approvals:
+        settings:
+          preventApprovalByMergeRequestCreator: true
+          preventApprovalsByUsersWhoAddCommits: false
+          preventEditingApprovalRulesInMergeRequests: true
+          requireUserReauthenticationToApprove: false
+          whenCommitAdded: removeAllApprovals
+        rules:
+          - name: review
+            branches:
+              - main
+              - startercode
+            requiredApprovals: 1
+            multiMemberGroupsOnly: true
+          - name: submission
+            branch: startercode
+            usernames:
+              - obcode
+            requiredApprovals: 1
+    clone:
+      localpath: /tmp/glabs/vss/26ss/blatt2
+      branch: main
+      clone: true
+    # accesslevel: guest
+    release:
+      mergeRequest:
+        pipeline: true
+        dockerImages:
+          - service/customer
+          - service/order
+          - service/payment
+          - service/shipment
+          - service/stock
+          - service/supplier
+
+  students:
+    - s161.t161@example.edu
+    - s013@example.edu
+    - s054@example.edu
+    - s191.t191@example.edu
+    - s053.t053@example.edu
+    - s021@example.edu
+    - s073.t073@example.edu
+    - s209.t209@example.edu
+    - s152.t152@example.edu
+    - s081@example.edu
+    - s206.t206@example.edu
+    - s194.t194@example.edu
+    - s198.t198@example.edu
+    - s215.t215@example.edu
+    - s039.t039@example.edu
+    - s067.t067@example.edu
+    - s019.t019@example.edu
+    - s088.t088@example.edu
+    - s045.t045@example.edu
+    - s089.t089@example.edu
+    - s036.t036@example.edu
+    - s066@example.edu
+    - s085.t085@example.edu
+    - s155.t155@example.edu
+    - s109.t109@example.edu
+    - s205.t205@example.edu
+    - s070.t070@example.edu
+    - s047.t047@example.edu
+    - s084@example.edu
+    - s143.t143@example.edu
+    - s189.t189@example.edu
+    - s136.t136@example.edu
+    - s142@example.edu
+    - s200.t200@example.edu
+    - s107@example.edu
+    - s185.t185@example.edu
+    - s207.t207@example.edu
+    - s078.t078@example.edu
+    - s151@example.edu
+    - s132.t132@example.edu
+    - s004.t004@example.edu
+    - s166@example.edu
+    - s075.t075@example.edu
+    - s169@example.edu
+    - s044.t044@example.edu
+    - s184.t184@example.edu
+    - s114.t114@example.edu
+    - s137.t137@example.edu
+    - s003.t003@example.edu
+    - s190@example.edu
+    - s034.t034@example.edu
+    - s055.t055@example.edu
+    - s133.t133@example.edu
+    - s029.t029@example.edu
+    - s165.t165@example.edu
+    - s144.t144@example.edu
+    - s096.t096@example.edu
+    - s128.t128@example.edu
+    - s071.t071@example.edu
+    - s083.t083@example.edu
+    - s103@example.edu
+    - s092.t092@example.edu
+    - s129.t129@example.edu
+
+  groups:
+    grp00:
+      - s161.t161@example.edu
+
+    grp01:
+      - s081@example.edu # Student 081
+      - s036.t036@example.edu # Student 036
+    grp02:
+      - s070.t070@example.edu # Student 070
+      - s132.t132@example.edu # Student 132
+    grp03:
+      - s089.t089@example.edu # Student 089
+      - s165.t165@example.edu # Student 165
+    grp04:
+      - s198.t198@example.edu # Student 198
+      - s114.t114@example.edu # Student 114
+    grp05:
+      - s019.t019@example.edu # Student 019
+      - s107@example.edu # Student 107
+    grp06:
+      - s054@example.edu # Student 054
+      - s129.t129@example.edu # Student 129
+    grp07:
+      - s013@example.edu # Student 013
+      - s083.t083@example.edu # Student 083
+    grp08:
+      - s067.t067@example.edu # Student 067
+      - s066@example.edu # Student 066
+    grp09:
+      - s152.t152@example.edu # Student 152
+      - s166@example.edu # Student 166
+    grp10:
+      - s143.t143@example.edu # Student 143
+      - s029.t029@example.edu # Student 029
+    grp11:
+      - s189.t189@example.edu # Student 189
+      - s103@example.edu # Student 103
+    grp12:
+      - s215.t215@example.edu # Student 215
+      - s004.t004@example.edu # Student 004
+    grp13:
+      - s191.t191@example.edu # Student 191
+      - s184.t184@example.edu # Student 184
+    grp14:
+      - s137.t137@example.edu # Student 137
+    grp15:
+      - s085.t085@example.edu # Student 085
+      - s185.t185@example.edu # Student 185
+    grp16:
+      - s207.t207@example.edu # Student 207
+    grp17:
+      - s206.t206@example.edu # Student 206
+      - s169@example.edu # Student 169
+    grp18:
+      - s088.t088@example.edu # Student 088
+    grp19:
+      - s078.t078@example.edu # Student 078
+    grp20:
+      - s039.t039@example.edu # Student 039
+      - s155.t155@example.edu # Student 155
+    grp21:
+      - s136.t136@example.edu # Student 136
+      - s142@example.edu # Student 142
+    grp22:
+      - s190@example.edu # Student 190
+    grp23:
+      - s055.t055@example.edu # Student 055
+    grp24:
+      - s053.t053@example.edu # Student 053
+    grp25:
+      - s200.t200@example.edu # Student 200
+    grp26:
+      - s003.t003@example.edu # Student 003
+    grp27:
+      - s021@example.edu # Student 021
+    grp28:
+      - s096.t096@example.edu # Student 096
+      - s128.t128@example.edu # Student 128
+    grp29:
+      - s034.t034@example.edu # Student 034
+    grp30:
+      - s133.t133@example.edu # Student 133
+      - s092.t092@example.edu # Student 092
+    grp32:
+      - s151@example.edu # Student 151
+    grp33:
+      - s194.t194@example.edu # Student 194
+    grp35:
+      - s109.t109@example.edu # Student 109
+      - s084@example.edu # Student 084
+    grp36:
+      - s044.t044@example.edu # Student 044
+    grp37:
+      - s073.t073@example.edu # Student 073
+    grp38:
+      - s071.t071@example.edu # Student 071
+    grp39:
+      - s075.t075@example.edu # Student 075
+    grp40:
+      - s205.t205@example.edu # Student 205
+    grp41:
+      - s047.t047@example.edu # Student 047
+    grp42:
+      - s209.t209@example.edu # Student 209
+    grp43:
+      - s144.t144@example.edu # Student 144

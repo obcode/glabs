@@ -1,0 +1,138 @@
+# Synthetic fixture pinning the legacy-key compatibility shims. Of these, only
+# `startercode.devBranch` / `protectToBranch` still appear in the real course
+# files (algdati, fundc); the rest are kept working for older configs and have
+# no live coverage at all.
+#
+# Note the subtle activation rules this fixture exists to pin down:
+#   - the startercode branch shims apply ONLY when `branches:` is absent
+#     (config/repo.go:98)
+#   - the startercode issue shims apply ONLY when `issues:` is absent entirely,
+#     not merely when replicateFromStartercode is false (config/repo.go:193)
+legacy:
+  coursepath: legacy/semester
+  semesterpath: ss2026
+  useCoursenameAsPrefix: true
+  useEmailDomainAsSuffix: false
+
+  # startercode.devBranch + protectToBranch + protectDevBranchMergeOnly,
+  # superseded by `branches:` but honoured here because `branches:` is absent.
+  devbranch:
+    assignmentpath: blatt-01
+    description: Legacy startercode branch keys
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:legacy/startercode.git
+      fromBranch: template
+      toBranch: main
+      devBranch: develop
+      protectToBranch: true
+      protectDevBranchMergeOnly: true
+      additionalBranches:
+        - extra
+
+  # Same legacy keys, but `branches:` is present and must win outright.
+  devbranchoverridden:
+    assignmentpath: blatt-01b
+    description: Legacy branch keys ignored because branches is set
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:legacy/startercode.git
+      fromBranch: template
+      toBranch: main
+      devBranch: develop
+      protectToBranch: true
+    branches:
+      - name: main
+        default: true
+
+  # startercode.replicateIssue + startercode.issueNumbers.
+  legacyissues:
+    assignmentpath: blatt-02
+    description: Legacy startercode issue keys
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:legacy/startercode.git
+      fromBranch: template
+      toBranch: main
+      replicateIssue: true
+      issueNumbers: [3, 4]
+
+  # `issues:` present but replication off -> the legacy shim must NOT kick in,
+  # even though startercode.replicateIssue says true.
+  legacyissuesshadowed:
+    assignmentpath: blatt-02b
+    description: Legacy issue keys shadowed by an explicit issues block
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:legacy/startercode.git
+      fromBranch: template
+      toBranch: main
+      replicateIssue: true
+      issueNumbers: [3, 4]
+    issues:
+      replicateFromStartercode: false
+
+  # approvals as a bare list (the pre-{settings, rules} form), plus both
+  # aliases of requiredApprovals.
+  #
+  # BUG, frozen on purpose: only `required_approvals` actually works. viper
+  # lowercases keys, so `approvalsRequired` arrives as `approvalsrequired`,
+  # which the alias table in config/assignment.go:443 compares against the
+  # camelCase spelling and therefore never matches. The rule silently ends up
+  # with RequiredApprovals 0 — i.e. no approval required at all. Latent today:
+  # no real course file uses the alias. Do not "fix" this by regenerating the
+  # golden; fix it in its own commit after the schema rewrite.
+  approvalslist:
+    assignmentpath: blatt-03
+    description: Legacy approvals list form
+    per: group
+    startercode:
+      url: git@gitlab.lrz.de:legacy/startercode.git
+      fromBranch: template
+      toBranch: main
+    mergeRequest:
+      mergeMethod: ff
+      squashOption: always
+      approvals:
+        - name: review
+          branch: main
+          required_approvals: 2 # snake_case alias -> works (already lowercase)
+          usernames: [obcode]
+        - name: second
+          branches: [main, startercode]
+          approvalsRequired: 1 # camelCase alias -> silently ignored, yields 0
+          groups: [tutors]
+          multiMemberGroupsOnly: true
+        - name: canonical
+          branches: [main]
+          requiredApprovals: 3 # canonical spelling -> works
+          usernames: [obcode]
+
+  # Normalization edge cases: a rule without branches is dropped entirely, a
+  # negative requiredApprovals is clamped to 0, whitespace is trimmed.
+  approvalsnormalized:
+    assignmentpath: blatt-04
+    description: Approvals normalization
+    per: group
+    startercode:
+      url: git@gitlab.lrz.de:legacy/startercode.git
+      fromBranch: template
+      toBranch: main
+    mergeRequest:
+      approvals:
+        rules:
+          - name: dropped-no-branches
+            requiredApprovals: 1
+          - name: "  padded  "
+            branches: ["  main  ", "", main] # trimmed, empties and dupes removed
+            requiredApprovals: -5 # clamped to 0
+            usernames: ["  obcode  ", ""]
+
+  students:
+    - a@example.edu
+    - b.two@example.edu
+
+  groups:
+    grp01:
+      - a@example.edu
+      - b.two@example.edu

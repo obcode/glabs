@@ -1,0 +1,217 @@
+fundc:
+  coursepath: fundc/semester
+  semesterpath: ob-25ss
+
+  blatt02:
+    assignmentpath: blatt-02
+    description: Blatt 2, Funktionale Programmierung, DC, SS 25
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:fundc/startercode/startercodeB02.git
+      fromBranch: 24ss-2
+    # accesslevel: guest
+
+  blatt03:
+    assignmentpath: blatt-03
+    description: Blatt 3, Funktionale Programmierung, DC, SS 25
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:fundc/startercode/startercodeB03.git
+      fromBranch: 24ss
+    # accesslevel: guest
+
+  blatt04:
+    assignmentpath: blatt-04
+    description: Blatt 4 (Abgabe), Funktionale Programmierung, DC, SS 25
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:fundc/startercode/startercodeB04.git
+      fromBranch: 24ss
+      devBranch: develop
+      protectToBranch: true
+    clone:
+      localpath: /tmp/glabs/fundc/24ss/blatt04
+      branch: develop
+      clone: true
+    release:
+      mergeRequest:
+        pipeline: true
+    accesslevel: guest
+
+  blatt05:
+    assignmentpath: blatt-05
+    description: Blatt 5, Funktionale Programmierung, DC, SS 25
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:fundc/startercode/startercodeB05.git
+      fromBranch: 24ss
+      devBranch: develop
+      protectToBranch: true
+    clone:
+      localpath: /tmp/glabs/fundc/24ss/blatt05
+      branch: develop
+      clone: true
+    # accesslevel: guest
+
+  blatt06:
+    assignmentpath: blatt-06
+    description: Blatt 6, Funktionale Programmierung, DC, SS 25
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:fundc/startercode/startercodeB06.git
+      fromBranch: 24ss
+      devBranch: develop
+      protectToBranch: true
+    clone:
+      localpath: /tmp/glabs/fundc/24ss/blatt06
+      branch: develop
+      clone: true
+    # accesslevel: guest
+
+  blatt07:
+    assignmentpath: blatt-07
+    description: Blatt 7 (Abgabe), Funktionale Programmierung, DC, SS 25
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:fundc/startercode/startercodeB07.git
+      fromBranch: 24ss
+      devBranch: develop
+      protectToBranch: true
+    clone:
+      localpath: /tmp/glabs/fundc/24ss/blatt07
+      branch: develop
+      clone: true
+    release:
+      mergeRequest:
+        pipeline: true
+    accesslevel: guest
+
+  blatt08:
+    assignmentpath: blatt-08
+    description: Blatt 8, Funktionale Programmierung, DC, SS 25
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:fundc/startercode/startercodeB08.git
+      fromBranch: 24ss
+      devBranch: develop
+      protectToBranch: true
+    clone:
+      localpath: /tmp/glabs/fundc/24ss/blatt08
+      branch: develop
+      clone: true
+    release:
+      mergeRequest:
+        pipeline: true
+    # accesslevel: guest
+
+  blatt09:
+    assignmentpath: blatt-09
+    description: Blatt 9, Funktionale Programmierung, DC, SS 25
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:fundc/startercode/startercode-blatt-09.git
+      fromBranch: 25ss # neuen Branch erzeugen!!!
+      devBranch: develop
+      protectToBranch: true
+    clone:
+      localpath: /tmp/glabs/fundc/24ss/blatt09
+      branch: develop
+      clone: true
+    release:
+      mergeRequest:
+        pipeline: true
+    # accesslevel: guest
+
+  blatt10:
+    assignmentpath: blatt-10
+    description: Blatt 10, Funktionale Programmierung, DC, SS 25
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:fundc/startercode/startercodeB10.git
+      fromBranch: 25ss
+      devBranch: develop
+      protectToBranch: true
+    clone:
+      localpath: /tmp/glabs/fundc/25ss/blatt10
+      branch: develop
+      clone: true
+    release:
+      mergeRequest:
+        pipeline: true
+    # accesslevel: guest
+
+  blatt11:
+    assignmentpath: blatt-11
+    description: Blatt 11, Funktionale Programmierung, DC, SS 25
+    per: student
+    startercode:
+      url: git@gitlab.lrz.de:fundc/startercode/startercodeB11.git
+      fromBranch: 24ss
+      devBranch: develop
+      protectToBranch: true
+    clone:
+      localpath: /tmp/glabs/fundc/25ss/blatt11
+      branch: develop
+      clone: true
+    release:
+      mergeRequest:
+        pipeline: true
+    # accesslevel: guest
+
+  students:
+    - s161.t161@example.edu
+    - s001.t001@example.edu
+    - s112.t112@example.edu
+    - s006@example.edu
+    - s030.t030@example.edu
+    - s022.t022@example.edu
+    - s097.t097@example.edu
+    - s223@example.edu
+    - s222.t222@example.edu
+    - s064.t064@example.edu
+    - s080.t080@example.edu
+    - s008.t008@example.edu
+    - s017@example.edu
+    - s049.t049@example.edu
+    - s154.t154@example.edu
+    - s035.t035@example.edu
+    - s056@example.edu
+    - s011.t011@example.edu
+    - s150.t150@example.edu
+    - s122.t122@example.edu
+    - s033.t033@example.edu
+    - s040.t040@example.edu
+    - s106.t106@example.edu
+    - s123.t123@example.edu
+    - s196.t196@example.edu
+    - s127.t127@example.edu
+    - s134@example.edu
+    - s062.t062@example.edu
+    - s167.t167@example.edu
+    - s048.t048@example.edu
+    - s163@example.edu
+    - s090.t090@example.edu
+    - s060.t060@example.edu
+    - s119.t119@example.edu
+    - s108.t108@example.edu
+    - s175.t175@example.edu
+    - s043.t043@example.edu
+    - s041.t041@example.edu
+    - s203.t203@example.edu
+    - s125.t125@example.edu
+    - s111.t111@example.edu
+    - s050.t050@example.edu
+    - s091.t091@example.edu
+    - s160.t160@example.edu
+    - s204.t204@example.edu
+    - s026.t026@example.edu
+    - s027.t027@example.edu
+    - s211.t211@example.edu
+    - s212.t212@example.edu
+    - s010.t010@example.edu
+    - s052.t052@example.edu
+    - s032.t032@example.edu
+    - s117.t117@example.edu
+    - s214@example.edu
+    - s059@example.edu
+    - s094@example.edu

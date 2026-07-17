@@ -1,0 +1,107 @@
+{
+  "course": "casecourse",
+  "name": "mixedfields",
+  "useCoursenameAsPrefix": true,
+  "useEmailDomainAsSuffix": false,
+  "path": "casecourse/semester/ss2026/blatt-01",
+  "url": "https://gitlab.lrz.de/casecourse/semester/ss2026/blatt-01",
+  "repoBaseName": "casecourse-mixedfields",
+  "per": "student",
+  "description": "Mixed-case field names",
+  "containerRegistry": false,
+  "accessLevel": "developer",
+  "accessLevelValue": 30,
+  "mergeRequest": {
+    "MergeMethod": "merge",
+    "SquashOption": "default_off",
+    "PipelineMustSucceed": false,
+    "SkippedPipelinesAreSuccessful": false,
+    "AllThreadsMustBeResolved": false,
+    "StatusChecksMustSucceed": false,
+    "Approvals": null,
+    "ApprovalSettings": null
+  },
+  "branches": [
+    {
+      "Name": "main",
+      "Protect": false,
+      "MergeOnly": true,
+      "Default": true,
+      "AllowForcePush": false,
+      "CodeOwnerApprovalRequired": false
+    },
+    {
+      "Name": "startercode",
+      "Protect": true,
+      "MergeOnly": false,
+      "Default": false,
+      "AllowForcePush": true,
+      "CodeOwnerApprovalRequired": false
+    }
+  ],
+  "issues": {
+    "ReplicateFromStartercode": false,
+    "IssueNumbers": null,
+    "IncludeChildTasks": false
+  },
+  "startercode": {
+    "URL": "git@gitlab.lrz.de:case/startercode.git",
+    "FromBranch": "template",
+    "Tag": "",
+    "Template": false,
+    "TemplateMessage": "Init",
+    "ToBranch": "main",
+    "AdditionalBranches": null
+  },
+  "clone": {
+    "LocalPath": ".",
+    "Branch": "main",
+    "Force": false
+  },
+  "release": null,
+  "seeder": null,
+  "deferredBranches": {},
+  "students": [
+    {
+      "raw": "Upper.Case@example.edu",
+      "email": "Upper.Case@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "Upper.Case",
+      "repoName": "casecourse-mixedfields-Upper.Case"
+    },
+    {
+      "raw": "dotted.name@example.edu",
+      "email": "dotted.name@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "dotted.name",
+      "repoName": "casecourse-mixedfields-dotted.name"
+    },
+    {
+      "raw": "plain@example.edu",
+      "email": "plain@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "plain",
+      "repoName": "casecourse-mixedfields-plain"
+    },
+    {
+      "raw": "plus+tag@example.edu",
+      "email": "plus+tag@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "plus+tag",
+      "repoName": "casecourse-mixedfields-plus-tag"
+    },
+    {
+      "raw": "under_score@example.edu",
+      "email": "under_score@example.edu",
+      "username": null,
+      "id": null,
+      "repoSuffix": "under_score",
+      "repoName": "casecourse-mixedfields-under_score"
+    }
+  ],
+  "groups": null
+}

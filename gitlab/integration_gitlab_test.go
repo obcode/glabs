@@ -14,6 +14,7 @@ import (
 
 	"github.com/obcode/glabs/v3/config"
 	g "github.com/obcode/glabs/v3/git"
+	"github.com/obcode/glabs/v3/reporter"
 	"github.com/spf13/viper"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -162,7 +163,7 @@ func startGitLabContainer(t *testing.T) (*Client, string) {
 		t.Fatalf("creating gitlab api client failed: %v", err)
 	}
 
-	return &Client{apiClient}, baseURL
+	return &Client{Client: apiClient, rep: reporter.NewDiscardReporter()}, baseURL
 }
 
 func isTransientRegistryStartupError(err error) bool {
@@ -272,7 +273,9 @@ func TestIntegration_GitLab_Operations(t *testing.T) {
 		cfg := createGroupAndProject(t, "archive-a1", "student1", false)
 		projectPath := cfg.Path + "/" + cfg.RepoNameWithSuffix("student1")
 
-		client.Archive(cfg, false)
+		if err := client.Archive(cfg, false); err != nil {
+			t.Fatalf("Archive failed: %v", err)
+		}
 
 		proj, _, err := client.Projects.GetProject(projectPath, &gitlabapi.GetProjectOptions{})
 		if err != nil {
@@ -282,7 +285,9 @@ func TestIntegration_GitLab_Operations(t *testing.T) {
 			t.Fatal("expected project to be archived")
 		}
 
-		client.Archive(cfg, true) // unarchive
+		if err := client.Archive(cfg, true); err != nil { // unarchive
+			t.Fatalf("Unarchive failed: %v", err)
+		}
 
 		proj, _, err = client.Projects.GetProject(projectPath, &gitlabapi.GetProjectOptions{})
 		if err != nil {
@@ -323,7 +328,7 @@ func TestIntegration_GitLab_Operations(t *testing.T) {
 		gitURL := func(p *gitlabapi.Project) string { return baseURL + "/" + p.PathWithNamespace + ".git" }
 
 		// Clone it over HTTPS+PAT — proves the clone side of the transport.
-		sourceRepo, err := g.PrepareSourceRepo(gitURL(srcProject), "main", false, "")
+		sourceRepo, err := g.PrepareSourceRepo(reporter.NewDiscardReporter(), gitURL(srcProject), "main", false, "")
 		if err != nil {
 			t.Fatalf("PrepareSourceRepo over HTTPS failed: %v", err)
 		}
@@ -347,7 +352,7 @@ func TestIntegration_GitLab_Operations(t *testing.T) {
 			Startercode: &config.Startercode{ToBranch: "main"},
 		}
 		// Push over HTTPS+PAT — proves the push side of the transport.
-		if err := g.Push(cfg, dstProject.Name, sourceRepo, "main", true, dstProject); err != nil {
+		if err := g.Push(reporter.NewDiscardReporter(), cfg, dstProject.Name, sourceRepo, "main", true, dstProject); err != nil {
 			t.Fatalf("Push over HTTPS failed: %v", err)
 		}
 
@@ -372,7 +377,9 @@ func TestIntegration_GitLab_Operations(t *testing.T) {
 			t.Fatalf("getGroupIDByFullPath before delete failed: %v", err)
 		}
 
-		client.Delete(cfg)
+		if err := client.Delete(cfg); err != nil {
+			t.Fatalf("Delete failed: %v", err)
+		}
 
 		projects, _, err := client.Search.ProjectsByGroup(groupID, repoName, &gitlabapi.SearchOptions{})
 		if err != nil {
@@ -391,7 +398,9 @@ func TestIntegration_GitLab_Operations(t *testing.T) {
 		cfg := createGroupAndProject(t, "protect-a1", "student1", true)
 		cfg.Branches = []config.BranchRule{{Name: "main", Protect: true, Default: true}}
 
-		client.ProtectToBranch(cfg)
+		if err := client.ProtectToBranch(cfg); err != nil {
+			t.Fatalf("ProtectToBranch failed: %v", err)
+		}
 
 		projectPath := cfg.Path + "/" + cfg.RepoNameWithSuffix("student1")
 		proj, _, err := client.Projects.GetProject(projectPath, &gitlabapi.GetProjectOptions{})
@@ -420,7 +429,9 @@ func TestIntegration_GitLab_Operations(t *testing.T) {
 		cfg := createGroupAndProject(t, "setaccess-a1", itUsername, false)
 		cfg.AccessLevel = config.AccessLevel(gitlabapi.DeveloperPermissions) // 30
 
-		client.Setaccess(cfg)
+		if err := client.Setaccess(cfg); err != nil {
+			t.Fatalf("Setaccess failed: %v", err)
+		}
 
 		projectPath := cfg.Path + "/" + cfg.RepoNameWithSuffix(itUsername)
 		proj, _, err := client.Projects.GetProject(projectPath, &gitlabapi.GetProjectOptions{})

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/obcode/glabs/v2/config"
+	"github.com/obcode/glabs/v3/config"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 

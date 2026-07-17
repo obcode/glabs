@@ -7,8 +7,8 @@ import (
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
-	cfg "github.com/obcode/glabs/v2/config"
-	g "github.com/obcode/glabs/v2/git"
+	cfg "github.com/obcode/glabs/v3/config"
+	g "github.com/obcode/glabs/v3/git"
 	"github.com/rs/zerolog/log"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
@@ -16,13 +16,13 @@ import (
 func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *g.SourceRepo, project *gitlab.Project) error {
 	conf := &config.RemoteConfig{
 		Name: project.Name,
-		URLs: []string{project.SSHURLToRepo},
+		URLs: []string{project.HTTPURLToRepo},
 	}
 
 	remote, err := from.Repo.CreateRemote(conf)
 	if err != nil {
 		log.Debug().Err(err).
-			Str("name", project.Name).Str("url", project.SSHURLToRepo).
+			Str("name", project.Name).Str("url", project.HTTPURLToRepo).
 			Msg("cannot create remote")
 		return fmt.Errorf("cannot create remote: %w", err)
 	}
@@ -36,7 +36,7 @@ func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *g.So
 	log.Debug().
 		Str("refSpec", string(refSpec)).
 		Str("name", project.Name).
-		Str("toURL", project.SSHURLToRepo).
+		Str("toURL", project.HTTPURLToRepo).
 		Str("fromBranch", from.Ref.Short()).
 		Str("toBranch", assignmentCfg.Startercode.ToBranch).
 		Msg("pushing starter code")
@@ -49,7 +49,7 @@ func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *g.So
 	err = from.Repo.Push(pushOpts)
 	if err != nil {
 		log.Debug().Err(err).
-			Str("name", project.Name).Str("url", project.SSHURLToRepo).
+			Str("name", project.Name).Str("url", project.HTTPURLToRepo).
 			Msg("cannot push to remote")
 		return fmt.Errorf("cannot push to remote: %w", err)
 	}
@@ -70,7 +70,7 @@ func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *g.So
 		log.Debug().
 			Str("refSpec", string(tagRefSpec)).
 			Str("name", project.Name).
-			Str("toURL", project.SSHURLToRepo).
+			Str("toURL", project.HTTPURLToRepo).
 			Str("tag", tagName).
 			Msg("pushing startercode tag")
 
@@ -94,7 +94,7 @@ func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *g.So
 		log.Debug().
 			Str("refSpec", string(refSpec)).
 			Str("name", project.Name).
-			Str("toURL", project.SSHURLToRepo).
+			Str("toURL", project.HTTPURLToRepo).
 			Str("branch", additionalBranch).
 			Msg("pushing additional startercode branch")
 
@@ -109,7 +109,7 @@ func (c *Client) pushStartercode(assignmentCfg *cfg.AssignmentConfig, from *g.So
 				Str("branch", additionalBranch).
 				Str("refSpec", refSpec.String()).
 				Str("name", project.Name).
-				Str("url", project.SSHURLToRepo).
+				Str("url", project.HTTPURLToRepo).
 				Msg("cannot push additional branch to remote, continuing with other setup steps")
 			continue
 		}

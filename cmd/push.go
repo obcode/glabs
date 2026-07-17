@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/logrusorgru/aurora/v4"
-	"github.com/obcode/glabs/v2/config"
-	"github.com/obcode/glabs/v2/gitlab"
+	"github.com/obcode/glabs/v3/config"
+	"github.com/obcode/glabs/v3/gitlab"
 	"github.com/spf13/cobra"
 )
 

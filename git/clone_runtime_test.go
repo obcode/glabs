@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/obcode/glabs/v2/config"
+	"github.com/obcode/glabs/v3/config"
 )
 
 func TestClone_NoSpinner_CloneErrorNoPanic(t *testing.T) {

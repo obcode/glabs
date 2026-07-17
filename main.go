@@ -5,7 +5,7 @@ import (
 	"os"
 	"runtime/debug"
 
-	"github.com/obcode/glabs/v2/cmd"
+	"github.com/obcode/glabs/v3/cmd"
 	"github.com/spf13/viper"
 )
 

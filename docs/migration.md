@@ -1,3 +1,45 @@
+# Migration Guide: v3 — PAT-only, no SSH
+
+glabs v3 drops SSH for git. Everything — cloning starter code, pushing to student
+repositories — now goes over HTTPS with `gitlab.token`, the same token already
+used for the API.
+
+**What you need to do:**
+
+1. **Give the token the `write_repository` scope.** It needed `api` before;
+   pushing over HTTPS additionally needs `write_repository`. Create a new token
+   with both scopes and update `gitlab.token`.
+2. **Remove `sshprivatekey`** from your main config. It is no longer read.
+3. **Reinstall with the new module path:**
+   ```sh
+   go install github.com/obcode/glabs/v3@latest
+   ```
+
+**What you do *not* need to change:** your course files, if their starter-code
+and `deferredBranches` URLs point at your GitLab instance. SSH notation
+(`git@gitlab.lrz.de:...`) stays valid — glabs normalizes it to HTTPS.
+
+**The one capability that is gone: starter code from another host.** Under SSH,
+a starter repo or deferred branch could live anywhere the operator's key had
+access — `git@github.com:...`, a second GitLab, etc. The PAT authenticates
+against *one* host, your GitLab instance, so:
+
+- A starter repo or deferred branch on **your GitLab instance** — works.
+- A **public** repo on another host (GitHub, …) — still works; a public clone
+  needs no credential.
+- A **private** repo on another host — no longer works. glabs has no credential
+  for that host, and deliberately does not send your GitLab token to it (that
+  would leak it). You will get a plain "authentication required".
+
+If you host starter code on another private host, mirror it into your GitLab
+instance and point the URL there.
+
+Why the whole change: one credential instead of two, and the same transport in
+the CLI and the upcoming web server, where a shared SSH key would have access to
+every user's repositories.
+
+---
+
 # Migration Guide: Startercode Refactor
 
 This guide helps you migrate from legacy assignment config keys under `startercode` to the new independent blocks:

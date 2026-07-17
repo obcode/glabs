@@ -1,9 +1,9 @@
 package git
 
 import (
-	"os"
 	"testing"
 
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/spf13/viper"
 )
 
@@ -13,57 +13,74 @@ func resetViper(t *testing.T) {
 	t.Cleanup(viper.Reset)
 }
 
-func TestGetAuth_NoKeyConfigured(t *testing.T) {
+func TestGetAuthUsesTheTokenOverHTTPS(t *testing.T) {
 	resetViper(t)
-	// sshprivatekey not set → returns nil, nil
+	viper.Set("gitlab.token", "glpat-secret")
 
 	auth, err := GetAuth()
 	if err != nil {
-		t.Fatalf("GetAuth() error = %v, want nil", err)
+		t.Fatalf("GetAuth() error = %v", err)
+	}
+
+	basic, ok := auth.(*githttp.BasicAuth)
+	if !ok {
+		t.Fatalf("GetAuth() = %T, want *http.BasicAuth", auth)
+	}
+	if basic.Password != "glpat-secret" {
+		t.Errorf("Password = %q, want the token", basic.Password)
+	}
+	if basic.Username == "" {
+		t.Error("Username is empty; GitLab needs a non-empty username with the token")
+	}
+}
+
+// Without a token there is nothing to authenticate with. This used to be
+// allowed — an empty sshprivatekey fell back to the ssh-agent — but the token is
+// now mandatory for any git operation.
+func TestGetAuthRequiresAToken(t *testing.T) {
+	resetViper(t)
+
+	if _, err := GetAuth(); err == nil {
+		t.Fatal("GetAuth() succeeded without a token, want an error")
+	}
+}
+
+// The token is attached only for the configured GitLab host. Sending it to a
+// foreign host (a starter repo on github.com, say) would both fail and leak the
+// token, so those are cloned unauthenticated.
+func TestAuthForURLIsHostScoped(t *testing.T) {
+	resetViper(t)
+	viper.Set("gitlab.host", "https://gitlab.lrz.de")
+	viper.Set("gitlab.token", "glpat-secret")
+
+	onGitLab, err := AuthForURL("https://gitlab.lrz.de/mpd/startercode/blatt-01.git")
+	if err != nil {
+		t.Fatalf("AuthForURL(gitlab): %v", err)
+	}
+	if _, ok := onGitLab.(*githttp.BasicAuth); !ok {
+		t.Errorf("AuthForURL(gitlab host) = %T, want *http.BasicAuth with the token", onGitLab)
+	}
+
+	foreign, err := AuthForURL("https://github.com/foo/bar.git")
+	if err != nil {
+		t.Fatalf("AuthForURL(github): %v", err)
+	}
+	if foreign != nil {
+		t.Errorf("AuthForURL(foreign host) = %v, want nil: the GitLab token must not be sent to another host", foreign)
+	}
+}
+
+// A foreign host is allowed even without a token — a public repo needs none. The
+// token requirement only bites for the GitLab host itself.
+func TestAuthForURLForeignHostWithoutToken(t *testing.T) {
+	resetViper(t)
+	viper.Set("gitlab.host", "https://gitlab.lrz.de")
+
+	auth, err := AuthForURL("https://github.com/foo/public.git")
+	if err != nil {
+		t.Fatalf("AuthForURL(github, no token): %v", err)
 	}
 	if auth != nil {
-		t.Fatalf("GetAuth() = %v, want nil", auth)
-	}
-}
-
-func TestGetAuth_ExplicitlyEmpty(t *testing.T) {
-	resetViper(t)
-	viper.Set("sshprivatekey", "")
-
-	auth, err := GetAuth()
-	if err != nil {
-		t.Fatalf("GetAuth() error = %v, want nil", err)
-	}
-	if auth != nil {
-		t.Fatalf("GetAuth() = %v, want nil", auth)
-	}
-}
-
-func TestGetAuth_MissingFile(t *testing.T) {
-	resetViper(t)
-	viper.Set("sshprivatekey", "/nonexistent/totally/missing/key")
-
-	_, err := GetAuth()
-	if err == nil {
-		t.Fatal("GetAuth() expected error for missing file, got nil")
-	}
-}
-
-func TestGetAuth_InvalidKeyContent(t *testing.T) {
-	resetViper(t)
-
-	f, err := os.CreateTemp(t.TempDir(), "sshkey-*")
-	if err != nil {
-		t.Fatalf("creating temp file: %v", err)
-	}
-	_, _ = f.WriteString("this is not a valid SSH private key")
-	f.Close()
-
-	viper.Set("sshprivatekey", f.Name())
-
-	// File exists but content is not a valid key → error from ssh.NewPublicKeysFromFile
-	_, err = GetAuth()
-	if err == nil {
-		t.Fatal("GetAuth() expected error for invalid key content, got nil")
+		t.Errorf("AuthForURL = %v, want nil", auth)
 	}
 }

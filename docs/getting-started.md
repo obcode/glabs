@@ -23,7 +23,7 @@ Essential defaults for your first assignment:
 From source:
 
 ```sh
-go install github.com/obcode/glabs@latest
+go install github.com/obcode/glabs/v3@latest
 ```
 
 From local checkout:

@@ -57,6 +57,9 @@ func Serve() error {
 	if err := database_.EnsureUserIndexes(ctx); err != nil {
 		return err
 	}
+	if err := database_.EnsureCourseIndexes(ctx); err != nil {
+		return err
+	}
 
 	a := app.New(database_)
 	if err := seedUsers(ctx, database_); err != nil {

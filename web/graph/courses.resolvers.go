@@ -1,0 +1,119 @@
+package graph
+
+import (
+	"context"
+	"errors"
+	"sort"
+
+	"github.com/obcode/glabs/v3/config"
+	"github.com/obcode/glabs/v3/web/db"
+	"github.com/obcode/glabs/v3/web/graph/generated"
+	"github.com/obcode/glabs/v3/web/graph/model"
+)
+
+// ImportCourseYaml is the resolver for the importCourseYAML field.
+func (r *mutationResolver) ImportCourseYaml(ctx context.Context, yaml string) (*model.Course, error) {
+	stored, err := r.app.ImportCourseYAML(ctx, yaml)
+	if err != nil {
+		return nil, err
+	}
+	return toGraphCourse(stored), nil
+}
+
+// DeleteCourse is the resolver for the deleteCourse field.
+func (r *mutationResolver) DeleteCourse(ctx context.Context, name string) (bool, error) {
+	if err := r.app.DeleteCourse(ctx, name); err != nil {
+		if errors.Is(err, db.ErrCourseNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+// Courses is the resolver for the courses field.
+func (r *queryResolver) Courses(ctx context.Context) ([]*model.Course, error) {
+	stored, err := r.app.Courses(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*model.Course, 0, len(stored))
+	for _, s := range stored {
+		out = append(out, toGraphCourse(s))
+	}
+	return out, nil
+}
+
+// Course is the resolver for the course field.
+func (r *queryResolver) Course(ctx context.Context, name string) (*model.Course, error) {
+	stored, err := r.app.Course(ctx, name)
+	if err != nil {
+		if errors.Is(err, db.ErrCourseNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return toGraphCourse(stored), nil
+}
+
+// CourseYaml is the resolver for the courseYAML field.
+func (r *queryResolver) CourseYaml(ctx context.Context, name string) (string, error) {
+	yaml, err := r.app.CourseYAML(ctx, name)
+	if err != nil {
+		return "", err
+	}
+	return string(yaml), nil
+}
+
+// CourseLint is the resolver for the courseLint field.
+func (r *queryResolver) CourseLint(ctx context.Context, name string) ([]*model.Finding, error) {
+	findings, err := r.app.CourseLint(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*model.Finding, 0, len(findings))
+	for _, f := range findings {
+		out = append(out, &model.Finding{
+			Path:     f.Path,
+			Message:  f.Message,
+			Severity: toGraphSeverity(f.Severity),
+		})
+	}
+	return out, nil
+}
+
+// toGraphCourse projects the stored course onto the curated GraphQL type. The
+// full CourseSource stays in the database; the API exposes what the GUI needs to
+// list and inspect a course, plus the YAML and lint via their own queries.
+func toGraphCourse(s *db.StoredCourse) *model.Course {
+	c := &model.Course{
+		Name:       s.Name,
+		ImportedAt: s.ImportedAt,
+		UpdatedAt:  s.UpdatedAt,
+	}
+	if s.Source != nil {
+		c.CoursePath = s.Source.CoursePath
+		c.SemesterPath = s.Source.SemesterPath
+		c.StudentCount = len(s.Source.Students)
+		c.GroupCount = len(s.Source.Groups)
+		names := make([]string, 0, len(s.Source.Assignments))
+		for name := range s.Source.Assignments {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+		c.AssignmentNames = names
+	}
+	return c
+}
+
+func toGraphSeverity(s config.Severity) model.FindingSeverity {
+	if s == config.SeverityProblem {
+		return model.FindingSeverityProblem
+	}
+	return model.FindingSeverityDeprecated
+}
+
+// Mutation returns generated.MutationResolver implementation.
+func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
+
+type mutationResolver struct{ *Resolver }

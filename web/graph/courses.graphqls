@@ -1,0 +1,49 @@
+"""
+A course as stored for the current user. Each user sees only their own courses;
+there is no way to reach another user's course.
+"""
+type Course {
+  name: String!
+  coursePath: String!
+  semesterPath: String!
+  "The names of the assignments in this course, sorted."
+  assignmentNames: [String!]!
+  studentCount: Int!
+  groupCount: Int!
+  importedAt: Time!
+  updatedAt: Time!
+}
+
+"""One lint finding: configuration that does not do what it looks like it does."""
+type Finding {
+  path: String!
+  message: String!
+  severity: FindingSeverity!
+}
+
+enum FindingSeverity {
+  "The setting is present but has no effect."
+  PROBLEM
+  "It works, but the spelling or shape is obsolete."
+  DEPRECATED
+}
+
+scalar Time
+
+extend type Query {
+  "The current user's courses."
+  courses: [Course!]!
+  "One of the current user's courses, or null if there is none by that name."
+  course(name: String!): Course
+  "The course as a downloadable YAML file (the original upload if unedited)."
+  courseYAML(name: String!): String!
+  "Lint findings for one of the current user's courses."
+  courseLint(name: String!): [Finding!]!
+}
+
+type Mutation {
+  "Import a course from an uploaded YAML file, replacing any course of the same name."
+  importCourseYAML(yaml: String!): Course!
+  "Delete one of the current user's courses."
+  deleteCourse(name: String!): Boolean!
+}

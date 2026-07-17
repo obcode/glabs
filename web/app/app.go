@@ -13,8 +13,20 @@ import (
 	"github.com/spf13/viper"
 )
 
+// store is the slice of the database the app uses. It is an interface so the
+// app's owner-scoping can be tested without a real MongoDB: a fake store records
+// which owner each call was given, proving the owner comes from the authenticated
+// principal and never from a caller-supplied argument.
+type store interface {
+	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
+	CoursesOf(ctx context.Context, owner string) ([]*db.StoredCourse, error)
+	CourseOf(ctx context.Context, owner, name string) (*db.StoredCourse, error)
+	SaveCourse(ctx context.Context, course *db.StoredCourse) error
+	DeleteCourse(ctx context.Context, owner, name string) error
+}
+
 type App struct {
-	db *db.DB
+	db store
 }
 
 func New(database *db.DB) *App {

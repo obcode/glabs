@@ -32,7 +32,9 @@ var (
 			if err != nil {
 				er(err)
 			}
-			c.Archive(assignmentConfig, unarchive)
+			if err := c.Archive(assignmentConfig, unarchive); err != nil {
+				er(err)
+			}
 		},
 	}
 	unarchive bool

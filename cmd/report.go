@@ -72,11 +72,17 @@ var (
 				er(err)
 			}
 			if Json {
-				c.ReportJSON(assignmentConfig, output)
+				if err := c.ReportJSON(assignmentConfig, output); err != nil {
+					er(err)
+				}
 			} else if Html {
-				c.ReportHTML(assignmentConfig, template, output)
+				if err := c.ReportHTML(assignmentConfig, template, output); err != nil {
+					er(err)
+				}
 			} else {
-				c.Report(assignmentConfig, template, output)
+				if err := c.Report(assignmentConfig, template, output); err != nil {
+					er(err)
+				}
 			}
 		}}
 	Html           bool

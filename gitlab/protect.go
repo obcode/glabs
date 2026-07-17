@@ -3,20 +3,18 @@ package gitlab
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/logrusorgru/aurora"
 	"github.com/obcode/glabs/v3/config"
+	"github.com/obcode/glabs/v3/reporter"
 	"github.com/rs/zerolog/log"
-	"github.com/theckman/yacspin"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
-func (c *Client) ProtectToBranch(assignmentCfg *config.AssignmentConfig) {
+func (c *Client) ProtectToBranch(assignmentCfg *config.AssignmentConfig) error {
 	_, err := c.getGroupID(assignmentCfg)
 	if err != nil {
-		fmt.Printf("error: GitLab group for assignment does not exist, please create the group %s\n", assignmentCfg.URL)
-		exitFunc(1)
+		return fmt.Errorf("GitLab group for assignment does not exist, please create the group %s", assignmentCfg.URL)
 	}
 
 	switch per := assignmentCfg.Per; per {
@@ -25,9 +23,9 @@ func (c *Client) ProtectToBranch(assignmentCfg *config.AssignmentConfig) {
 	case config.PerStudent:
 		c.protectToBranchPerStudent(assignmentCfg)
 	default:
-		fmt.Printf("it is only possible to protect the branch for students oder groups, not for %v", per)
-		exitFunc(1)
+		return fmt.Errorf("it is only possible to protect the branch for students or groups, not for %v", per)
 	}
+	return nil
 }
 
 func (c *Client) protectBranch(assignmentCfg *config.AssignmentConfig, project *gitlab.Project, spin bool) error {
@@ -39,31 +37,12 @@ func (c *Client) protectBranchForMemberCount(assignmentCfg *config.AssignmentCon
 		return nil
 	}
 
-	var spinner *yacspin.Spinner
+	task := reporter.NopTask()
 	if spin {
-		cfg := yacspin.Config{
-			Frequency: 100 * time.Millisecond,
-			CharSet:   yacspin.CharSets[69],
-			Suffix: aurora.Sprintf(aurora.Cyan(" protect branch for project %s at %s"),
-				aurora.Yellow(project.Name),
-				aurora.Magenta(assignmentCfg.URL+"/"+project.Name),
-			),
-			SuffixAutoColon:   true,
-			StopCharacter:     "✓",
-			StopColors:        []string{"fgGreen"},
-			StopFailMessage:   "error",
-			StopFailCharacter: "✗",
-			StopFailColors:    []string{"fgRed"},
-		}
-		var err error
-		spinner, err = yacspin.New(cfg)
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot create spinner")
-		}
-		err = spinner.Start()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot start spinner")
-		}
+		task = c.rep.Task(aurora.Sprintf(aurora.Cyan(" protect branch for project %s at %s"),
+			aurora.Yellow(project.Name),
+			aurora.Magenta(assignmentCfg.URL+"/"+project.Name),
+		))
 	}
 
 	log.Debug().
@@ -84,35 +63,18 @@ func (c *Client) protectBranchForMemberCount(assignmentCfg *config.AssignmentCon
 			mergeLevel = gitlab.DeveloperPermissions
 		}
 
-		err := c.protectSingleBranch(project, branch, pushLevel, mergeLevel)
-		if err != nil {
-			if spin {
-				err := spinner.StopFail()
-				if err != nil {
-					log.Debug().Err(err).Msg("cannot stop spinner")
-				}
-			}
+		if err := c.protectSingleBranch(project, branch, pushLevel, mergeLevel); err != nil {
+			task.Fail("")
 			return err
 		}
 	}
 
 	if err := c.applyMergeRequestApprovalRulesForMemberCount(assignmentCfg, project, memberCount); err != nil {
-		if spin {
-			err := spinner.StopFail()
-			if err != nil {
-				log.Debug().Err(err).Msg("cannot stop spinner")
-			}
-		}
+		task.Fail("")
 		return err
 	}
 
-	if spin {
-		spinner.StopMessage(aurora.Sprintf(aurora.Green("ok")))
-		if err := spinner.Stop(); err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
-	}
-
+	task.Done(aurora.Sprintf(aurora.Green("ok")))
 	return nil
 }
 
@@ -253,7 +215,7 @@ func isProtectedBranchNotFoundError(err error) bool {
 
 func (c *Client) protectToBranchPerStudent(assignmentCfg *config.AssignmentConfig) {
 	if len(assignmentCfg.Students) == 0 {
-		fmt.Println("no students in config for assignment found")
+		c.rep.Println("no students in config for assignment found")
 		return
 	}
 
@@ -264,7 +226,7 @@ func (c *Client) protectToBranchPerStudent(assignmentCfg *config.AssignmentConfi
 			&gitlab.GetProjectOptions{},
 		)
 		if err != nil {
-			fmt.Printf("cannot set access for project %s failed with %s", projectname, err)
+			c.rep.Printf("cannot protect branch for project %s failed with %s", projectname, err)
 			return
 		}
 		if err := c.protectBranchForMemberCount(assignmentCfg, project, true, 1); err != nil {
@@ -286,7 +248,7 @@ func (c *Client) protectToBranchPerGroup(assignmentCfg *config.AssignmentConfig)
 			&gitlab.GetProjectOptions{},
 		)
 		if err != nil {
-			fmt.Printf("cannot set access for project %s failed with %s", projectname, err)
+			c.rep.Printf("cannot protect branch for project %s failed with %s", projectname, err)
 			return
 		}
 		if err := c.protectBranchForMemberCount(assignmentCfg, project, true, len(grp.Members)); err != nil {

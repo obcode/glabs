@@ -41,7 +41,6 @@ func makeDeleteHandler(groupID, projectID int64, projectName string) http.Handle
 // ---- Delete (top-level) -----------------------------------------------------
 
 func TestDelete_GroupNotFound_Exits(t *testing.T) {
-	defer withExitCapture(t)()
 
 	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
@@ -53,11 +52,12 @@ func TestDelete_GroupNotFound_Exits(t *testing.T) {
 		Path:   "mpd/ss26/blatt-01",
 		Per:    config.PerStudent,
 	}
-	assertExitCode(t, 1, func() { client.Delete(cfg) })
+	if err := client.Delete(cfg); err == nil {
+		t.Fatal("expected an error")
+	}
 }
 
 func TestDelete_InvalidPer_Exits(t *testing.T) {
-	defer withExitCapture(t)()
 
 	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet && r.URL.Path == "/api/v4/groups" {
@@ -72,7 +72,9 @@ func TestDelete_InvalidPer_Exits(t *testing.T) {
 		Path:   "mpd/ss26/blatt-01",
 		Per:    config.PerFailed,
 	}
-	assertExitCode(t, 1, func() { client.Delete(cfg) })
+	if err := client.Delete(cfg); err == nil {
+		t.Fatal("expected an error")
+	}
 }
 
 // ---- deletePerStudent -------------------------------------------------------

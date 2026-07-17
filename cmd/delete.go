@@ -31,6 +31,8 @@ You can specify students or groups in order to delete only for these.`,
 		if err != nil {
 			er(err)
 		}
-		c.Delete(assignmentConfig)
+		if err := c.Delete(assignmentConfig); err != nil {
+			er(err)
+		}
 	},
 }

@@ -35,7 +35,9 @@ var (
 			if err != nil {
 				er(err)
 			}
-			c.Setaccess(assignmentConfig)
+			if err := c.Setaccess(assignmentConfig); err != nil {
+				er(err)
+			}
 		},
 	}
 	Level string

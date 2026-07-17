@@ -10,45 +10,20 @@ import (
 	"github.com/obcode/glabs/v3/config"
 	"github.com/obcode/glabs/v3/gitlab/report"
 	"github.com/rs/zerolog/log"
-	"github.com/theckman/yacspin"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
-func (c *Client) report(assignmentCfg *config.AssignmentConfig) *report.Reports {
-	cfg := yacspin.Config{
-		Frequency: 100 * time.Millisecond,
-		CharSet:   yacspin.CharSets[69],
-		Suffix: aurora.Sprintf(aurora.Cyan(" fetching info for  %s / %s"),
-			aurora.Yellow(assignmentCfg.Course),
-			aurora.Magenta(assignmentCfg.Name),
-		),
-		SuffixAutoColon:   true,
-		StopCharacter:     "✓",
-		StopColors:        []string{"fgGreen"},
-		StopFailMessage:   "error",
-		StopFailCharacter: "✗",
-		StopFailColors:    []string{"fgRed"},
-	}
+func (c *Client) report(assignmentCfg *config.AssignmentConfig) (*report.Reports, error) {
+	task := c.rep.Task(aurora.Sprintf(aurora.Cyan(" fetching info for  %s / %s"),
+		aurora.Yellow(assignmentCfg.Course),
+		aurora.Magenta(assignmentCfg.Name),
+	))
 
-	spinner, err := yacspin.New(cfg)
-	if err != nil {
-		log.Debug().Err(err).Msg("cannot create spinner")
-	}
-	err = spinner.Start()
-	if err != nil {
-		log.Debug().Err(err).Msg("cannot start spinner")
-	}
-
-	spinner.Message(aurora.Sprintf(aurora.Green("get group info")))
+	task.Update(aurora.Sprintf(aurora.Green("get group info")))
 	groupID, err := c.getGroupID(assignmentCfg)
 	if err != nil {
-		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-		err := spinner.StopFail()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
-		return nil
+		task.Fail(fmt.Sprintf("problem: %v", err))
+		return nil, err
 	}
 	log.Debug().Int64("groupID", groupID).Msg("found group id")
 
@@ -57,13 +32,8 @@ func (c *Client) report(assignmentCfg *config.AssignmentConfig) *report.Reports 
 	for {
 		someProjects, response, err := c.Groups.ListGroupProjects(groupID, opts)
 		if err != nil {
-			spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-			err := spinner.StopFail()
-			if err != nil {
-				log.Debug().Err(err).Msg("cannot stop spinner")
-			}
-			return nil
+			task.Fail(fmt.Sprintf("problem: %v", err))
+			return nil, err
 		}
 		projects = append(projects, someProjects...)
 
@@ -88,13 +58,13 @@ func (c *Client) report(assignmentCfg *config.AssignmentConfig) *report.Reports 
 
 	projectReportsMap := make(map[string]*report.ProjectReport)
 	for _, project := range projects {
-		spinner.Message(aurora.Sprintf(aurora.Green(fmt.Sprintf("get info for %s", project.Name))))
+		task.Update(aurora.Sprintf(aurora.Green(fmt.Sprintf("get info for %s", project.Name))))
 
 		pojectName, projectReport := c.projectReport(assignmentCfg, project)
 		projectReportsMap[pojectName] = projectReport
 	}
 
-	spinner.Message(aurora.Sprintf(aurora.Green("sorting projects")))
+	task.Update(aurora.Sprintf(aurora.Green("sorting projects")))
 	keys := make([]string, 0, len(projects))
 	for k := range projectReportsMap {
 		keys = append(keys, k)
@@ -105,10 +75,7 @@ func (c *Client) report(assignmentCfg *config.AssignmentConfig) *report.Reports 
 		projectReports = append(projectReports, projectReportsMap[projectName])
 	}
 
-	err = spinner.Stop()
-	if err != nil {
-		log.Debug().Err(err).Msg("cannot stop spinner")
-	}
+	task.Done("")
 
 	now := time.Now()
 
@@ -129,7 +96,7 @@ func (c *Client) report(assignmentCfg *config.AssignmentConfig) *report.Reports 
 		Generated:              &now,
 		HasReleaseMergeRequest: hasReleaseMergeRequest,
 		HasReleaseDockerImages: hasReleaseDockerImages,
-	}
+	}, nil
 }
 
 func (c *Client) projectReport(assignmentCfg *config.AssignmentConfig, project *gitlab.Project) (string, *report.ProjectReport) {

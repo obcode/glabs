@@ -2,27 +2,24 @@ package gitlab
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/logrusorgru/aurora"
 	"github.com/obcode/glabs/v3/config"
 	"github.com/obcode/glabs/v3/git"
 	"github.com/rs/zerolog/log"
-	"github.com/theckman/yacspin"
 )
 
-func (c *Client) Generate(assignmentCfg *config.AssignmentConfig) {
+func (c *Client) Generate(assignmentCfg *config.AssignmentConfig) error {
 	assignmentGitLabGroupID, err := c.getGroupID(assignmentCfg)
 	if err != nil {
-		// try to create group if it does not exist, otherwise exit with error
+		// try to create group if it does not exist, otherwise return an error
 		assignmentGitLabGroupID, err = c.createGroup(assignmentCfg)
 		if err != nil {
 			log.Error().Err(err).
 				Str("course", assignmentCfg.Course).
 				Str("assignmentpath", assignmentCfg.Path).
 				Msg("error while creating group for assignment")
-			fmt.Printf("error: cannot create GitLab group for assignment, please create the group %s\n", assignmentCfg.URL)
-			exitFunc(1)
+			return fmt.Errorf("cannot create GitLab group for assignment, please create the group %s", assignmentCfg.URL)
 		}
 	}
 
@@ -35,10 +32,8 @@ func (c *Client) Generate(assignmentCfg *config.AssignmentConfig) {
 			assignmentCfg.Startercode.Template,
 			assignmentCfg.Startercode.TemplateMessage,
 		)
-
 		if err != nil {
-			fmt.Println(err)
-			exitFunc(1)
+			return err
 		}
 	}
 
@@ -48,121 +43,55 @@ func (c *Client) Generate(assignmentCfg *config.AssignmentConfig) {
 	case config.PerStudent:
 		c.generatePerStudent(assignmentCfg, assignmentGitLabGroupID, starterrepo)
 	default:
-		fmt.Printf("it is only possible to generate for students oder groups, not for %v", per)
-		exitFunc(1)
+		return fmt.Errorf("it is only possible to generate for students or groups, not for %v", per)
 	}
+	return nil
 }
 
 func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGroupID int64,
 	projectname string, members []*config.Student, starterrepo *git.SourceRepo) {
 
-	cfg := yacspin.Config{
-		Frequency: 100 * time.Millisecond,
-		CharSet:   yacspin.CharSets[69],
-		Suffix: aurora.Sprintf(aurora.Cyan(" generating project %s at %s"),
-			aurora.Yellow(projectname),
-			aurora.Magenta(assignmentCfg.URL+"/"+projectname),
-		),
-		SuffixAutoColon:   true,
-		StopCharacter:     "✓",
-		StopColors:        []string{"fgGreen"},
-		StopFailMessage:   "error",
-		StopFailCharacter: "✗",
-		StopFailColors:    []string{"fgRed"},
-	}
+	task := c.rep.Task(aurora.Sprintf(aurora.Cyan(" generating project %s at %s"),
+		aurora.Yellow(projectname),
+		aurora.Magenta(assignmentCfg.URL+"/"+projectname),
+	))
+	task.Update("generating project on host")
 
-	spinner, err := yacspin.New(cfg)
-	if err != nil {
-		log.Debug().Err(err).Msg("cannot create spinner")
-	}
-	err = spinner.Start()
-	if err != nil {
-		log.Debug().Err(err).Msg("cannot start spinner")
-	}
-
-	spinner.Message("generating project on host")
 	project, generated, err := c.generateProject(assignmentCfg, projectname, assignmentGroupID)
 	if err != nil {
-		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-		err := spinner.StopFail()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
+		task.Fail(fmt.Sprintf("problem: %v", err))
 		return
+	}
+	if !generated {
+		task.Done(aurora.Sprintf(aurora.Red("project already exists")))
 	} else {
-		if !generated {
-			spinner.StopMessage(aurora.Sprintf(aurora.Red("project already exists")))
-		}
-
-		err = spinner.Stop()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
+		task.Done("")
 	}
 
 	if starterrepo != nil {
 		if !generated {
-			fmt.Println(aurora.Red("    ↪ not trying to push startercode to existing project"))
+			c.rep.Println(aurora.Red("    ↪ not trying to push startercode to existing project"))
 		} else {
-			cfg.Suffix = aurora.Sprintf(aurora.Cyan(" ↪ pushing startercode"))
-			spinner, err := yacspin.New(cfg)
-			if err != nil {
-				log.Debug().Err(err).Msg("cannot create spinner")
-			}
-			err = spinner.Start()
-			if err != nil {
-				log.Debug().Err(err).Msg("cannot start spinner")
-			}
-
-			err = c.pushStartercode(assignmentCfg, starterrepo, project)
-			if err != nil {
-				spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-				err := spinner.StopFail()
-				if err != nil {
-					log.Debug().Err(err).Msg("cannot stop spinner")
-				}
+			task := c.rep.Task(aurora.Sprintf(aurora.Cyan(" ↪ pushing startercode")))
+			if err := c.pushStartercode(assignmentCfg, starterrepo, project); err != nil {
+				task.Fail(fmt.Sprintf("problem: %v", err))
 				return
 			}
-
-			err = spinner.Stop()
-			if err != nil {
-				log.Debug().Err(err).Msg("cannot stop spinner")
-			}
+			task.Done("")
 		}
 	} else if assignmentCfg.Seeder != nil {
 		if !generated {
-			fmt.Println(aurora.Red("    ↪ not running seeder for existing project"))
+			c.rep.Println(aurora.Red("    ↪ not running seeder for existing project"))
 		} else {
-			cfg.Suffix = aurora.Sprintf(aurora.Cyan(" ↪ seeding project %s using %s"),
+			task := c.rep.Task(aurora.Sprintf(aurora.Cyan(" ↪ seeding project %s using %s"),
 				aurora.Magenta(projectname),
 				aurora.Magenta(assignmentCfg.Seeder.Command),
-			)
-			spinner, err := yacspin.New(cfg)
-			if err != nil {
-				log.Debug().Err(err).Msg("cannot create spinner")
-			}
-			err = spinner.Start()
-			if err != nil {
-				log.Debug().Err(err).Msg("cannot start spinner")
-			}
-
-			err = c.runSeeder(assignmentCfg, project)
-			if err != nil {
-				spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-				err := spinner.StopFail()
-				if err != nil {
-					log.Debug().Err(err).Msg("cannot stop spinner")
-				}
+			))
+			if err := c.runSeeder(assignmentCfg, project); err != nil {
+				task.Fail(fmt.Sprintf("problem: %v", err))
 				return
 			}
-
-			err = spinner.Stop()
-			if err != nil {
-				log.Debug().Err(err).Msg("cannot stop spinner")
-			}
+			task.Done("")
 		}
 	}
 
@@ -176,7 +105,7 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 
 		if err := c.syncConfiguredBranches(assignmentCfg, project, baseBranch, len(members)); err != nil {
 			log.Error().Err(err).Str("project", project.Name).Msg("cannot apply configured branch rules")
-			fmt.Printf("error: cannot apply branch/approval rules for project %s: %v\n", project.Name, err)
+			c.rep.Printf("error: cannot apply branch/approval rules for project %s: %v\n", project.Name, err)
 		}
 	}
 
@@ -203,48 +132,25 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 		createdIssueMap := make(map[int]int, len(issueNumbers))
 
 		for _, issueNumber := range issueNumbers {
-			cfg.Suffix = aurora.Sprintf(
+			task := c.rep.Task(aurora.Sprintf(
 				aurora.Cyan(" ↪ replicating issue #%d from startercode"),
 				aurora.Yellow(issueNumber),
-			)
-			spinner, err := yacspin.New(cfg)
-			if err != nil {
-				log.Debug().Err(err).Msg("cannot create spinner")
-			}
-			err = spinner.Start()
-			if err != nil {
-				log.Debug().Err(err).Msg("cannot start spinner")
-			}
+			))
 
 			if starterProjectErr != nil {
-				spinner.StopFailMessage(fmt.Sprintf("problem: %v", starterProjectErr))
-
-				err := spinner.StopFail()
-				if err != nil {
-					log.Debug().Err(err).Msg("cannot stop spinner")
-				}
+				task.Fail(fmt.Sprintf("problem: %v", starterProjectErr))
 				continue
 			}
 
 			_, isChildTask := parentByChild[issueNumber]
 			createdIssueIID, replicateErr := c.replicateIssue(starterProject, project, issueNumber, isChildTask)
-			err = replicateErr
-			if err != nil {
-				spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-				err := spinner.StopFail()
-				if err != nil {
-					log.Debug().Err(err).Msg("cannot stop spinner")
-				}
+			if replicateErr != nil {
+				task.Fail(fmt.Sprintf("problem: %v", replicateErr))
 				continue
 			}
 
 			createdIssueMap[issueNumber] = createdIssueIID
-
-			err = spinner.Stop()
-			if err != nil {
-				log.Debug().Err(err).Msg("cannot stop spinner")
-			}
+			task.Done("")
 		}
 
 		if starterProjectErr == nil && assignmentCfg.Issues.IncludeChildTasks {
@@ -267,7 +173,7 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 		}
 	}
 
-	c.setaccess(assignmentCfg, project, members, &cfg)
+	c.setaccess(assignmentCfg, project, members)
 }
 
 func (c *Client) generatePerStudent(assignmentCfg *config.AssignmentConfig, assignmentGroupID int64,

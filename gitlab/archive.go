@@ -2,20 +2,18 @@ package gitlab
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/logrusorgru/aurora"
 	"github.com/obcode/glabs/v3/config"
+	"github.com/obcode/glabs/v3/reporter"
 	"github.com/rs/zerolog/log"
-	"github.com/theckman/yacspin"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
-func (c *Client) Archive(assignmentCfg *config.AssignmentConfig, unarchive bool) {
+func (c *Client) Archive(assignmentCfg *config.AssignmentConfig, unarchive bool) error {
 	_, err := c.getGroupID(assignmentCfg)
 	if err != nil {
-		fmt.Printf("error: GitLab group for assignment does not exist, please create the group %s\n", assignmentCfg.URL)
-		exitFunc(1)
+		return fmt.Errorf("GitLab group for assignment does not exist, please create the group %s", assignmentCfg.URL)
 	}
 
 	switch per := assignmentCfg.Per; per {
@@ -24,14 +22,14 @@ func (c *Client) Archive(assignmentCfg *config.AssignmentConfig, unarchive bool)
 	case config.PerStudent:
 		c.archivePerStudent(assignmentCfg, unarchive)
 	default:
-		fmt.Printf("it is only possible to set access levels for students oder groups, not for %v", per)
-		exitFunc(1)
+		return fmt.Errorf("it is only possible to archive projects for students or groups, not for %v", per)
 	}
+	return nil
 }
 
 func (c *Client) archivePerStudent(assignmentCfg *config.AssignmentConfig, unarchive bool) {
 	if len(assignmentCfg.Students) == 0 {
-		fmt.Println("no students in config for assignment found")
+		c.rep.Println("no students in config for assignment found")
 		return
 	}
 
@@ -42,7 +40,7 @@ func (c *Client) archivePerStudent(assignmentCfg *config.AssignmentConfig, unarc
 			&gitlab.GetProjectOptions{},
 		)
 		if err != nil {
-			fmt.Printf("cannot archive project %s failed with %s", projectname, err)
+			c.rep.Printf("cannot archive project %s failed with %s", projectname, err)
 			return
 		}
 		if err := c.archive(assignmentCfg, project, true, unarchive); err != nil {
@@ -64,7 +62,7 @@ func (c *Client) archivePerGroup(assignmentCfg *config.AssignmentConfig, unarchi
 			&gitlab.GetProjectOptions{},
 		)
 		if err != nil {
-			fmt.Printf("cannot archive project %s failed with %s", projectname, err)
+			c.rep.Printf("cannot archive project %s failed with %s", projectname, err)
 			return
 		}
 		if err := c.archive(assignmentCfg, project, true, unarchive); err != nil {
@@ -73,93 +71,41 @@ func (c *Client) archivePerGroup(assignmentCfg *config.AssignmentConfig, unarchi
 	}
 }
 
+// archive (un)archives a project. spin reports its own progress; callers that
+// already run a task pass false to avoid a nested spinner.
 func (c *Client) archive(assignmentCfg *config.AssignmentConfig, project *gitlab.Project, spin bool, unarchive bool) error {
-	// var cfg yacspin.Config
-	var spinner *yacspin.Spinner
+	task := reporter.NopTask()
 	if spin {
 		un := ""
 		if unarchive {
 			un = "un"
 		}
-		cfg := yacspin.Config{
-			Frequency: 100 * time.Millisecond,
-			CharSet:   yacspin.CharSets[69],
-			Suffix: aurora.Sprintf(aurora.Cyan(" %sarchiving project %s at %s"),
-				un,
-				aurora.Yellow(project.Name),
-				aurora.Magenta(assignmentCfg.URL+"/"+project.Name),
-			),
-			SuffixAutoColon:   true,
-			StopCharacter:     "✓",
-			StopColors:        []string{"fgGreen"},
-			StopFailMessage:   "error",
-			StopFailCharacter: "✗",
-			StopFailColors:    []string{"fgRed"},
-		}
-		var err error
-		spinner, err = yacspin.New(cfg)
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot create spinner")
-		}
-		err = spinner.Start()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot start spinner")
-		}
+		task = c.rep.Task(aurora.Sprintf(aurora.Cyan(" %sarchiving project %s at %s"),
+			un,
+			aurora.Yellow(project.Name),
+			aurora.Magenta(assignmentCfg.URL+"/"+project.Name),
+		))
 	}
-
-	log.Debug().
-		Str("branch", func() string {
-			if assignmentCfg.Startercode != nil {
-				return assignmentCfg.Startercode.ToBranch
-			}
-			return ""
-		}()).
-		Str("name", project.Name).
-		Str("toURL", project.HTTPURLToRepo).
-		Msg("protecting branch")
 
 	var err error
 	if unarchive {
 		_, _, err = c.Projects.UnarchiveProject(project.ID)
-		if err != nil {
-			log.Debug().Err(err).
-				Str("name", project.Name).
-				Str("toURL", project.HTTPURLToRepo).
-				Msg("cannot unarchive project")
-
-			if spin {
-				err := spinner.StopFail()
-				if err != nil {
-					log.Debug().Err(err).Msg("cannot stop spinner")
-				}
-			}
-			return fmt.Errorf("error while trying to unarchive project: %w", err)
-		}
 	} else {
 		_, _, err = c.Projects.ArchiveProject(project.ID)
-		if err != nil {
-			log.Debug().Err(err).
-				Str("name", project.Name).
-				Str("toURL", project.HTTPURLToRepo).
-				Msg("cannot archive project")
-
-			if spin {
-				err := spinner.StopFail()
-				if err != nil {
-					log.Debug().Err(err).Msg("cannot stop spinner")
-				}
-			}
-			return fmt.Errorf("error while trying to archive project: %w", err)
+	}
+	if err != nil {
+		log.Debug().Err(err).
+			Str("name", project.Name).
+			Str("toURL", project.HTTPURLToRepo).
+			Msg("cannot archive project")
+		task.Fail("")
+		verb := "archive"
+		if unarchive {
+			verb = "unarchive"
 		}
+		return fmt.Errorf("error while trying to %s project: %w", verb, err)
 	}
 
-	if spin {
-		spinner.StopMessage(aurora.Sprintf(aurora.Green("ok")))
-		err = spinner.Stop()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
-	}
-
+	task.Done(aurora.Sprintf(aurora.Green("ok")))
 	return nil
 }

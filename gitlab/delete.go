@@ -8,11 +8,10 @@ import (
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
-func (c *Client) Delete(assignmentCfg *config.AssignmentConfig) {
+func (c *Client) Delete(assignmentCfg *config.AssignmentConfig) error {
 	assignmentGitLabGroupID, err := c.getGroupID(assignmentCfg)
 	if err != nil {
-		fmt.Printf("error: GitLab group for assignment does not exist, please create the group %s\n", assignmentCfg.URL)
-		exitFunc(1)
+		return fmt.Errorf("GitLab group for assignment does not exist, please create the group %s", assignmentCfg.URL)
 	}
 
 	switch per := assignmentCfg.Per; per {
@@ -21,14 +20,14 @@ func (c *Client) Delete(assignmentCfg *config.AssignmentConfig) {
 	case config.PerStudent:
 		c.deletePerStudent(assignmentCfg, assignmentGitLabGroupID)
 	default:
-		fmt.Printf("it is only possible to delete projects for students or groups, not for %v", per)
-		exitFunc(1)
+		return fmt.Errorf("it is only possible to delete projects for students or groups, not for %v", per)
 	}
+	return nil
 }
 
 func (c *Client) deletePerStudent(assignmentCfg *config.AssignmentConfig, assignmentGroupID int64) {
 	if len(assignmentCfg.Students) == 0 {
-		fmt.Println("no students in config for assignment found")
+		c.rep.Println("no students in config for assignment found")
 		return
 	}
 

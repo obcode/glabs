@@ -2,20 +2,17 @@ package gitlab
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/logrusorgru/aurora"
 	"github.com/obcode/glabs/v3/config"
 	"github.com/rs/zerolog/log"
-	"github.com/theckman/yacspin"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
-func (c *Client) Setaccess(assignmentCfg *config.AssignmentConfig) {
+func (c *Client) Setaccess(assignmentCfg *config.AssignmentConfig) error {
 	_, err := c.getGroupID(assignmentCfg)
 	if err != nil {
-		fmt.Printf("error: GitLab group for assignment does not exist, please create the group %s\n", assignmentCfg.URL)
-		exitFunc(1)
+		return fmt.Errorf("GitLab group for assignment does not exist, please create the group %s", assignmentCfg.URL)
 	}
 
 	switch per := assignmentCfg.Per; per {
@@ -24,59 +21,18 @@ func (c *Client) Setaccess(assignmentCfg *config.AssignmentConfig) {
 	case config.PerStudent:
 		c.setaccessPerStudent(assignmentCfg)
 	default:
-		fmt.Printf("it is only possible to set access levels for students oder groups, not for %v", per)
-		exitFunc(1)
+		return fmt.Errorf("it is only possible to set access levels for students or groups, not for %v", per)
 	}
+	return nil
 }
 
-func (c *Client) setaccess(assignmentCfg *config.AssignmentConfig,
-	project *gitlab.Project, members []*config.Student, cfgP *yacspin.Config) {
-	var cfg yacspin.Config
-	if cfgP == nil {
-		cfg = yacspin.Config{
-			Frequency: 100 * time.Millisecond,
-			CharSet:   yacspin.CharSets[69],
-			Suffix: aurora.Sprintf(aurora.Cyan(" setting access for project %s at %s"),
-				aurora.Yellow(project.Name),
-				aurora.Magenta(assignmentCfg.URL+"/"+project.Name),
-			),
-			SuffixAutoColon:   true,
-			StopCharacter:     "✓",
-			StopColors:        []string{"fgGreen"},
-			StopFailMessage:   "error",
-			StopFailCharacter: "✗",
-			StopFailColors:    []string{"fgRed"},
-		}
-		spinner, err := yacspin.New(cfg)
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot create spinner")
-		}
-		err = spinner.Start()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot start spinner")
-		}
-		err = spinner.Stop()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
-	} else {
-		cfg = *cfgP
-	}
-
+func (c *Client) setaccess(assignmentCfg *config.AssignmentConfig, project *gitlab.Project, members []*config.Student) {
 	for _, student := range members {
-		cfg.Suffix = aurora.Sprintf(aurora.Cyan(" ↪ adding member %s to %s as %s"),
+		task := c.rep.Task(aurora.Sprintf(aurora.Cyan(" ↪ adding member %s to %s as %s"),
 			aurora.Yellow(student.Raw),
 			aurora.Magenta(project.Name),
 			aurora.Magenta(assignmentCfg.AccessLevel.String()),
-		)
-		spinner, err := yacspin.New(cfg)
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot create spinner")
-		}
-		err = spinner.Start()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot start spinner")
-		}
+		))
 
 		userID, err := c.getUserID(student)
 		if err != nil {
@@ -84,29 +40,13 @@ func (c *Client) setaccess(assignmentCfg *config.AssignmentConfig,
 				log.Debug().Str("email", *student.Email).Msg("inviting via email")
 				info, err := c.inviteByEmail(assignmentCfg, project.ID, *student.Email)
 				if err != nil {
-					spinner.StopFailMessage(fmt.Sprintf("%v", err))
-
-					err := spinner.StopFail()
-					if err != nil {
-						log.Debug().Err(err).Msg("cannot stop spinner")
-					}
+					task.Fail(fmt.Sprintf("%v", err))
 				} else {
-					spinner.StopMessage(aurora.Sprintf(aurora.Green(info)))
-
-					err = spinner.Stop()
-					if err != nil {
-						log.Debug().Err(err).Msg("cannot stop spinner")
-					}
+					task.Done(aurora.Sprintf(aurora.Green(info)))
 				}
 				continue
-			} else {
-				spinner.StopFailMessage(fmt.Sprintf("cannot get user id: %v", err))
-
-				err := spinner.StopFail()
-				if err != nil {
-					log.Debug().Err(err).Msg("cannot stop spinner")
-				}
 			}
+			task.Fail(fmt.Sprintf("cannot get user id: %v", err))
 			continue
 		}
 
@@ -120,20 +60,11 @@ func (c *Client) setaccess(assignmentCfg *config.AssignmentConfig,
 				Str("assignment", assignmentCfg.Name).
 				Msg("error while adding member")
 
-			spinner.StopFailMessage(fmt.Sprintf("cannot add user %v: %v", student, err))
-
-			err := spinner.StopFail()
-			if err != nil {
-				log.Debug().Err(err).Msg("cannot stop spinner")
-			}
+			task.Fail(fmt.Sprintf("cannot add user %v: %v", student, err))
 			continue
 		}
 
-		spinner.StopMessage(aurora.Sprintf(aurora.Green(info)))
-		err = spinner.Stop()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
+		task.Done(aurora.Sprintf(aurora.Green(info)))
 	}
 }
 
@@ -154,7 +85,7 @@ func (c *Client) inviteByEmail(cfg *config.AssignmentConfig, projectID int64, em
 
 func (c *Client) setaccessPerStudent(assignmentCfg *config.AssignmentConfig) {
 	if len(assignmentCfg.Students) == 0 {
-		fmt.Println("no students in config for assignment found")
+		c.rep.Println("no students in config for assignment found")
 		return
 	}
 
@@ -165,10 +96,10 @@ func (c *Client) setaccessPerStudent(assignmentCfg *config.AssignmentConfig) {
 			&gitlab.GetProjectOptions{},
 		)
 		if err != nil {
-			fmt.Printf("cannot set access for project %s failed with %s", projectname, err)
+			c.rep.Printf("cannot set access for project %s failed with %s", projectname, err)
 			return
 		}
-		c.setaccess(assignmentCfg, project, []*config.Student{student}, nil)
+		c.setaccess(assignmentCfg, project, []*config.Student{student})
 	}
 }
 
@@ -185,9 +116,9 @@ func (c *Client) setaccessPerGroup(assignmentCfg *config.AssignmentConfig) {
 			&gitlab.GetProjectOptions{},
 		)
 		if err != nil {
-			fmt.Printf("cannot set access for project %s failed with %s", projectname, err)
+			c.rep.Printf("cannot set access for project %s failed with %s", projectname, err)
 			return
 		}
-		c.setaccess(assignmentCfg, project, grp.Members, nil)
+		c.setaccess(assignmentCfg, project, grp.Members)
 	}
 }

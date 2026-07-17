@@ -32,6 +32,8 @@ A student needs to exist on GitLab, a group needs to exist in the configuration 
 		if err != nil {
 			er(err)
 		}
-		c.Generate(assignmentConfig)
+		if err := c.Generate(assignmentConfig); err != nil {
+			er(err)
+		}
 	},
 }

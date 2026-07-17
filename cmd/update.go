@@ -34,6 +34,8 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			er(err)
 		}
-		c.Update(assignmentConfig)
+		if err := c.Update(assignmentConfig); err != nil {
+			er(err)
+		}
 	},
 }

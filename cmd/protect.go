@@ -35,7 +35,9 @@ var (
 			if err != nil {
 				er(err)
 			}
-			c.ProtectToBranch(assignmentConfig)
+			if err := c.ProtectToBranch(assignmentConfig); err != nil {
+				er(err)
+			}
 		},
 	}
 	ProtectBranch string

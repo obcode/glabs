@@ -13,7 +13,6 @@ import (
 // ---- Setaccess (top-level) --------------------------------------------------
 
 func TestSetaccess_GroupNotFound_Exits(t *testing.T) {
-	defer withExitCapture(t)()
 
 	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
@@ -25,11 +24,12 @@ func TestSetaccess_GroupNotFound_Exits(t *testing.T) {
 		Path:   "mpd/ss26/blatt-01",
 		Per:    config.PerStudent,
 	}
-	assertExitCode(t, 1, func() { client.Setaccess(cfg) })
+	if err := client.Setaccess(cfg); err == nil {
+		t.Fatal("expected an error")
+	}
 }
 
 func TestSetaccess_InvalidPer_Exits(t *testing.T) {
-	defer withExitCapture(t)()
 
 	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet && r.URL.Path == "/api/v4/groups" {
@@ -44,7 +44,9 @@ func TestSetaccess_InvalidPer_Exits(t *testing.T) {
 		Path:   "mpd/ss26/blatt-01",
 		Per:    config.PerFailed,
 	}
-	assertExitCode(t, 1, func() { client.Setaccess(cfg) })
+	if err := client.Setaccess(cfg); err == nil {
+		t.Fatal("expected an error")
+	}
 }
 
 // ---- setaccessPerStudent ----------------------------------------------------

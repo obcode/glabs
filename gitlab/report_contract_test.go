@@ -73,7 +73,10 @@ func TestReport_GroupNotFound_ReturnsNil(t *testing.T) {
 		Path:   "mpd/ss26/blatt-01",
 		URL:    "https://gitlab.example.org/mpd/ss26/blatt-01",
 	}
-	result := client.report(cfg)
+	result, err := client.report(cfg)
+	if err == nil {
+		t.Fatal("report() returned no error, want one")
+	}
 	if result != nil {
 		t.Fatalf("report() = %#v, want nil", result)
 	}
@@ -96,7 +99,10 @@ func TestReport_ListGroupProjectsFails_ReturnsNil(t *testing.T) {
 		Path:   "mpd/ss26/blatt-01",
 		URL:    "https://gitlab.example.org/mpd/ss26/blatt-01",
 	}
-	result := client.report(cfg)
+	result, err := client.report(cfg)
+	if err == nil {
+		t.Fatal("report() returned no error, want one")
+	}
 	if result != nil {
 		t.Fatalf("report() = %#v, want nil after ListGroupProjects failure", result)
 	}
@@ -120,7 +126,10 @@ func TestReport_HappyPath_NoProjects(t *testing.T) {
 		Path:   "mpd/ss26/blatt-01",
 		URL:    "https://gitlab.example.org/mpd/ss26/blatt-01",
 	}
-	result := client.report(cfg)
+	result, err := client.report(cfg)
+	if err != nil {
+		t.Fatalf("report(): unexpected error: %v", err)
+	}
 	if result == nil {
 		t.Fatal("report() returned nil, want non-nil")
 	}
@@ -141,7 +150,10 @@ func TestReport_HappyPath_WithProject(t *testing.T) {
 		Path:   "mpd/ss26/blatt-01",
 		URL:    "https://gitlab.example.org/mpd/ss26/blatt-01",
 	}
-	result := client.report(cfg)
+	result, err := client.report(cfg)
+	if err != nil {
+		t.Fatalf("report(): unexpected error: %v", err)
+	}
 	if result == nil {
 		t.Fatal("report() returned nil, want non-nil")
 	}
@@ -163,7 +175,10 @@ func TestReport_HappyPath_WithRelease(t *testing.T) {
 			DockerImages: []string{"myimage:latest"},
 		},
 	}
-	result := client.report(cfg)
+	result, err := client.report(cfg)
+	if err != nil {
+		t.Fatalf("report(): unexpected error: %v", err)
+	}
 	if result == nil {
 		t.Fatal("report() returned nil, want non-nil")
 	}
@@ -187,7 +202,9 @@ func TestReport_TextTemplate_ToStdout(t *testing.T) {
 		URL:    "https://gitlab.example.org/mpd/ss26/blatt-01",
 	}
 	// nil template → uses default text template; nil output → uses stdout
-	client.Report(cfg, nil, nil)
+	if err := client.Report(cfg, nil, nil); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 }
 
 func TestReport_TextTemplate_ToFile(t *testing.T) {
@@ -200,7 +217,9 @@ func TestReport_TextTemplate_ToFile(t *testing.T) {
 		Path:   "mpd/ss26/blatt-01",
 		URL:    "https://gitlab.example.org/mpd/ss26/blatt-01",
 	}
-	client.Report(cfg, nil, &outFile)
+	if err := client.Report(cfg, nil, &outFile); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	data, err := os.ReadFile(outFile)
 	if err != nil {
@@ -228,7 +247,9 @@ func TestReport_CustomTemplate_ToFile(t *testing.T) {
 		Path:   "mpd/ss26/blatt-01",
 		URL:    "https://gitlab.example.org/mpd/ss26/blatt-01",
 	}
-	client.Report(cfg, &tmplFile, &outFile)
+	if err := client.Report(cfg, &tmplFile, &outFile); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	data, err := os.ReadFile(outFile)
 	if err != nil {
@@ -250,7 +271,9 @@ func TestReportHTML_DefaultTemplate_ToStdout(t *testing.T) {
 		Path:   "mpd/ss26/blatt-01",
 		URL:    "https://gitlab.example.org/mpd/ss26/blatt-01",
 	}
-	client.ReportHTML(cfg, nil, nil)
+	if err := client.ReportHTML(cfg, nil, nil); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 }
 
 func TestReportHTML_DefaultTemplate_ToFile(t *testing.T) {
@@ -263,7 +286,9 @@ func TestReportHTML_DefaultTemplate_ToFile(t *testing.T) {
 		Path:   "mpd/ss26/blatt-01",
 		URL:    "https://gitlab.example.org/mpd/ss26/blatt-01",
 	}
-	client.ReportHTML(cfg, nil, &outFile)
+	if err := client.ReportHTML(cfg, nil, &outFile); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	data, err := os.ReadFile(outFile)
 	if err != nil {
@@ -285,7 +310,9 @@ func TestReportJSON_ToStdout(t *testing.T) {
 		Path:   "mpd/ss26/blatt-01",
 		URL:    "https://gitlab.example.org/mpd/ss26/blatt-01",
 	}
-	client.ReportJSON(cfg, nil)
+	if err := client.ReportJSON(cfg, nil); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 }
 
 func TestReportJSON_ToFile(t *testing.T) {
@@ -298,7 +325,9 @@ func TestReportJSON_ToFile(t *testing.T) {
 		Path:   "mpd/ss26/blatt-01",
 		URL:    "https://gitlab.example.org/mpd/ss26/blatt-01",
 	}
-	client.ReportJSON(cfg, &outFile)
+	if err := client.ReportJSON(cfg, &outFile); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	data, err := os.ReadFile(outFile)
 	if err != nil {

@@ -2,21 +2,18 @@ package gitlab
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/logrusorgru/aurora"
 	"github.com/obcode/glabs/v3/config"
 	"github.com/obcode/glabs/v3/git"
 	"github.com/rs/zerolog/log"
-	"github.com/theckman/yacspin"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
-func (c *Client) Update(assignmentCfg *config.AssignmentConfig) {
+func (c *Client) Update(assignmentCfg *config.AssignmentConfig) error {
 	_, err := c.getGroupID(assignmentCfg)
 	if err != nil {
-		fmt.Printf("error: GitLab group for assignment does not exist, please create the group %s\n", assignmentCfg.URL)
-		exitFunc(1)
+		return fmt.Errorf("GitLab group for assignment does not exist, please create the group %s", assignmentCfg.URL)
 	}
 
 	var starterrepo *git.SourceRepo
@@ -28,10 +25,8 @@ func (c *Client) Update(assignmentCfg *config.AssignmentConfig) {
 			assignmentCfg.Startercode.Template,
 			assignmentCfg.Startercode.TemplateMessage,
 		)
-
 		if err != nil {
-			fmt.Println(err)
-			exitFunc(1)
+			return err
 		}
 	}
 
@@ -41,56 +36,26 @@ func (c *Client) Update(assignmentCfg *config.AssignmentConfig) {
 	case config.PerStudent:
 		c.updatePerStudent(assignmentCfg, starterrepo)
 	default:
-		fmt.Printf("it is only possible to update for students oder groups, not for %v", per)
-		exitFunc(1)
+		return fmt.Errorf("it is only possible to update for students or groups, not for %v", per)
 	}
+	return nil
 }
 
 func (c *Client) update(assignmentCfg *config.AssignmentConfig, project *gitlab.Project, starterrepo *git.SourceRepo) {
-
-	cfg := yacspin.Config{
-		Frequency: 100 * time.Millisecond,
-		CharSet:   yacspin.CharSets[69],
-		Suffix: aurora.Sprintf(aurora.Cyan(" updating project %s at %s"),
-			aurora.Yellow(project.Name),
-			aurora.Magenta(assignmentCfg.URL+"/"+project.Name),
-		),
-		SuffixAutoColon:   true,
-		StopCharacter:     "✓",
-		StopColors:        []string{"fgGreen"},
-		StopFailMessage:   "error",
-		StopFailCharacter: "✗",
-		StopFailColors:    []string{"fgRed"},
+	if starterrepo == nil {
+		return
 	}
 
-	spinner, err := yacspin.New(cfg)
-	if err != nil {
-		log.Debug().Err(err).Msg("cannot create spinner")
+	task := c.rep.Task(aurora.Sprintf(aurora.Cyan(" updating project %s at %s"),
+		aurora.Yellow(project.Name),
+		aurora.Magenta(assignmentCfg.URL+"/"+project.Name),
+	))
+
+	if err := c.pushStartercode(assignmentCfg, starterrepo, project); err != nil {
+		task.Fail(fmt.Sprintf("problem: %v", err))
+		return
 	}
-	err = spinner.Start()
-	if err != nil {
-		log.Debug().Err(err).Msg("cannot start spinner")
-	}
-
-	if starterrepo != nil {
-		cfg.Suffix = aurora.Sprintf(aurora.Cyan(" ↪ pushing updates from startercode"))
-
-		err = c.pushStartercode(assignmentCfg, starterrepo, project)
-		if err != nil {
-			spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-			err := spinner.StopFail()
-			if err != nil {
-				log.Debug().Err(err).Msg("cannot stop spinner")
-			}
-			return
-		}
-
-		err = spinner.Stop()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
-	}
+	task.Done("")
 }
 
 func (c *Client) updatePerStudent(assignmentCfg *config.AssignmentConfig, starterrepo *git.SourceRepo) {
@@ -106,7 +71,7 @@ func (c *Client) updatePerStudent(assignmentCfg *config.AssignmentConfig, starte
 			&gitlab.GetProjectOptions{},
 		)
 		if err != nil {
-			fmt.Printf("cannot set access for project %s failed with %s", projectname, err)
+			c.rep.Printf("cannot update project %s failed with %s", projectname, err)
 			return
 		}
 		c.update(assignmentCfg, project, starterrepo)
@@ -126,7 +91,7 @@ func (c *Client) updatePerGroup(assignmentCfg *config.AssignmentConfig, starterr
 			&gitlab.GetProjectOptions{},
 		)
 		if err != nil {
-			fmt.Printf("cannot set access for project %s failed with %s", projectname, err)
+			c.rep.Printf("cannot update project %s failed with %s", projectname, err)
 			return
 		}
 		c.update(assignmentCfg, project, starterrepo)

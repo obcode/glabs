@@ -1,3 +1,64 @@
+## 3.0.0 (2026-07-17)
+
+#### 📣 Breaking Changes
+
+* **git:** use the PAT over HTTPS for all git, drop SSH (#80) (b27a54fc)
+```
+
+glabs authenticated the API with a token and git with a separate SSH key
+(sshprivatekey). Now everything is the token, over HTTPS: one credential, one
+transport, and — the reason it matters — the same in the CLI and the coming web
+server, where a per-user SSH key would be a shared identity with access to every
+user's repositories.
+
+Course files do not change. Starter-code and deferredBranches URLs written in
+SSH notation (git@host:path.git) stay valid; they are normalized to https on
+resolve, which folded the two branches of the old gitURLToWebURL into one
+gitURLToHTTPSBase.
+
+The token is host-scoped, and getting this wrong the first time is what makes it
+worth stating: the initial version attached the PAT to every clone, which would
+have sent the GitLab token as the HTTP password to whatever host a starter URL
+named — github.com included — both failing and leaking it. AuthForURL now
+attaches the token only for the configured GitLab host. This is the one
+capability SSH had that HTTPS cannot: a starter repo or deferred branch on
+another *private* host no longer works, because glabs has no credential for it.
+Public repos on other hosts still clone (no credential needed); private ones
+fail with a plain "authentication required". Covers starter code and deferred
+branches alike, since both clone through PrepareSourceRepo.
+
+Proven against real GitLab CE: a new integration sub-test clones a project and
+pushes it to another over HTTPS+PAT, then reads the file back through the API.
+The transport had no integration coverage before — the existing tests only
+exercise the API — so this is the first thing that actually verifies a push
+works. The token scope in the test harness gains write_repository, which real
+tokens now need too.
+
+Also fixes a $HOME regression from the config-loading rewrite: course files
+stopped going through viper's config-path loader, which expanded $HOME and ~
+implicitly, so a coursesfilepath like "$HOME/courses" was taken literally.
+findCourseFile now expands it.
+
+And deprecates the seeder: a stderr warning when it runs, a lint finding, and a
+fix for its in-place mutation of Seeder.Args (the %s substitution consumed the
+placeholder after the first repo in the loop).
+
+BREAKING CHANGE: git now uses gitlab.token over HTTPS instead of an SSH key.
+The token needs the write_repository scope in addition to api, sshprivatekey is
+no longer read, starter code and deferred branches on another private host no
+longer work (mirror them into your GitLab instance), and the module path is now
+github.com/obcode/glabs/v3 — reinstall with
+`go install github.com/obcode/glabs/v3@latest`.
+
+Co-authored-by: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
+```
+
+#### 🔀 Code Refactoring
+
+* **config:** resolve from the source schema, drop viper from course loading (#79) (af9d1e14)
+* **config:** add a pure resolver alongside the viper loader (#78) (9913954a)
+
+
 ## 2.12.1 (2026-07-17)
 
 #### 🐞 Bug Fixes

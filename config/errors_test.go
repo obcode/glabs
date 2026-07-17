@@ -14,12 +14,14 @@ import (
 func loadErrorFixture(t *testing.T) {
 	t.Helper()
 
+	ResetCourses()
+	t.Cleanup(ResetCourses)
 	resetViper(t)
-	viper.SetConfigFile("testdata/errors/edge.yaml")
-	if err := viper.ReadInConfig(); err != nil {
-		t.Fatalf("reading error fixture: %v", err)
+	viper.Set("gitlab.host", goldenHost)
+
+	if _, err := LoadCourseFile("testdata/errors/edge.yaml"); err != nil {
+		t.Fatalf("loading error fixture: %v", err)
 	}
-	viper.Set("gitlab.host", "https://gitlab.lrz.de")
 }
 
 func TestGetAssignmentConfigErrors(t *testing.T) {

@@ -27,17 +27,6 @@ var updateGolden = flag.Bool("update", false, "update golden files")
 // goldenHost is fixed so the recorded URLs do not depend on any local config.
 const goldenHost = "https://gitlab.lrz.de"
 
-// reservedCourseKeys are the course-level keys that are not assignments.
-// viper lowercases all keys, so these are compared lowercase.
-var reservedCourseKeys = map[string]bool{
-	"coursepath":             true,
-	"semesterpath":           true,
-	"usecoursenameasprefix":  true,
-	"useemaildomainassuffix": true,
-	"students":               true,
-	"groups":                 true,
-}
-
 // goldenStudent records the resolved identity together with the names derived
 // from it. The derived names are the point: a change in case handling would not
 // show up in Email/Raw, but it silently renames the GitLab project.
@@ -154,24 +143,23 @@ func goldenStudentView(cfg *AssignmentConfig, student *Student) goldenStudent {
 	}
 }
 
-// loadCourseFixture resets viper and loads a single course file, mimicking what
-// cmd/root.go initConfig() does for a course file. viper is global and
-// GetAssignmentConfig writes back to it while resolving `extends`
-// (config/inheritance.go:54), so every assignment gets a fresh load — otherwise
-// results would depend on resolution order.
+// loadCourseFixture loads a single course file the way cmd/root.go initConfig()
+// does, and returns the course name.
 func loadCourseFixture(t *testing.T, path string) string {
 	t.Helper()
 
+	ResetCourses()
+	t.Cleanup(ResetCourses)
 	resetViper(t)
-	viper.SetConfigFile(path)
-	if err := viper.ReadInConfig(); err != nil {
-		t.Fatalf("reading fixture %s: %v", path, err)
-	}
 	viper.Set("gitlab.host", goldenHost)
 
-	course := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
-	if !viper.IsSet(course) {
-		t.Fatalf("fixture %s has no top-level key %q — filename and course name must match", path, course)
+	course, err := LoadCourseFile(path)
+	if err != nil {
+		t.Fatalf("loading fixture %s: %v", path, err)
+	}
+
+	if want := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)); course != want {
+		t.Fatalf("fixture %s declares course %q — filename and course name must match", path, course)
 	}
 	return course
 }
@@ -182,15 +170,25 @@ func loadCourseFixture(t *testing.T, path string) string {
 func concreteAssignments(t *testing.T, course string) []string {
 	t.Helper()
 
+	body, ok := courseBody(course)
+	if !ok {
+		t.Fatalf("course %q is not loaded", course)
+	}
+	courseMap, ok := asStringMap(body)
+	if !ok {
+		t.Fatalf("course %q body is not a mapping", course)
+	}
+
 	var names []string
-	for key, value := range viper.GetStringMap(course) {
-		if reservedCourseKeys[key] {
+	for key, value := range courseMap {
+		if reservedCourseKey(key) {
 			continue
 		}
-		if _, isMap := asStringMap(value); !isMap {
+		assignment, isMap := asStringMap(value)
+		if !isMap {
 			continue
 		}
-		if viper.GetBool(course + "." + key + "." + abstractKey) {
+		if truthy(assignment[abstractKey]) {
 			continue
 		}
 		names = append(names, key)

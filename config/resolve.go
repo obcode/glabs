@@ -58,17 +58,25 @@ func ResolveAssignment(courseName string, body any, g Globals, assignment string
 
 	normalized, _ := normalizeLegacyKeys(merged, courseName+"."+assignment)
 
+	// `users` was renamed to `usernames`. It has to be caught on the raw map:
+	// the schema has no such field, so decoding would drop it silently and the
+	// rule would apply to nobody.
+	if containsApprovalUsersKey(normalized) {
+		return nil, fmt.Errorf("course %s, assignment %s: mergeRequest.approvals.rules[].users is no longer supported; use usernames",
+			courseName, assignment)
+	}
+
 	var src AssignmentSource
 	if err := decodeInto(&src, normalized, nil); err != nil {
 		return nil, fmt.Errorf("course %s, assignment %s: cannot decode configuration: %w", courseName, assignment, err)
 	}
 
-	var course courseSourceRaw
-	if err := decodeInto(&course, courseMap, nil); err != nil {
-		return nil, fmt.Errorf("course %s: cannot decode course settings: %w", courseName, err)
+	course, err := decodeCourseSettings(courseName, courseMap)
+	if err != nil {
+		return nil, err
 	}
 
-	return buildAssignmentConfig(courseName, assignment, &course, &src, g, onlyForStudentsOrGroups...)
+	return buildAssignmentConfig(courseName, assignment, course, &src, g, onlyForStudentsOrGroups...)
 }
 
 // lookupAssignment finds an assignment by name, folding case the way the rest of
@@ -91,6 +99,31 @@ func reservedCourseKey(key string) bool {
 	switch strings.ToLower(key) {
 	case "coursepath", "semesterpath", "usecoursenameasprefix", "useemaildomainassuffix", "students", "groups":
 		return true
+	}
+	return false
+}
+
+// containsApprovalUsersKey reports whether the tree still uses the `users` key,
+// renamed to `usernames`. Unlike the other deprecated spellings this is not
+// aliased but rejected: silently applying an approval rule to nobody is worse
+// than refusing to load.
+func containsApprovalUsersKey(value any) bool {
+	switch typed := value.(type) {
+	case map[string]any:
+		for key, item := range typed {
+			if strings.EqualFold(key, "users") {
+				return true
+			}
+			if containsApprovalUsersKey(item) {
+				return true
+			}
+		}
+	case []any:
+		for _, item := range typed {
+			if containsApprovalUsersKey(item) {
+				return true
+			}
+		}
 	}
 	return false
 }
@@ -150,7 +183,10 @@ func mergeAssignment(courseMap map[string]any, courseName, assignment string, se
 func buildAssignmentConfig(courseName, assignment string, course *courseSourceRaw, src *AssignmentSource, g Globals, onlyFor ...string) (*AssignmentConfig, error) {
 	per := resolvePer(src.Per)
 	path := resolveAssignmentPath(course, src)
-	starter := resolveStartercode(src.Startercode)
+	starter, err := resolveStartercode(courseName, assignment, src.Startercode)
+	if err != nil {
+		return nil, err
+	}
 	branchRules := resolveBranches(src, starter)
 	release := resolveRelease(src.Release)
 
@@ -236,18 +272,52 @@ func resolveAssignmentPath(course *courseSourceRaw, src *AssignmentSource) strin
 	return gitlabGroupPath(path)
 }
 
+// ResolveCourse resolves the course-level students and groups out of a raw
+// course body.
+func ResolveCourse(courseName string, body any) (*CourseConfig, error) {
+	course, err := decodeCourseSettings(courseName, body)
+	if err != nil {
+		return nil, err
+	}
+	empty := &AssignmentSource{}
+	return &CourseConfig{
+		Course:   courseName,
+		Students: resolveStudents(PerStudent, course, empty),
+		Groups:   resolveGroups(PerGroup, course, empty),
+	}, nil
+}
+
 // ResolveCoursePath returns the course subgroup path (coursepath/semesterpath).
-func ResolveCoursePath(course *CourseSource) string {
+func ResolveCoursePath(courseName string, body any) (string, error) {
+	course, err := decodeCourseSettings(courseName, body)
+	if err != nil {
+		return "", err
+	}
 	path := course.CoursePath
 	if course.SemesterPath != "" {
 		path += "/" + course.SemesterPath
 	}
-	return gitlabGroupPath(path)
+	return gitlabGroupPath(path), nil
 }
 
-func resolveStartercode(src *StartercodeSource) *Startercode {
+func decodeCourseSettings(courseName string, body any) (*courseSourceRaw, error) {
+	courseMap, ok := asStringMap(body)
+	if !ok {
+		return nil, fmt.Errorf("configuration for course %s not found", courseName)
+	}
+	var course courseSourceRaw
+	if err := decodeInto(&course, courseMap, nil); err != nil {
+		return nil, fmt.Errorf("course %s: cannot decode course settings: %w", courseName, err)
+	}
+	return &course, nil
+}
+
+func resolveStartercode(courseName, assignment string, src *StartercodeSource) (*Startercode, error) {
 	if src == nil {
-		return nil
+		return nil, nil
+	}
+	if src.URL == "" {
+		return nil, fmt.Errorf("course %s, assignment %s: startercode provided without url", courseName, assignment)
 	}
 
 	fromBranch := "main"
@@ -271,7 +341,7 @@ func resolveStartercode(src *StartercodeSource) *Startercode {
 		TemplateMessage:    templateMessage,
 		ToBranch:           toBranch,
 		AdditionalBranches: src.AdditionalBranches,
-	}
+	}, nil
 }
 
 func resolveBranches(src *AssignmentSource, starter *Startercode) []BranchRule {

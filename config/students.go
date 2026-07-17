@@ -3,12 +3,10 @@ package config
 import (
 	"net/mail"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 )
 
 func (cfg *AssignmentConfig) SetAccessLevel(level string) {
@@ -32,53 +30,6 @@ func (cfg *AssignmentConfig) SetAccessLevel(level string) {
 func matchesPattern(pattern, value string) bool {
 	ok, err := regexp.MatchString(pattern, value)
 	return ok && err == nil
-}
-
-func accessLevel(assignmentKey string) AccessLevel {
-	accesslevelIdentifier := viper.GetString(assignmentKey + ".accesslevel")
-
-	switch accesslevelIdentifier {
-	case "guest":
-		return Guest
-	case "reporter":
-		return Reporter
-	case "maintainer":
-		return Maintainer
-	}
-
-	return Developer
-}
-
-func students(per Per, course, assignment string, onlyForStudentsOrGroups ...string) []*Student {
-	if per == PerGroup {
-		return nil
-	}
-
-	studs := viper.GetStringSlice(course + "." + assignment + ".students")
-	studsGlobal := viper.GetStringSlice(course + ".students")
-
-	if len(studs) == 0 {
-		studs = studsGlobal
-	} else {
-		studs = append(studs, studsGlobal...)
-	}
-
-	if len(onlyForStudentsOrGroups) > 0 {
-		onlyForStudents := make([]string, 0, len(onlyForStudentsOrGroups))
-		for _, onlyStudent := range onlyForStudentsOrGroups {
-			for _, student := range studs {
-				if matchesPattern(onlyStudent, student) {
-					onlyForStudents = append(onlyForStudents, student)
-				}
-			}
-		}
-		studs = onlyForStudents
-	}
-
-	log.Debug().Interface("students", studs).Msg("found students")
-	sort.Strings(studs)
-	students := mkStudents(studs)
-	return students
 }
 
 func mkStudents(studs []string) []*Student {
@@ -112,50 +63,4 @@ func mkStudents(studs []string) []*Student {
 	}
 
 	return students
-}
-
-func groups(per Per, course, assignment string, onlyForStudentsOrGroups ...string) []*Group {
-	if per == PerStudent {
-		return nil
-	}
-
-	groupsMapAssignmemt := viper.GetStringMapStringSlice(course + "." + assignment + ".groups")
-	groupsMap := viper.GetStringMapStringSlice(course + ".groups")
-
-	if len(groupsMapAssignmemt) > 0 {
-		for k, v := range groupsMapAssignmemt {
-			groupsMap[k] = v
-		}
-	}
-
-	if len(onlyForStudentsOrGroups) > 0 {
-		onlyTheseGroups := make(map[string][]string)
-		for _, onlyGroup := range onlyForStudentsOrGroups {
-			for groupname, students := range groupsMap {
-				if ok, err := regexp.MatchString(onlyGroup, groupname); ok && err == nil {
-					onlyTheseGroups[groupname] = students
-				}
-			}
-		}
-		groupsMap = onlyTheseGroups
-	}
-
-	keys := make([]string, 0, len(groupsMap))
-	for k := range groupsMap {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	groups := make([]*Group, 0, len(groupsMap))
-	for _, groupname := range keys {
-		members := groupsMap[groupname]
-		sort.Strings(members)
-		studentMembers := mkStudents(members)
-		groups = append(groups, &Group{
-			Name:    groupname,
-			Members: studentMembers,
-		})
-	}
-
-	return groups
 }

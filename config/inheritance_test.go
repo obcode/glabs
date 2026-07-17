@@ -1,218 +1,197 @@
 package config
 
-import (
-	"testing"
+import "testing"
 
-	"github.com/spf13/viper"
-)
+// inheritanceCourse is a parent assignment (blatt09) with every kind of nested
+// structure, plus the children that inherit from it. The children override only
+// what differs — which is the point of the whole feature and the reason the
+// merge has to run on the raw map: `pipeline` is never mentioned again below,
+// and it has to survive.
+const inheritanceCourse = `
+mpd:
+  coursepath: mpd
+  semesterpath: ss26
+  useCoursenameAsPrefix: true
+  students:
+    - alice
 
-// baseAssignment sets up a fully-featured parent assignment ("blatt09") that
-// children inherit from.
-func baseAssignment(t *testing.T) {
-	t.Helper()
-	resetViper(t)
+  blatt09:
+    assignmentpath: blatt-09
+    description: Blatt 9
+    per: student
+    mergeRequest:
+      mergeMethod: semi_linear
+      squashOption: never
+      pipeline: true
+    startercode:
+      url: git@gitlab.lrz.de:mpd/labs/blatt-09.git
+      fromBranch: startercode
+      template: true
+    branches:
+      - name: main
+        mergeOnly: true
+    deferredBranches:
+      devcontainer:
+        url: git@gitlab.lrz.de:mpd/devcontainer.git
+        fromBranch: main
+        toBranch: devcontainer
+      solution:
+        fromBranch: solution
+        orphan: true
+        orphanMessage: Lösung 9
 
-	viper.Set("gitlab.host", "https://gitlab.example.org")
-	viper.Set("mpd", true)
-	viper.Set("mpd.coursepath", "mpd")
-	viper.Set("mpd.semesterpath", "ss26")
-	viper.Set("mpd.useCoursenameAsPrefix", true)
-	viper.Set("mpd.students", []string{"alice"})
+  # Overrides one nested startercode field; everything else is inherited.
+  blatt10:
+    extends: blatt09
+    assignmentpath: blatt-10
+    description: Blatt 10
+    startercode:
+      url: git@gitlab.lrz.de:mpd/labs/blatt-10.git
 
-	viper.Set("mpd.blatt09", true)
-	viper.Set("mpd.blatt09.assignmentpath", "blatt-09")
-	viper.Set("mpd.blatt09.description", "Blatt 9")
-	viper.Set("mpd.blatt09.per", "student")
-	viper.Set("mpd.blatt09.mergeRequest", map[string]any{
-		"mergeMethod":  "semi_linear",
-		"squashOption": "never",
-		"pipeline":     true,
-	})
-	viper.Set("mpd.blatt09.startercode", map[string]any{
-		"url":        "git@gitlab.lrz.de:mpd/labs/blatt-09.git",
-		"fromBranch": "startercode",
-		"template":   true,
-	})
-	viper.Set("mpd.blatt09.branches", []map[string]any{
-		{"name": "main", "mergeOnly": true},
-	})
-	viper.Set("mpd.blatt09.deferredBranches", map[string]any{
-		"devcontainer": map[string]any{
-			"url":        "git@gitlab.lrz.de:mpd/devcontainer.git",
-			"fromBranch": "main",
-			"toBranch":   "devcontainer",
-		},
-		"solution": map[string]any{
-			"fromBranch":    "solution",
-			"orphan":        true,
-			"orphanMessage": "Lösung 9",
-		},
-	})
-}
+  # Overrides one field of one deferred branch.
+  blatt10deep:
+    extends: blatt09
+    assignmentpath: blatt-10-deep
+    deferredBranches:
+      solution:
+        orphanMessage: Lösung 10
 
-func TestInheritance_OverridesAndInherits(t *testing.T) {
-	baseAssignment(t)
+  # Third level: inherits through blatt10.
+  blatt11:
+    extends: blatt10
+    assignmentpath: blatt-11
+    description: Blatt 11
 
-	// blatt10 extends blatt09 and only overrides what differs.
-	viper.Set("mpd.blatt10", true)
-	viper.Set("mpd.blatt10.extends", "blatt09")
-	viper.Set("mpd.blatt10.assignmentpath", "blatt-10")
-	viper.Set("mpd.blatt10.description", "Blatt 10")
-	// override only one nested field of startercode
-	viper.Set("mpd.blatt10.startercode", map[string]any{
-		"url": "git@gitlab.lrz.de:mpd/labs/blatt-10.git",
-	})
+  # No extends at all.
+  standalone:
+    assignmentpath: standalone
+    description: Standalone
+`
 
+// A child inherits everything it does not mention, and a nested map is merged
+// field by field rather than replaced wholesale.
+func TestInheritanceOverridesAndInherits(t *testing.T) {
+	registerCourse(t, inheritanceCourse)
 	cfg := mustAssignmentConfig(t, "mpd", "blatt10")
 
-	// overridden scalars
+	// Overridden.
 	if cfg.Path != "mpd/ss26/blatt-10" {
-		t.Fatalf("Path = %q, want mpd/ss26/blatt-10", cfg.Path)
+		t.Errorf("Path = %q, want %q", cfg.Path, "mpd/ss26/blatt-10")
 	}
 	if cfg.Description != "Blatt 10" {
-		t.Fatalf("Description = %q, want Blatt 10", cfg.Description)
-	}
-
-	// inherited mergeRequest
-	if cfg.MergeRequest == nil || cfg.MergeRequest.MergeMethod != SemiLinearHistory {
-		t.Fatalf("MergeRequest = %#v, want inherited semi_linear", cfg.MergeRequest)
-	}
-	if !cfg.MergeRequest.PipelineMustSucceed {
-		t.Fatal("PipelineMustSucceed should be inherited as true")
-	}
-
-	// startercode: url overridden, rest deep-merged from parent
-	if cfg.Startercode == nil {
-		t.Fatal("Startercode should not be nil")
+		t.Errorf("Description = %q, want %q", cfg.Description, "Blatt 10")
 	}
 	if cfg.Startercode.URL != "git@gitlab.lrz.de:mpd/labs/blatt-10.git" {
-		t.Fatalf("Startercode.URL = %q, want overridden blatt-10 url", cfg.Startercode.URL)
+		t.Errorf("Startercode.URL = %q, want the override", cfg.Startercode.URL)
 	}
+
+	// Inherited, including the sibling fields of the overridden one: the
+	// startercode block was merged, not replaced.
 	if cfg.Startercode.FromBranch != "startercode" {
-		t.Fatalf("Startercode.FromBranch = %q, want inherited 'startercode'", cfg.Startercode.FromBranch)
+		t.Errorf("Startercode.FromBranch = %q, want %q inherited", cfg.Startercode.FromBranch, "startercode")
 	}
 	if !cfg.Startercode.Template {
-		t.Fatal("Startercode.Template should be inherited as true")
+		t.Error("Startercode.Template = false, want true inherited")
+	}
+	if cfg.MergeRequest.MergeMethod != SemiLinearHistory {
+		t.Errorf("MergeMethod = %q, want %q inherited", cfg.MergeRequest.MergeMethod, SemiLinearHistory)
 	}
 
-	// deferredBranches inherited
+	// The one that a struct-level merge would have got wrong: the child never
+	// mentions pipeline, so its zero value must not overwrite the parent's true.
+	if !cfg.MergeRequest.PipelineMustSucceed {
+		t.Error("PipelineMustSucceed = false: an unmentioned field overwrote the inherited value")
+	}
+
+	if len(cfg.Branches) != 1 || !cfg.Branches[0].MergeOnly {
+		t.Errorf("Branches = %#v, want the inherited main rule", cfg.Branches)
+	}
 	if len(cfg.DeferredBranches) != 2 {
-		t.Fatalf("DeferredBranches len = %d, want 2", len(cfg.DeferredBranches))
-	}
-	if db, ok := cfg.DeferredBranches["solution"]; !ok || db.OrphanMessage != "Lösung 9" {
-		t.Fatalf("inherited solution deferred branch = %#v", db)
-	}
-
-	// branches inherited
-	if len(cfg.Branches) != 1 || cfg.Branches[0].Name != "main" || !cfg.Branches[0].MergeOnly {
-		t.Fatalf("Branches = %#v, want inherited [main mergeOnly]", cfg.Branches)
+		t.Errorf("DeferredBranches = %v, want both inherited", cfg.DeferredBranches)
 	}
 }
 
-func TestInheritance_DeepMergeNestedDeferredBranch(t *testing.T) {
-	baseAssignment(t)
+// Deep merge reaches into a map inside a map: overriding one field of one
+// deferred branch must keep the branch's other fields and the sibling branch.
+func TestInheritanceDeepMergesNestedDeferredBranch(t *testing.T) {
+	registerCourse(t, inheritanceCourse)
+	cfg := mustAssignmentConfig(t, "mpd", "blatt10deep")
 
-	viper.Set("mpd.blatt10", true)
-	viper.Set("mpd.blatt10.extends", "blatt09")
-	viper.Set("mpd.blatt10.assignmentpath", "blatt-10")
-	// override only the orphanMessage of the inherited "solution" deferred branch
-	viper.Set("mpd.blatt10.deferredBranches", map[string]any{
-		"solution": map[string]any{
-			"orphanMessage": "Lösung 10",
-		},
-	})
-
-	cfg := mustAssignmentConfig(t, "mpd", "blatt10")
-
-	if len(cfg.DeferredBranches) != 2 {
-		t.Fatalf("DeferredBranches len = %d, want 2 (devcontainer kept)", len(cfg.DeferredBranches))
+	solution := cfg.DeferredBranches["solution"]
+	if solution == nil {
+		t.Fatalf("solution branch missing; got %v", cfg.DeferredBranches)
 	}
-	sol, ok := cfg.DeferredBranches["solution"]
-	if !ok {
-		t.Fatal("solution deferred branch missing")
+	if solution.OrphanMessage != "Lösung 10" {
+		t.Errorf("OrphanMessage = %q, want the override", solution.OrphanMessage)
 	}
-	if sol.OrphanMessage != "Lösung 10" {
-		t.Fatalf("solution.OrphanMessage = %q, want overridden 'Lösung 10'", sol.OrphanMessage)
+	if solution.FromBranch != "solution" {
+		t.Errorf("FromBranch = %q, want %q inherited", solution.FromBranch, "solution")
 	}
-	if sol.FromBranch != "solution" {
-		t.Fatalf("solution.FromBranch = %q, want inherited 'solution'", sol.FromBranch)
+	if !solution.Orphan {
+		t.Error("Orphan = false, want true inherited")
 	}
-	if _, ok := cfg.DeferredBranches["devcontainer"]; !ok {
-		t.Fatal("devcontainer deferred branch should be inherited")
+	if cfg.DeferredBranches["devcontainer"] == nil {
+		t.Error("devcontainer branch lost: the deferredBranches map was replaced instead of merged")
 	}
 }
 
-func TestInheritance_MultiLevelChain(t *testing.T) {
-	baseAssignment(t)
-
-	viper.Set("mpd.blatt10", true)
-	viper.Set("mpd.blatt10.extends", "blatt09")
-	viper.Set("mpd.blatt10.assignmentpath", "blatt-10")
-
-	viper.Set("mpd.blatt11", true)
-	viper.Set("mpd.blatt11.extends", "blatt10")
-	viper.Set("mpd.blatt11.assignmentpath", "blatt-11")
-
+func TestInheritanceMultiLevelChain(t *testing.T) {
+	registerCourse(t, inheritanceCourse)
 	cfg := mustAssignmentConfig(t, "mpd", "blatt11")
 
-	if cfg.Path != "mpd/ss26/blatt-11" {
-		t.Fatalf("Path = %q, want mpd/ss26/blatt-11", cfg.Path)
+	if cfg.Description != "Blatt 11" {
+		t.Errorf("Description = %q, want %q", cfg.Description, "Blatt 11")
 	}
-	// inherited transitively from blatt09 via blatt10
-	if cfg.MergeRequest == nil || cfg.MergeRequest.MergeMethod != SemiLinearHistory {
-		t.Fatalf("MergeRequest = %#v, want transitively inherited semi_linear", cfg.MergeRequest)
+	// From blatt10, one level up.
+	if cfg.Startercode.URL != "git@gitlab.lrz.de:mpd/labs/blatt-10.git" {
+		t.Errorf("Startercode.URL = %q, want the value from blatt10", cfg.Startercode.URL)
 	}
-	if cfg.Startercode == nil || cfg.Startercode.FromBranch != "startercode" {
-		t.Fatalf("Startercode = %#v, want transitively inherited", cfg.Startercode)
+	// From blatt09, two levels up.
+	if cfg.Startercode.FromBranch != "startercode" {
+		t.Errorf("Startercode.FromBranch = %q, want %q from blatt09", cfg.Startercode.FromBranch, "startercode")
 	}
-}
-
-func TestInheritance_NoExtendsIsUnaffected(t *testing.T) {
-	baseAssignment(t)
-
-	cfg := mustAssignmentConfig(t, "mpd", "blatt09")
-
-	if cfg.Path != "mpd/ss26/blatt-09" {
-		t.Fatalf("Path = %q", cfg.Path)
-	}
-	if cfg.Startercode == nil || cfg.Startercode.URL != "git@gitlab.lrz.de:mpd/labs/blatt-09.git" {
-		t.Fatalf("Startercode = %#v", cfg.Startercode)
+	if !cfg.MergeRequest.PipelineMustSucceed {
+		t.Error("PipelineMustSucceed = false, want true from blatt09")
 	}
 }
 
-func TestAssignmentIsAbstract(t *testing.T) {
-	baseAssignment(t)
+func TestInheritanceLeavesUnrelatedAssignmentsAlone(t *testing.T) {
+	registerCourse(t, inheritanceCourse)
+	cfg := mustAssignmentConfig(t, "mpd", "standalone")
 
-	// blatt09 (from baseAssignment) is concrete.
-	if assignmentIsAbstract("mpd", "blatt09") {
-		t.Fatal("blatt09 should not be abstract")
+	if cfg.Startercode != nil {
+		t.Errorf("Startercode = %#v, want nil: standalone extends nothing", cfg.Startercode)
+	}
+	if cfg.MergeRequest.PipelineMustSucceed {
+		t.Error("PipelineMustSucceed = true: config leaked from another assignment")
+	}
+}
+
+func TestAbstractFlagIsReadBeforeInheritance(t *testing.T) {
+	registerCourse(t, `
+mpd:
+  coursepath: mpd
+  defaults:
+    abstract: true
+    per: student
+  blatt10:
+    extends: defaults
+    assignmentpath: blatt-10
+`)
+
+	// The base itself cannot be operated on.
+	if _, err := GetAssignmentConfig("mpd", "defaults"); err == nil {
+		t.Fatal("an abstract assignment was accepted, want an error")
 	}
 
-	// A declared abstract base.
-	viper.Set("mpd.defaults", true)
-	viper.Set("mpd.defaults.abstract", true)
-	viper.Set("mpd.defaults.per", "student")
-	if !assignmentIsAbstract("mpd", "defaults") {
-		t.Fatal("defaults should be abstract")
+	// A child extending it must not become abstract: the flag is read from the
+	// assignment's own value, before inheritance is resolved.
+	cfg, err := GetAssignmentConfig("mpd", "blatt10")
+	if err != nil {
+		t.Fatalf("blatt10 extends an abstract base but must not be abstract itself: %v", err)
 	}
-
-	// A child extending an abstract base must NOT itself become abstract:
-	// the flag is read from the own value before inheritance is resolved.
-	viper.Set("mpd.blatt10", true)
-	viper.Set("mpd.blatt10.extends", "defaults")
-	viper.Set("mpd.blatt10.assignmentpath", "blatt-10")
-	if assignmentIsAbstract("mpd", "blatt10") {
-		t.Fatal("blatt10 extends an abstract base but must not be abstract itself")
-	}
-
-	// And after full resolution the abstract flag must not leak into the
-	// effective config.
-	cfg := mustAssignmentConfig(t, "mpd", "blatt10")
 	if cfg.Per != PerStudent {
-		t.Fatalf("Per = %q, want inherited student", cfg.Per)
-	}
-	if viper.GetBool("mpd.blatt10.abstract") {
-		t.Fatal("abstract flag leaked into resolved blatt10 config")
+		t.Fatalf("Per = %q, want %q inherited from the base", cfg.Per, PerStudent)
 	}
 }
 

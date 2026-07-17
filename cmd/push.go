@@ -20,12 +20,15 @@ var pushCmd = &cobra.Command{
 		course := args[0]
 		assignment := args[1]
 		branchname := args[2]
-		assignmentConfig := config.GetAssignmentConfig(course, assignment, args[3:]...)
+		assignmentConfig, err := config.GetAssignmentConfig(course, assignment, args[3:]...)
+		if err != nil {
+			er(err)
+		}
 		assignmentConfig.Show()
 		fmt.Println(aurora.Magenta("Config okay? Press 'Enter' to continue or 'Ctrl-C' to stop ..."))
 		fmt.Scanln() //nolint:errcheck
 		c := gitlab.NewClient()
-		err := c.Push(assignmentConfig, branchname)
+		err = c.Push(assignmentConfig, branchname)
 		if err != nil {
 			fmt.Printf("error: %s", err.Error())
 		}

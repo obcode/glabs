@@ -1,0 +1,89 @@
+# Fixtures for the error paths of config loading. Deliberately NOT in
+# testdata/courses/: every assignment here fails to resolve, so the golden
+# tests must not pick it up.
+#
+# These tests exist at all only because config loading returns errors instead of
+# calling log.Fatal (= os.Exit), which would have killed the test process.
+edge:
+  coursepath: edge/semester
+  semesterpath: ss2026
+  useCoursenameAsPrefix: true
+
+  # An abstract base is a valid config; using it directly is not.
+  base:
+    abstract: true
+    per: student
+
+  # Resolves fine — proves failures below are about the assignment, not the file.
+  fine:
+    extends: base
+    assignmentpath: fine
+
+  # extends cycle across two assignments: cyclea -> cycleb -> cyclea
+  cyclea:
+    extends: cycleb
+    assignmentpath: cycle-a
+  cycleb:
+    extends: cyclea
+    assignmentpath: cycle-b
+
+  # extends cycle of length one
+  selfcycle:
+    extends: selfcycle
+    assignmentpath: self-cycle
+
+  # extends must be a string naming another assignment
+  extendsnotstring:
+    extends: [a, b]
+    assignmentpath: extends-not-string
+
+  extendsempty:
+    extends: "   "
+    assignmentpath: extends-empty
+
+  extendsmissing:
+    extends: doesnotexist
+    assignmentpath: extends-missing
+
+  # startercode requires a url
+  starterwithouturl:
+    assignmentpath: starter-without-url
+    startercode:
+      fromBranch: template
+
+  # seeder requires a cmd
+  seederwithoutcmd:
+    assignmentpath: seeder-without-cmd
+    seeder:
+      name: bot
+
+  # seeder.signKey must be an armored PGP key ring. Before the error refactor
+  # this hit a bare `log.Fatal()` with no .Msg(), which in zerolog neither logs
+  # nor exits — execution fell through to entities[0] and panicked with index
+  # out of range.
+  seederbadsignkey:
+    assignmentpath: seeder-bad-signkey
+    seeder:
+      cmd: /bin/true
+      signKey: "definitely not an armored pgp key"
+
+  # `users` was renamed to `usernames`
+  approvalsusers:
+    assignmentpath: approvals-users
+    mergeRequest:
+      approvals:
+        rules:
+          - name: review
+            branches: [main]
+            users: [obcode]
+
+  # whenCommitAdded is an enum
+  badwhencommitadded:
+    assignmentpath: bad-when-commit-added
+    mergeRequest:
+      approvals:
+        settings:
+          whenCommitAdded: nonsense
+
+  students:
+    - a@example.edu

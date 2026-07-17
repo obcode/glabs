@@ -12,18 +12,17 @@ import (
 	"golang.org/x/term"
 )
 
-func seeder(assignmentKey string) *Seeder {
+func seeder(assignmentKey string) (*Seeder, error) {
 	seederMap := viper.GetStringMapString(assignmentKey + ".seeder")
 
 	if len(seederMap) == 0 {
 		log.Debug().Str("assignmemtKey", assignmentKey).Msg("no seeder provided")
-		return nil
+		return nil, nil
 	}
 
 	cmd, ok := seederMap["cmd"]
 	if !ok {
-		log.Fatal().Str("assignmemtKey", assignmentKey).Msg("seeder provided without cmd")
-		return nil
+		return nil, fmt.Errorf("%s: seeder provided without cmd", assignmentKey)
 	}
 
 	toBranch := "main"
@@ -33,22 +32,25 @@ func seeder(assignmentKey string) *Seeder {
 
 	privKeyString := viper.GetString(assignmentKey + ".seeder.signKey")
 	var entity *openpgp.Entity
-	entity = nil
 	if privKeyString != "" {
 		entities, err := openpgp.ReadArmoredKeyRing(strings.NewReader(privKeyString))
 		if err != nil {
-			log.Fatal()
+			return nil, fmt.Errorf("%s: cannot read seeder.signKey as an armored PGP key ring: %w", assignmentKey, err)
+		}
+		if len(entities) == 0 {
+			return nil, fmt.Errorf("%s: seeder.signKey contains no PGP key", assignmentKey)
+		}
+		if entities[0].PrivateKey == nil {
+			return nil, fmt.Errorf("%s: seeder.signKey contains no private key", assignmentKey)
 		}
 		if entities[0].PrivateKey.Encrypted {
 			fmt.Println(aurora.Blue("Passphrase for signing key is required. Please enter it now:"))
 			passphrase, _ := term.ReadPassword(int(syscall.Stdin))
-			err = entities[0].PrivateKey.Decrypt(passphrase)
-			if err != nil {
-				log.Fatal()
+			if err := entities[0].PrivateKey.Decrypt(passphrase); err != nil {
+				return nil, fmt.Errorf("%s: cannot decrypt seeder.signKey with the given passphrase: %w", assignmentKey, err)
 			}
 		}
 		entity = entities[0]
-
 	}
 
 	return &Seeder{
@@ -59,5 +61,5 @@ func seeder(assignmentKey string) *Seeder {
 		EMail:           viper.GetString(assignmentKey + ".seeder.email"),
 		ToBranch:        toBranch,
 		ProtectToBranch: viper.GetBool(assignmentKey + ".seeder.protectToBranch"),
-	}
+	}, nil
 }

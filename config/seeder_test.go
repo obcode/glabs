@@ -8,7 +8,7 @@ import (
 
 func TestSeeder_NoSeeder_ReturnsNil(t *testing.T) {
 	resetViper(t)
-	if got := seeder("course.a1"); got != nil {
+	if got := mustSeeder(t, "course.a1"); got != nil {
 		t.Fatalf("seeder() = %#v, want nil", got)
 	}
 }
@@ -20,7 +20,7 @@ func TestSeeder_HappyPath_Defaults(t *testing.T) {
 	viper.Set("course.a1.seeder.name", "Seed Bot")
 	viper.Set("course.a1.seeder.email", "bot@example.com")
 
-	got := seeder("course.a1")
+	got := mustSeeder(t, "course.a1")
 	if got == nil {
 		t.Fatal("seeder() returned nil, want non-nil")
 	}
@@ -46,7 +46,7 @@ func TestSeeder_ToBranchOverride(t *testing.T) {
 	viper.Set("course.a1.seeder.cmd", "make")
 	viper.Set("course.a1.seeder.toBranch", "develop")
 
-	got := seeder("course.a1")
+	got := mustSeeder(t, "course.a1")
 	if got == nil {
 		t.Fatal("seeder() returned nil")
 	}
@@ -60,7 +60,7 @@ func TestSeeder_WithArgs(t *testing.T) {
 	viper.Set("course.a1.seeder.cmd", "python")
 	viper.Set("course.a1.seeder.args", []string{"seed.py", "--verbose"})
 
-	got := seeder("course.a1")
+	got := mustSeeder(t, "course.a1")
 	if got == nil {
 		t.Fatal("seeder() returned nil")
 	}

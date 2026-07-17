@@ -63,7 +63,10 @@ var (
 				}
 				return
 			}
-			assignmentConfig := config.GetAssignmentConfig(args[0], args[1], args[2:]...)
+			assignmentConfig, err := config.GetAssignmentConfig(args[0], args[1], args[2:]...)
+			if err != nil {
+				er(err)
+			}
 			c := gitlab.NewClient()
 			if Json {
 				c.ReportJSON(assignmentConfig, output)

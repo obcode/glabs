@@ -226,10 +226,7 @@ func TestGolden(t *testing.T) {
 				// Reload per assignment: GetAssignmentConfig mutates viper.
 				loadCourseFixture(t, path)
 
-				cfg := GetAssignmentConfig(course, assignment)
-				if cfg == nil {
-					t.Fatalf("GetAssignmentConfig(%q, %q) returned nil", course, assignment)
-				}
+				cfg := mustAssignmentConfig(t, course, assignment)
 
 				got, err := json.MarshalIndent(goldenView(cfg), "", "  ")
 				if err != nil {

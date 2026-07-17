@@ -20,7 +20,10 @@ var checkCmd = &cobra.Command{
 		viper.Set("show-success", true)
 		c := gitlab.NewClient()
 		if len(args) == 1 {
-			cfg := config.GetCourseConfig(args[0])
+			cfg, err := config.GetCourseConfig(args[0])
+			if err != nil {
+				er(err)
+			}
 			if cfg != nil {
 				c.CheckCourse(cfg)
 			}

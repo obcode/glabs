@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/go-viper/mapstructure/v2"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
 
@@ -13,33 +12,28 @@ func GetCourseURL(course string) {
 	fmt.Printf("%s/%s\n", viper.GetString("gitlab.host"), coursePath(course))
 }
 
-func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...string) *AssignmentConfig {
+func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...string) (*AssignmentConfig, error) {
 	if !viper.IsSet(course) {
-		log.Fatal().
-			Str("course", course).
-			Msg("configuration for course not found")
+		return nil, fmt.Errorf("configuration for course %s not found", course)
 	}
 
 	if !viper.IsSet(course + "." + assignment) {
-		log.Fatal().
-			Str("course", course).
-			Str("assignment", assignment).
-			Msg("configuration for assignment not found")
+		return nil, fmt.Errorf("course %s: configuration for assignment %s not found", course, assignment)
 	}
 
 	// Abstract assignments are bases for `extends` only and must not be used
 	// directly. Checked before resolving inheritance so the (own) flag is read,
 	// not an inherited one.
 	if assignmentIsAbstract(course, assignment) {
-		log.Fatal().
-			Str("course", course).
-			Str("assignment", assignment).
-			Msg("assignment is abstract (a base for 'extends') and cannot be used directly")
+		return nil, fmt.Errorf("course %s: assignment %s is abstract (a base for 'extends') and cannot be used directly",
+			course, assignment)
 	}
 
 	// Resolve `extends` inheritance before reading any fields so the rest of
 	// the config loading sees the merged, effective configuration.
-	resolveAssignmentInheritance(course, assignment)
+	if err := resolveAssignmentInheritance(course, assignment); err != nil {
+		return nil, err
+	}
 
 	assignmentKey := course + "." + assignment
 	per := per(assignmentKey)
@@ -53,8 +47,14 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 		containerRegistry = true
 	}
 
-	starter := startercode(assignmentKey)
-	branchRules := branches(assignmentKey, starter)
+	starter, err := startercode(assignmentKey)
+	if err != nil {
+		return nil, err
+	}
+	branchRules, err := branches(assignmentKey, starter)
+	if err != nil {
+		return nil, err
+	}
 	defaultCloneBranch := defaultBranch(branchRules, "main")
 
 	deferredBranches := make(map[string]*DeferredBranch)
@@ -93,6 +93,15 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 		}
 	}
 
+	mr, err := mergeRequest(assignmentKey)
+	if err != nil {
+		return nil, err
+	}
+	seed, err := seeder(assignmentKey)
+	if err != nil {
+		return nil, err
+	}
+
 	assignmentConfig := &AssignmentConfig{
 		Course:                course,
 		Name:                  assignment,
@@ -109,7 +118,7 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 		Description:       description(assignmentKey),
 		ContainerRegistry: containerRegistry,
 		AccessLevel:       accessLevel(assignmentKey),
-		MergeRequest:      mergeRequest(assignmentKey),
+		MergeRequest:      mr,
 		Branches:          branchRules,
 		Issues:            issues(assignmentKey),
 		Students:          students(per, course, assignment, onlyForStudentsOrGroups...),
@@ -117,11 +126,11 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 		Startercode:       starter,
 		Clone:             clone(assignmentKey, defaultCloneBranch),
 		Release:           release,
-		Seeder:            seeder(assignmentKey),
+		Seeder:            seed,
 		DeferredBranches:  deferredBranches,
 	}
 
-	return assignmentConfig
+	return assignmentConfig, nil
 }
 
 // Using email addresses instead of usernames/user-id's results in @ in the student's name.
@@ -215,7 +224,7 @@ func description(assignmentKey string) string {
 	return description
 }
 
-func mergeRequest(assignmentKey string) *MergeRequest {
+func mergeRequest(assignmentKey string) (*MergeRequest, error) {
 	mergeMethod := MergeCommit
 	switch viper.GetString(assignmentKey + ".mergeRequest.mergeMethod") {
 	case "semi_linear":
@@ -238,6 +247,15 @@ func mergeRequest(assignmentKey string) *MergeRequest {
 		squashOption = SquashDefaultOff
 	}
 
+	approvals, err := mergeRequestApprovals(assignmentKey)
+	if err != nil {
+		return nil, err
+	}
+	settings, err := mergeRequestApprovalSettings(assignmentKey)
+	if err != nil {
+		return nil, err
+	}
+
 	return &MergeRequest{
 		MergeMethod:                   mergeMethod,
 		SquashOption:                  squashOption,
@@ -245,21 +263,21 @@ func mergeRequest(assignmentKey string) *MergeRequest {
 		SkippedPipelinesAreSuccessful: viper.GetBool(assignmentKey + ".mergeRequest.skippedPipelinesAreSuccessful"),
 		AllThreadsMustBeResolved:      viper.GetBool(assignmentKey + ".mergeRequest.allThreadsMustBeResolved"),
 		StatusChecksMustSucceed:       viper.GetBool(assignmentKey + ".mergeRequest.statusChecksMustSucceed"),
-		Approvals:                     mergeRequestApprovals(assignmentKey),
-		ApprovalSettings:              mergeRequestApprovalSettings(assignmentKey),
-	}
+		Approvals:                     approvals,
+		ApprovalSettings:              settings,
+	}, nil
 }
 
-func mergeRequestApprovals(assignmentKey string) []MergeRequestApprovalRule {
+func mergeRequestApprovals(assignmentKey string) ([]MergeRequestApprovalRule, error) {
 	raw := viper.Get(assignmentKey + ".mergeRequest.approvals")
 	raw = extractMergeRequestApprovalRulesRaw(raw)
 	raw = normalizeMergeRequestApprovalConfigKeys(raw)
 	if raw == nil {
-		return nil
+		return nil, nil
 	}
 
 	if containsLegacyApprovalUsersKey(raw) {
-		log.Fatal().Str("assignmentKey", assignmentKey).Msg("mergeRequest.approvals.rules[].users is no longer supported; use usernames")
+		return nil, fmt.Errorf("%s: mergeRequest.approvals.rules[].users is no longer supported; use usernames", assignmentKey)
 	}
 
 	var configured []MergeRequestApprovalRule
@@ -269,10 +287,10 @@ func mergeRequestApprovals(assignmentKey string) []MergeRequestApprovalRule {
 		WeaklyTypedInput: true,
 	})
 	if err != nil {
-		log.Fatal().Err(err).Str("assignmentKey", assignmentKey).Msg("cannot create mergeRequest.approvals decoder")
+		return nil, fmt.Errorf("%s: cannot create mergeRequest.approvals decoder: %w", assignmentKey, err)
 	}
 	if err := decoder.Decode(raw); err != nil {
-		log.Fatal().Err(err).Str("assignmentKey", assignmentKey).Msg("cannot parse mergeRequest.approvals config")
+		return nil, fmt.Errorf("%s: cannot parse mergeRequest.approvals config: %w", assignmentKey, err)
 	}
 
 	normalized := make([]MergeRequestApprovalRule, 0, len(configured))
@@ -327,7 +345,7 @@ func mergeRequestApprovals(assignmentKey string) []MergeRequestApprovalRule {
 		normalized = append(normalized, rule)
 	}
 
-	return normalized
+	return normalized, nil
 }
 
 func extractMergeRequestApprovalRulesRaw(value any) any {
@@ -374,10 +392,10 @@ func containsLegacyApprovalUsersKey(value any) bool {
 	}
 }
 
-func mergeRequestApprovalSettings(assignmentKey string) *MergeRequestApprovalSettings {
+func mergeRequestApprovalSettings(assignmentKey string) (*MergeRequestApprovalSettings, error) {
 	prefix := assignmentKey + ".mergeRequest.approvals.settings"
 	if !viper.IsSet(prefix) {
-		return nil
+		return nil, nil
 	}
 
 	settings := &MergeRequestApprovalSettings{}
@@ -404,10 +422,9 @@ func mergeRequestApprovalSettings(assignmentKey string) *MergeRequestApprovalSet
 		case ApprovalKeepApprovals, ApprovalRemoveAllApprovals, ApprovalRemoveCodeOwnerApprovalsIfFilesChanged:
 			settings.WhenCommitAdded = &v
 		default:
-			log.Fatal().
-				Str("assignmentKey", assignmentKey).
-				Str("whenCommitAdded", string(v)).
-				Msg("invalid mergeRequest.approvals.settings.whenCommitAdded")
+			return nil, fmt.Errorf("%s: invalid mergeRequest.approvals.settings.whenCommitAdded %q, must be one of %s, %s, %s",
+				assignmentKey, v,
+				ApprovalKeepApprovals, ApprovalRemoveAllApprovals, ApprovalRemoveCodeOwnerApprovalsIfFilesChanged)
 		}
 	}
 
@@ -416,10 +433,10 @@ func mergeRequestApprovalSettings(assignmentKey string) *MergeRequestApprovalSet
 		settings.PreventEditingApprovalRulesInMergeRequests == nil &&
 		settings.RequireUserReauthenticationToApprove == nil &&
 		settings.WhenCommitAdded == nil {
-		return nil
+		return nil, nil
 	}
 
-	return settings
+	return settings, nil
 }
 
 func normalizeMergeRequestApprovalConfigKeys(value any) any {

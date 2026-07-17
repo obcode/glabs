@@ -24,7 +24,7 @@ You can specify students or groups in order to delete only for these.`,
 		if err != nil {
 			er(err)
 		}
-		assignmentConfig.Show()
+		fmt.Println(assignmentConfig.Show())
 		fmt.Println(aurora.Magenta("Do you really want to delete the repos? Press 'Enter' to continue or 'Ctrl-C' to stop ..."))
 		fmt.Scanln() //nolint:errcheck
 		c, err := gitlab.NewClientFromViper()

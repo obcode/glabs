@@ -6,13 +6,14 @@ import (
 	"testing"
 
 	"github.com/obcode/glabs/v3/config"
+	"github.com/obcode/glabs/v3/reporter"
 )
 
 func TestClone_NoSpinner_CloneErrorNoPanic(t *testing.T) {
 	resetViper(t)
 
 	local := filepath.Join(t.TempDir(), "repo")
-	clone(local, "main", "http://127.0.0.1:1/does-not-exist.git", nil, false, true)
+	clone(reporter.NewDiscardReporter(), local, "main", "http://127.0.0.1:1/does-not-exist.git", nil, false)
 }
 
 func TestClone_Force_RemovesExistingPath(t *testing.T) {
@@ -27,7 +28,7 @@ func TestClone_Force_RemovesExistingPath(t *testing.T) {
 		t.Fatalf("writing marker file failed: %v", err)
 	}
 
-	clone(local, "main", "http://127.0.0.1:1/does-not-exist.git", nil, true, true)
+	clone(reporter.NewDiscardReporter(), local, "main", "http://127.0.0.1:1/does-not-exist.git", nil, true)
 
 	if _, err := os.Stat(marker); err == nil {
 		t.Fatal("expected marker file to be removed by force clone")
@@ -49,7 +50,7 @@ func TestClone_PerStudent_PathAndDispatch(t *testing.T) {
 		Clone: &config.Clone{LocalPath: t.TempDir(), Branch: "main", Force: false},
 	}
 
-	Clone(cfg, true)
+	Clone(reporter.NewDiscardReporter(), cfg)
 }
 
 func TestClone_PerGroup_PathAndDispatch(t *testing.T) {
@@ -66,5 +67,5 @@ func TestClone_PerGroup_PathAndDispatch(t *testing.T) {
 		Clone: &config.Clone{LocalPath: t.TempDir(), Branch: "main", Force: false},
 	}
 
-	Clone(cfg, true)
+	Clone(reporter.NewDiscardReporter(), cfg)
 }

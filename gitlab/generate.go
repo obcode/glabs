@@ -29,7 +29,7 @@ func (c *Client) Generate(assignmentCfg *config.AssignmentConfig) {
 	var starterrepo *git.SourceRepo
 
 	if assignmentCfg.Startercode != nil {
-		starterrepo, err = git.PrepareSourceRepo(
+		starterrepo, err = git.PrepareSourceRepo(c.rep,
 			assignmentCfg.Startercode.URL,
 			assignmentCfg.Startercode.FromBranch,
 			assignmentCfg.Startercode.Template,

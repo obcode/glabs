@@ -26,7 +26,7 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			er(err)
 		}
-		assignmentConfig.Show()
+		fmt.Println(assignmentConfig.Show())
 		fmt.Println(aurora.Red("Heads up! Use only with untouched projects."))
 		fmt.Println(aurora.Magenta("Config okay? Press 'Enter' to continue or 'Ctrl-C' to stop ..."))
 		fmt.Scanln() //nolint:errcheck

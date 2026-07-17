@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/obcode/glabs/v3/reporter"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
@@ -11,6 +12,11 @@ import (
 
 type Client struct {
 	*gitlab.Client
+	// rep receives progress. It is a field rather than a per-call parameter
+	// because the operation methods and their ~20 helpers all report, and
+	// because a per-user web request builds its own Client anyway (per-user
+	// token), so the reporter is naturally request-scoped and never shared.
+	rep reporter.Reporter
 }
 
 // clientOptions holds what a Client needs to reach GitLab. They are injected
@@ -22,6 +28,7 @@ type clientOptions struct {
 	token          string
 	httpClient     *http.Client
 	withoutRetries bool
+	reporter       reporter.Reporter
 }
 
 type Option func(*clientOptions)
@@ -32,6 +39,12 @@ func WithToken(token string) Option { return func(o *clientOptions) { o.token = 
 // WithHTTPClient injects the underlying HTTP client.
 func WithHTTPClient(hc *http.Client) Option {
 	return func(o *clientOptions) { o.httpClient = hc }
+}
+
+// WithReporter sets where the client's progress goes. Defaults to a
+// ConsoleReporter (spinners on stdout); the web server passes a streaming one.
+func WithReporter(r reporter.Reporter) Option {
+	return func(o *clientOptions) { o.reporter = r }
 }
 
 // WithoutRetries disables the client's retry-on-5xx wrapper. The contract tests
@@ -70,7 +83,12 @@ func NewClient(opts ...Option) (*Client, error) {
 		return nil, fmt.Errorf("cannot create a gitlab client: %w", err)
 	}
 
-	return &Client{client}, nil
+	rep := o.reporter
+	if rep == nil {
+		rep = reporter.NewConsoleReporter()
+	}
+
+	return &Client{Client: client, rep: rep}, nil
 }
 
 // NewClientFromViper builds a client from the global config. It is the CLI's

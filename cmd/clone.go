@@ -6,6 +6,7 @@ import (
 	"github.com/logrusorgru/aurora/v4"
 	"github.com/obcode/glabs/v3/config"
 	"github.com/obcode/glabs/v3/git"
+	"github.com/obcode/glabs/v3/reporter"
 	"github.com/spf13/cobra"
 )
 
@@ -31,12 +32,17 @@ var (
 				assignmentConfig.SetForce()
 			}
 			if !Suppress {
-				assignmentConfig.Show()
+				fmt.Println(assignmentConfig.Show())
 				fmt.Println(aurora.Magenta("Config okay? Press 'Enter' to continue or 'Ctrl-C' to stop ..."))
 				fmt.Scanln() //nolint:errcheck
 			}
 
-			git.Clone(assignmentConfig, Suppress)
+			// --suppress: no spinners, only the machine-readable paths for piping.
+			var rep reporter.Reporter = reporter.NewConsoleReporter()
+			if Suppress {
+				rep = reporter.NewDiscardReporter()
+			}
+			git.Clone(rep, assignmentConfig)
 		},
 	}
 	Localpath string

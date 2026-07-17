@@ -25,7 +25,7 @@ var (
 			if err != nil {
 				er(err)
 			}
-			assignmentConfig.Show()
+			fmt.Println(assignmentConfig.Show())
 			fmt.Println(aurora.Magenta("Config okay? Press 'Enter' to continue or 'Ctrl-C' to stop ..."))
 			fmt.Scanln() //nolint:errcheck
 			c, err := gitlab.NewClientFromViper()

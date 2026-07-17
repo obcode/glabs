@@ -2,43 +2,23 @@ package git
 
 import (
 	"fmt"
-	"time"
 
 	git "github.com/go-git/go-git/v5"
 	gitconfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/logrusorgru/aurora"
 	"github.com/obcode/glabs/v3/config"
+	"github.com/obcode/glabs/v3/reporter"
 	"github.com/rs/zerolog/log"
-	"github.com/theckman/yacspin"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
-func Push(assignmentCfg *config.AssignmentConfig, projectname string, sourceRepo *SourceRepo, toBranch string, force bool, project *gitlab.Project) error {
-	cfg := yacspin.Config{
-		Frequency: 100 * time.Millisecond,
-		CharSet:   yacspin.CharSets[69],
-		Suffix: aurora.Sprintf(aurora.Cyan(" pushing branch %s to project %s / branch %s"),
-			aurora.Yellow(sourceRepo.Ref.Short()),
-			aurora.Magenta(assignmentCfg.URL+"/"+project.Name),
-			aurora.Magenta(toBranch),
-		),
-		SuffixAutoColon:   true,
-		StopCharacter:     "✓",
-		StopColors:        []string{"fgGreen"},
-		StopFailMessage:   "error",
-		StopFailCharacter: "✗",
-		StopFailColors:    []string{"fgRed"},
-	}
-
-	spinner, err := yacspin.New(cfg)
-	if err != nil {
-		log.Debug().Err(err).Msg("cannot create spinner")
-	}
-	err = spinner.Start()
-	if err != nil {
-		log.Debug().Err(err).Msg("cannot start spinner")
-	}
+func Push(rep reporter.Reporter, assignmentCfg *config.AssignmentConfig, projectname string, sourceRepo *SourceRepo, toBranch string, force bool, project *gitlab.Project) error {
+	task := rep.Task(aurora.Sprintf(aurora.Cyan(" pushing branch %s to project %s / branch %s"),
+		aurora.Yellow(sourceRepo.Ref.Short()),
+		aurora.Magenta(assignmentCfg.URL+"/"+project.Name),
+		aurora.Magenta(toBranch),
+	))
 
 	conf := &gitconfig.RemoteConfig{
 		Name: project.Name,
@@ -47,12 +27,7 @@ func Push(assignmentCfg *config.AssignmentConfig, projectname string, sourceRepo
 
 	remote, err := sourceRepo.Repo.CreateRemote(conf)
 	if err != nil {
-		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-		err := spinner.StopFail()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
+		task.Fail(fmt.Sprintf("problem: %v", err))
 		log.Debug().Err(err).
 			Str("name", project.Name).Str("url", project.HTTPURLToRepo).
 			Msg("cannot create remote")
@@ -70,19 +45,10 @@ func Push(assignmentCfg *config.AssignmentConfig, projectname string, sourceRepo
 		Auth:       sourceRepo.Auth,
 	}
 
-	err = sourceRepo.Repo.Push(pushOpts)
-	if err != nil {
-		spinner.StopFailMessage(fmt.Sprintf("problem: %v", err))
-
-		err := spinner.StopFail()
-		if err != nil {
-			log.Debug().Err(err).Msg("cannot stop spinner")
-		}
+	if err := sourceRepo.Repo.Push(pushOpts); err != nil {
+		task.Fail(fmt.Sprintf("problem: %v", err))
 		return err
 	}
-	err = spinner.Stop()
-	if err != nil {
-		log.Debug().Err(err).Msg("cannot stop spinner")
-	}
+	task.Done("")
 	return nil
 }

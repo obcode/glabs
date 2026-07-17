@@ -7,7 +7,11 @@ import (
 	"github.com/logrusorgru/aurora/v4"
 )
 
-func (cfg *AssignmentConfig) Show() {
+// Show renders the resolved assignment configuration as a colored, human-
+// readable document and returns it. It returns the string rather than printing,
+// so the CLI writes it to stdout while the web server can send the same rendering
+// to the browser; config stays free of any opinion about where output goes.
+func (cfg *AssignmentConfig) Show() string {
 	var out strings.Builder
 
 	maxLabelWidth := func(labels ...string) int {
@@ -367,5 +371,5 @@ func (cfg *AssignmentConfig) Show() {
 		}
 	}
 
-	fmt.Println(out.String())
+	return out.String()
 }

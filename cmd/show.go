@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/obcode/glabs/v3/config"
 	"github.com/spf13/cobra"
 )
@@ -19,6 +21,6 @@ var showConfigCmd = &cobra.Command{
 		if err != nil {
 			er(err)
 		}
-		cfg.Show()
+		fmt.Println(cfg.Show())
 	},
 }

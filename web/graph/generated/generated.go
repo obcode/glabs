@@ -54,18 +54,26 @@ type ComplexityRoot struct {
 		Severity func(childComplexity int) int
 	}
 
+	GitLabTokenStatus struct {
+		Set       func(childComplexity int) int
+		UpdatedAt func(childComplexity int) int
+	}
+
 	Mutation struct {
-		DeleteCourse     func(childComplexity int, name string) int
-		ImportCourseYaml func(childComplexity int, yaml string) int
+		DeleteCourse      func(childComplexity int, name string) int
+		ImportCourseYaml  func(childComplexity int, yaml string) int
+		RemoveGitlabToken func(childComplexity int) int
+		SetGitlabToken    func(childComplexity int, token string) int
 	}
 
 	Query struct {
-		Course     func(childComplexity int, name string) int
-		CourseLint func(childComplexity int, name string) int
-		CourseYaml func(childComplexity int, name string) int
-		Courses    func(childComplexity int) int
-		Me         func(childComplexity int) int
-		ServerInfo func(childComplexity int) int
+		Course      func(childComplexity int, name string) int
+		CourseLint  func(childComplexity int, name string) int
+		CourseYaml  func(childComplexity int, name string) int
+		Courses     func(childComplexity int) int
+		GitlabToken func(childComplexity int) int
+		Me          func(childComplexity int) int
+		ServerInfo  func(childComplexity int) int
 	}
 
 	ServerInfo struct {
@@ -87,6 +95,8 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	ImportCourseYaml(ctx context.Context, yaml string) (*model.Course, error)
 	DeleteCourse(ctx context.Context, name string) (bool, error)
+	SetGitlabToken(ctx context.Context, token string) (*model.GitLabTokenStatus, error)
+	RemoveGitlabToken(ctx context.Context) (*model.GitLabTokenStatus, error)
 }
 type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
@@ -95,6 +105,7 @@ type QueryResolver interface {
 	Course(ctx context.Context, name string) (*model.Course, error)
 	CourseYaml(ctx context.Context, name string) (string, error)
 	CourseLint(ctx context.Context, name string) ([]*model.Finding, error)
+	GitlabToken(ctx context.Context) (*model.GitLabTokenStatus, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -183,6 +194,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Finding.Severity(childComplexity), true
 
+	case "GitLabTokenStatus.set":
+		if e.ComplexityRoot.GitLabTokenStatus.Set == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GitLabTokenStatus.Set(childComplexity), true
+	case "GitLabTokenStatus.updatedAt":
+		if e.ComplexityRoot.GitLabTokenStatus.UpdatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GitLabTokenStatus.UpdatedAt(childComplexity), true
+
 	case "Mutation.deleteCourse":
 		if e.ComplexityRoot.Mutation.DeleteCourse == nil {
 			break
@@ -205,6 +229,23 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ImportCourseYaml(childComplexity, args["yaml"].(string)), true
+	case "Mutation.removeGitlabToken":
+		if e.ComplexityRoot.Mutation.RemoveGitlabToken == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Mutation.RemoveGitlabToken(childComplexity), true
+	case "Mutation.setGitlabToken":
+		if e.ComplexityRoot.Mutation.SetGitlabToken == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setGitlabToken_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.SetGitlabToken(childComplexity, args["token"].(string)), true
 
 	case "Query.course":
 		if e.ComplexityRoot.Query.Course == nil {
@@ -245,6 +286,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Courses(childComplexity), true
+	case "Query.gitlabToken":
+		if e.ComplexityRoot.Query.GitlabToken == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.GitlabToken(childComplexity), true
 
 	case "Query.me":
 		if e.ComplexityRoot.Query.Me == nil {
@@ -423,6 +470,31 @@ type Mutation {
   deleteCourse(name: String!): Boolean!
 }
 `, BuiltIn: false},
+	{Name: "../gitlab_token.graphqls", Input: `"""
+Whether the current user has stored a GitLab token, and when it was last set.
+The token itself is never returned by any query.
+"""
+type GitLabTokenStatus {
+  set: Boolean!
+  updatedAt: Time
+}
+
+extend type Query {
+  "Whether the current user has a stored GitLab token."
+  gitlabToken: GitLabTokenStatus!
+}
+
+extend type Mutation {
+  """
+  Store the current user's GitLab personal access token, AES-256-GCM encrypted in
+  the database. Write-only: the token is never returned. Needs the api and
+  write_repository scopes, and secrets.key configured on the server.
+  """
+  setGitlabToken(token: String!): GitLabTokenStatus!
+  "Remove the current user's stored GitLab token."
+  removeGitlabToken: GitLabTokenStatus!
+}
+`, BuiltIn: false},
 	{Name: "../schema.graphqls", Input: `"""
 An authenticated user of glabs-web. Identity comes from the auth proxy; there
 are no roles — each user manages only their own courses.
@@ -485,6 +557,16 @@ func (ec *executionContext) childFields_Finding(ctx context.Context, field graph
 		return ec.fieldContext_Finding_severity(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Finding", field.Name)
+}
+
+func (ec *executionContext) childFields_GitLabTokenStatus(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "set":
+		return ec.fieldContext_GitLabTokenStatus_set(ctx, field)
+	case "updatedAt":
+		return ec.fieldContext_GitLabTokenStatus_updatedAt(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type GitLabTokenStatus", field.Name)
 }
 
 func (ec *executionContext) childFields_ServerInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -650,6 +732,20 @@ func (ec *executionContext) field_Mutation_importCourseYAML_args(ctx context.Con
 		return nil, err
 	}
 	args["yaml"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_setGitlabToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "token",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["token"] = arg0
 	return args, nil
 }
 
@@ -1022,6 +1118,52 @@ func (ec *executionContext) fieldContext_Finding_severity(_ context.Context, fie
 	return graphql.NewScalarFieldContext("Finding", field, false, false, errors.New("field of type FindingSeverity does not have child fields"))
 }
 
+func (ec *executionContext) _GitLabTokenStatus_set(ctx context.Context, field graphql.CollectedField, obj *model.GitLabTokenStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GitLabTokenStatus_set(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Set, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GitLabTokenStatus_set(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GitLabTokenStatus", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _GitLabTokenStatus_updatedAt(ctx context.Context, field graphql.CollectedField, obj *model.GitLabTokenStatus) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GitLabTokenStatus_updatedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_GitLabTokenStatus_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GitLabTokenStatus", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
 func (ec *executionContext) _Mutation_importCourseYAML(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -1106,6 +1248,82 @@ func (ec *executionContext) fieldContext_Mutation_deleteCourse(ctx context.Conte
 	if fc.Args, err = ec.field_Mutation_deleteCourse_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_setGitlabToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_setGitlabToken(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().SetGitlabToken(ctx, fc.Args["token"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.GitLabTokenStatus) graphql.Marshaler {
+			return ec.marshalNGitLabTokenStatus2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐGitLabTokenStatus(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_setGitlabToken(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_GitLabTokenStatus(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_setGitlabToken_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_removeGitlabToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_removeGitlabToken(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Mutation().RemoveGitlabToken(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.GitLabTokenStatus) graphql.Marshaler {
+			return ec.marshalNGitLabTokenStatus2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐGitLabTokenStatus(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_removeGitlabToken(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_GitLabTokenStatus(ctx, field)
+		},
 	}
 	return fc, nil
 }
@@ -1334,6 +1552,38 @@ func (ec *executionContext) fieldContext_Query_courseLint(ctx context.Context, f
 	if fc.Args, err = ec.field_Query_courseLint_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_gitlabToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_gitlabToken(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().GitlabToken(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.GitLabTokenStatus) graphql.Marshaler {
+			return ec.marshalNGitLabTokenStatus2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐGitLabTokenStatus(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_gitlabToken(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_GitLabTokenStatus(ctx, field)
+		},
 	}
 	return fc, nil
 }
@@ -2717,6 +2967,49 @@ func (ec *executionContext) _Finding(ctx context.Context, sel ast.SelectionSet, 
 	return out
 }
 
+var gitLabTokenStatusImplementors = []string{"GitLabTokenStatus"}
+
+func (ec *executionContext) _GitLabTokenStatus(ctx context.Context, sel ast.SelectionSet, obj *model.GitLabTokenStatus) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, gitLabTokenStatusImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GitLabTokenStatus")
+		case "set":
+			out.Values[i] = ec._GitLabTokenStatus_set(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updatedAt":
+			out.Values[i] = ec._GitLabTokenStatus_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -2747,6 +3040,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "deleteCourse":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteCourse(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "setGitlabToken":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setGitlabToken(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "removeGitlabToken":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_removeGitlabToken(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -2912,6 +3219,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_courseLint(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "gitlabToken":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_gitlabToken(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -3524,6 +3853,20 @@ func (ec *executionContext) marshalNFindingSeverity2githubᚗcomᚋobcodeᚋglab
 	return v
 }
 
+func (ec *executionContext) marshalNGitLabTokenStatus2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐGitLabTokenStatus(ctx context.Context, sel ast.SelectionSet, v model.GitLabTokenStatus) graphql.Marshaler {
+	return ec._GitLabTokenStatus(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNGitLabTokenStatus2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐGitLabTokenStatus(ctx context.Context, sel ast.SelectionSet, v *model.GitLabTokenStatus) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GitLabTokenStatus(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v any) (int, error) {
 	res, err := graphql.UnmarshalInt(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -3821,6 +4164,24 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	_ = sel
 	_ = ctx
 	res := graphql.MarshalString(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOTime2ᚖtimeᚐTime(ctx context.Context, v any) (*time.Time, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalTime(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel ast.SelectionSet, v *time.Time) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalTime(*v)
 	return res
 }
 

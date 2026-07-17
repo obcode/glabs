@@ -3,10 +3,12 @@ package app
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/obcode/glabs/v3/web/db"
 	"github.com/obcode/glabs/v3/web/graph/model"
 	"github.com/obcode/glabs/v3/web/principal"
+	"github.com/obcode/glabs/v3/web/secrets"
 )
 
 // fakeStore records the owner each method was called with, so a test can assert
@@ -15,10 +17,11 @@ type fakeStore struct {
 	seenOwners []string
 	courses    map[string]*db.StoredCourse // keyed by owner+"/"+name
 	saved      *db.StoredCourse
+	userSecret map[string]*db.UserSecret // keyed by owner
 }
 
 func newFakeStore() *fakeStore {
-	return &fakeStore{courses: map[string]*db.StoredCourse{}}
+	return &fakeStore{courses: map[string]*db.StoredCourse{}, userSecret: map[string]*db.UserSecret{}}
 }
 
 func (f *fakeStore) GetUserByEmail(context.Context, string) (*model.User, error) { return nil, nil }
@@ -56,6 +59,28 @@ func (f *fakeStore) DeleteCourse(_ context.Context, owner, name string) error {
 		return db.ErrCourseNotFound
 	}
 	delete(f.courses, key)
+	return nil
+}
+
+func (f *fakeStore) GetUserSecret(_ context.Context, owner string) (*db.UserSecret, error) {
+	f.seenOwners = append(f.seenOwners, owner)
+	return f.userSecret[owner], nil
+}
+
+func (f *fakeStore) SaveUserGitLabToken(_ context.Context, owner string, sealed secrets.SealedValue, updatedAt time.Time) error {
+	f.seenOwners = append(f.seenOwners, owner)
+	s := sealed
+	t := updatedAt
+	f.userSecret[owner] = &db.UserSecret{Owner: owner, GitLab: &s, GitLabUpdatedAt: &t}
+	return nil
+}
+
+func (f *fakeStore) DeleteUserGitLabToken(_ context.Context, owner string) error {
+	f.seenOwners = append(f.seenOwners, owner)
+	if s, ok := f.userSecret[owner]; ok {
+		s.GitLab = nil
+		s.GitLabUpdatedAt = nil
+	}
 	return nil
 }
 

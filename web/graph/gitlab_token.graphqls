@@ -1,0 +1,24 @@
+"""
+Whether the current user has stored a GitLab token, and when it was last set.
+The token itself is never returned by any query.
+"""
+type GitLabTokenStatus {
+  set: Boolean!
+  updatedAt: Time
+}
+
+extend type Query {
+  "Whether the current user has a stored GitLab token."
+  gitlabToken: GitLabTokenStatus!
+}
+
+extend type Mutation {
+  """
+  Store the current user's GitLab personal access token, AES-256-GCM encrypted in
+  the database. Write-only: the token is never returned. Needs the api and
+  write_repository scopes, and secrets.key configured on the server.
+  """
+  setGitlabToken(token: String!): GitLabTokenStatus!
+  "Remove the current user's stored GitLab token."
+  removeGitlabToken: GitLabTokenStatus!
+}

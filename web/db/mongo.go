@@ -14,8 +14,9 @@ import (
 // Collection names. One place, so a typo is a compile error rather than a silent
 // empty result.
 const (
-	collectionUsers   = "users"
-	collectionCourses = "courses"
+	collectionUsers       = "users"
+	collectionCourses     = "courses"
+	collectionUserSecrets = "user_secrets"
 )
 
 type DB struct {

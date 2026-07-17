@@ -29,30 +29,62 @@ func paths(findings []Finding) []string {
 	return out
 }
 
-// The two silently-ignored keys in the real configs are the reason lint exists:
-// nothing complains about them today, so they look like settings that work.
+// Silently-ignored keys are the reason lint exists: nothing complains about
+// them, so they look exactly like settings that work. Both cases here were real
+// and were live in the course files until lint surfaced them — `clone.clone` in
+// every single one, and dockerImages nested a level too deep in vss/blatt2,
+// where all six images were dropped on the floor.
 func TestLintReportsSilentlyIgnoredKeys(t *testing.T) {
 	t.Parallel()
 
-	findings := lintFixture(t, "vss")
+	course, decoded := decodeYAML(t, `
+demo:
+  coursepath: demo/semester
+  blatt1:
+    assignmentpath: blatt-1
+    clone:
+      localpath: /tmp/demo
+      clone: true
+    release:
+      mergeRequest:
+        pipeline: true
+        dockerImages:
+          - service/one
+`)
+	findings := Lint(course, decoded)
 
-	f := findingFor(findings, "vss.blatt2.release.mergeRequest.dockerImages")
+	f := findingFor(findings, "demo.blatt1.release.mergeRequest.dockerImages")
 	if f == nil {
 		t.Fatalf("dockerImages under mergeRequest not reported; got %v", paths(findings))
 	}
 	if f.Severity != SeverityProblem {
-		t.Errorf("severity = %q, want %q: the six images are configured and never applied", f.Severity, SeverityProblem)
+		t.Errorf("severity = %q, want %q: the images are configured and never applied", f.Severity, SeverityProblem)
 	}
 	if !strings.Contains(f.Message, "belongs under `release:`") {
 		t.Errorf("message %q does not say where dockerImages belongs", f.Message)
 	}
 
-	f = findingFor(findings, "vss.blatt0.clone.clone")
+	f = findingFor(findings, "demo.blatt1.clone.clone")
 	if f == nil {
 		t.Fatalf("stray clone.clone not reported; got %v", paths(findings))
 	}
 	if f.Severity != SeverityProblem {
 		t.Errorf("severity = %q, want %q", f.Severity, SeverityProblem)
+	}
+}
+
+// The real course files must lint free of problems. Deprecations are allowed to
+// remain — they still work — but anything that silently does nothing is a bug
+// in the config and should not be sitting there unnoticed.
+func TestLintFindsNoProblemsInRealFixtures(t *testing.T) {
+	t.Parallel()
+
+	for _, name := range realCourseFixtures {
+		for _, f := range lintFixture(t, name) {
+			if f.Severity == SeverityProblem {
+				t.Errorf("%s.yaml: %s: %s", name, f.Path, f.Message)
+			}
+		}
 	}
 }
 

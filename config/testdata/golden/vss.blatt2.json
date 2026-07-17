@@ -98,7 +98,14 @@
       "TargetBranch": "main",
       "HasPipeline": true
     },
-    "DockerImages": null
+    "DockerImages": [
+      "service/customer",
+      "service/order",
+      "service/payment",
+      "service/shipment",
+      "service/stock",
+      "service/supplier"
+    ]
   },
   "seeder": null,
   "deferredBranches": {},

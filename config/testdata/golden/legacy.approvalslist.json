@@ -44,7 +44,7 @@
           "tutors"
         ],
         "MultiMemberGroupsOnly": true,
-        "RequiredApprovals": 0
+        "RequiredApprovals": 1
       },
       {
         "Name": "canonical",

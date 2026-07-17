@@ -32,7 +32,6 @@ fundc:
     clone:
       localpath: /tmp/glabs/fundc/24ss/blatt04
       branch: develop
-      clone: true
     release:
       mergeRequest:
         pipeline: true
@@ -50,7 +49,6 @@ fundc:
     clone:
       localpath: /tmp/glabs/fundc/24ss/blatt05
       branch: develop
-      clone: true
     # accesslevel: guest
 
   blatt06:
@@ -65,7 +63,6 @@ fundc:
     clone:
       localpath: /tmp/glabs/fundc/24ss/blatt06
       branch: develop
-      clone: true
     # accesslevel: guest
 
   blatt07:
@@ -80,7 +77,6 @@ fundc:
     clone:
       localpath: /tmp/glabs/fundc/24ss/blatt07
       branch: develop
-      clone: true
     release:
       mergeRequest:
         pipeline: true
@@ -98,7 +94,6 @@ fundc:
     clone:
       localpath: /tmp/glabs/fundc/24ss/blatt08
       branch: develop
-      clone: true
     release:
       mergeRequest:
         pipeline: true
@@ -116,7 +111,6 @@ fundc:
     clone:
       localpath: /tmp/glabs/fundc/24ss/blatt09
       branch: develop
-      clone: true
     release:
       mergeRequest:
         pipeline: true
@@ -134,7 +128,6 @@ fundc:
     clone:
       localpath: /tmp/glabs/fundc/25ss/blatt10
       branch: develop
-      clone: true
     release:
       mergeRequest:
         pipeline: true
@@ -152,7 +145,6 @@ fundc:
     clone:
       localpath: /tmp/glabs/fundc/25ss/blatt11
       branch: develop
-      clone: true
     release:
       mergeRequest:
         pipeline: true

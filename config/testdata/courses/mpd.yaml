@@ -92,7 +92,6 @@ mpd:
         orphanMessage: Lösungsvorschlag [skip ci]
     clone:
       localpath: /tmp/glabs/mpd/26ss/blatt1
-      clone: true
 
   # ---------------------------------------------------------------------------
   # blatt07 + mockexam: devcontainer + (nicht-orphan) Lösungs-Branch,

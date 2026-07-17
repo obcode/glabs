@@ -29,7 +29,7 @@ In CI (`.github/workflows/ci.yml`) integration tests run only on `main` or via `
 
 ## Conventions
 
-- **Conventional Commits are required**: releases are automated by go-semantic-release on push to `main`, which bumps the version, prepends to `CHANGELOG.md`, and runs goreleaser. Use `feat:`, `fix:`, etc. with scopes (e.g. `feat(startercode): ...`). Do not hand-edit `CHANGELOG.md`.
+- **Conventional Commits are required**: releases are automated by go-semantic-release on push to `main`, which bumps the version, publishes a GitHub Release with generated notes, and runs goreleaser. Use `feat:`, `fix:`, etc. with scopes (e.g. `feat(startercode): ...`). There is no `CHANGELOG.md` — the GitHub Releases page is the changelog. (It was removed because committing it back to `main` raced when two release-triggering PRs merged in quick succession; avoid merging such PRs seconds apart regardless.)
 - Run `gofmt`, `go vet ./...`, and `golangci-lint run` before committing — these are pre-commit hooks and CI gates. gitleaks also runs in pre-commit.
 
 ## Architecture

@@ -10,7 +10,7 @@ func TestGetCourseConfig_HappyPath_Students(t *testing.T) {
 	resetViper(t)
 	viper.Set("mpd.students", []string{"alice", "bob"})
 
-	cc := GetCourseConfig("mpd")
+	cc := mustCourseConfig(t, "mpd")
 	if cc == nil {
 		t.Fatal("GetCourseConfig() returned nil")
 	}
@@ -27,7 +27,7 @@ func TestGetCourseConfig_HappyPath_Groups(t *testing.T) {
 	viper.Set("mpd.groups.team1.members", []string{"alice"})
 	viper.Set("mpd.groups.team2.members", []string{"bob", "carol"})
 
-	cc := GetCourseConfig("mpd")
+	cc := mustCourseConfig(t, "mpd")
 	if cc == nil {
 		t.Fatal("GetCourseConfig() returned nil")
 	}
@@ -41,7 +41,7 @@ func TestGetCourseConfig_NoStudentsNoGroups(t *testing.T) {
 	// Just set the top-level key so IsSet("mpd") returns true
 	viper.Set("mpd.semesterpath", "ss26")
 
-	cc := GetCourseConfig("mpd")
+	cc := mustCourseConfig(t, "mpd")
 	if cc == nil {
 		t.Fatal("GetCourseConfig() returned nil")
 	}

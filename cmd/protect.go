@@ -21,7 +21,10 @@ var (
 		Long:  `Protect branch for exisiting repositories.`,
 		Args:  cobra.MinimumNArgs(2), //nolint:gomnd
 		Run: func(cmd *cobra.Command, args []string) {
-			assignmentConfig := config.GetAssignmentConfig(args[0], args[1], args[2:]...)
+			assignmentConfig, err := config.GetAssignmentConfig(args[0], args[1], args[2:]...)
+			if err != nil {
+				er(err)
+			}
 			if len(ProtectBranch) > 0 {
 				assignmentConfig.SetProtectToBranch(ProtectBranch)
 			}

@@ -114,7 +114,7 @@ func TestGetAssignmentConfig(t *testing.T) {
 	viper.Set("course.a1.release", map[string]any{"dockerImages": []string{"registry/app"}})
 	viper.Set("course.a1.release.dockerImages", []string{"registry/app"})
 
-	cfg := GetAssignmentConfig("course", "a1")
+	cfg := mustAssignmentConfig(t, "course", "a1")
 
 	if cfg.Path != "mpd/ss26/blatt-01" {
 		t.Fatalf("Path = %q", cfg.Path)
@@ -154,7 +154,7 @@ func TestGetAssignmentConfig_DefaultMergeRequest(t *testing.T) {
 	viper.Set("course.a1", true)
 	viper.Set("course.a1.assignmentpath", "blatt-01")
 
-	cfg := GetAssignmentConfig("course", "a1")
+	cfg := mustAssignmentConfig(t, "course", "a1")
 
 	if cfg.MergeRequest == nil {
 		t.Fatal("MergeRequest should be initialized with defaults")
@@ -199,7 +199,7 @@ func TestGetAssignmentConfig_SquashOption(t *testing.T) {
 			viper.Set("course.a1.assignmentpath", "blatt-01")
 			viper.Set("course.a1.mergeRequest.squashOption", tc.value)
 
-			cfg := GetAssignmentConfig("course", "a1")
+			cfg := mustAssignmentConfig(t, "course", "a1")
 
 			if cfg.MergeRequest == nil {
 				t.Fatal("MergeRequest should not be nil")
@@ -224,7 +224,7 @@ func TestGetAssignmentConfig_MergeRequestChecks(t *testing.T) {
 	viper.Set("course.a1.mergeRequest.allThreadsMustBeResolved", true)
 	viper.Set("course.a1.mergeRequest.statusChecksMustSucceed", true)
 
-	cfg := GetAssignmentConfig("course", "a1")
+	cfg := mustAssignmentConfig(t, "course", "a1")
 
 	if cfg.MergeRequest == nil {
 		t.Fatal("MergeRequest should not be nil")
@@ -277,7 +277,7 @@ func TestGetAssignmentConfig_MergeRequestApprovals(t *testing.T) {
 		},
 	})
 
-	cfg := GetAssignmentConfig("course", "a1")
+	cfg := mustAssignmentConfig(t, "course", "a1")
 	if cfg.MergeRequest == nil {
 		t.Fatal("MergeRequest should not be nil")
 	}

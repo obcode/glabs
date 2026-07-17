@@ -15,7 +15,10 @@ var showConfigCmd = &cobra.Command{
 	Long:  `Show config of an assignment`,
 	Args:  cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg := config.GetAssignmentConfig(args[0], args[1], args[2:]...)
+		cfg, err := config.GetAssignmentConfig(args[0], args[1], args[2:]...)
+		if err != nil {
+			er(err)
+		}
 		cfg.Show()
 	},
 }

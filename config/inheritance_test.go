@@ -63,7 +63,7 @@ func TestInheritance_OverridesAndInherits(t *testing.T) {
 		"url": "git@gitlab.lrz.de:mpd/labs/blatt-10.git",
 	})
 
-	cfg := GetAssignmentConfig("mpd", "blatt10")
+	cfg := mustAssignmentConfig(t, "mpd", "blatt10")
 
 	// overridden scalars
 	if cfg.Path != "mpd/ss26/blatt-10" {
@@ -122,7 +122,7 @@ func TestInheritance_DeepMergeNestedDeferredBranch(t *testing.T) {
 		},
 	})
 
-	cfg := GetAssignmentConfig("mpd", "blatt10")
+	cfg := mustAssignmentConfig(t, "mpd", "blatt10")
 
 	if len(cfg.DeferredBranches) != 2 {
 		t.Fatalf("DeferredBranches len = %d, want 2 (devcontainer kept)", len(cfg.DeferredBranches))
@@ -153,7 +153,7 @@ func TestInheritance_MultiLevelChain(t *testing.T) {
 	viper.Set("mpd.blatt11.extends", "blatt10")
 	viper.Set("mpd.blatt11.assignmentpath", "blatt-11")
 
-	cfg := GetAssignmentConfig("mpd", "blatt11")
+	cfg := mustAssignmentConfig(t, "mpd", "blatt11")
 
 	if cfg.Path != "mpd/ss26/blatt-11" {
 		t.Fatalf("Path = %q, want mpd/ss26/blatt-11", cfg.Path)
@@ -170,7 +170,7 @@ func TestInheritance_MultiLevelChain(t *testing.T) {
 func TestInheritance_NoExtendsIsUnaffected(t *testing.T) {
 	baseAssignment(t)
 
-	cfg := GetAssignmentConfig("mpd", "blatt09")
+	cfg := mustAssignmentConfig(t, "mpd", "blatt09")
 
 	if cfg.Path != "mpd/ss26/blatt-09" {
 		t.Fatalf("Path = %q", cfg.Path)
@@ -207,7 +207,7 @@ func TestAssignmentIsAbstract(t *testing.T) {
 
 	// And after full resolution the abstract flag must not leak into the
 	// effective config.
-	cfg := GetAssignmentConfig("mpd", "blatt10")
+	cfg := mustAssignmentConfig(t, "mpd", "blatt10")
 	if cfg.Per != PerStudent {
 		t.Fatalf("Per = %q, want inherited student", cfg.Per)
 	}

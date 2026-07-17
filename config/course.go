@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
 
@@ -13,19 +12,16 @@ type CourseConfig struct {
 	Groups   []*Group
 }
 
-func GetCourseConfig(course string) *CourseConfig {
+func GetCourseConfig(course string) (*CourseConfig, error) {
 	if !viper.IsSet(course) {
-		log.Fatal().
-			Str("course", course).
-			Msg("configuration for course not found")
-		return nil
+		return nil, fmt.Errorf("configuration for course %s not found", course)
 	}
 
 	return &CourseConfig{
 		Course:   course,
 		Students: students(PerStudent, course, ""),
 		Groups:   groups(PerGroup, course, ""),
-	}
+	}, nil
 }
 
 // CourseExists checks if a course configuration exists

@@ -21,7 +21,10 @@ var (
 		Long:  `Archive or unarchive repositories.`,
 		Args:  cobra.MinimumNArgs(2), //nolint:gomnd
 		Run: func(cmd *cobra.Command, args []string) {
-			assignmentConfig := config.GetAssignmentConfig(args[0], args[1], args[2:]...)
+			assignmentConfig, err := config.GetAssignmentConfig(args[0], args[1], args[2:]...)
+			if err != nil {
+				er(err)
+			}
 			assignmentConfig.Show()
 			fmt.Println(aurora.Magenta("Config okay? Press 'Enter' to continue or 'Ctrl-C' to stop ..."))
 			fmt.Scanln() //nolint:errcheck

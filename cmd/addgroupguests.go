@@ -35,7 +35,10 @@ Example:
 			return
 		}
 
-		courseConfig := config.GetCourseConfig(courseName)
+		courseConfig, err := config.GetCourseConfig(courseName)
+		if err != nil {
+			er(err)
+		}
 		subgroupPath := config.GetCourseSubgroupPath(courseName)
 
 		fmt.Printf("Course: %s\n", courseName)
@@ -64,7 +67,7 @@ Example:
 		fmt.Scanln() //nolint:errcheck
 
 		c := gitlab.NewClient()
-		err := c.AddGroupGuests(courseName)
+		err = c.AddGroupGuests(courseName)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			return

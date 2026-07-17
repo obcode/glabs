@@ -3,8 +3,6 @@ package config
 import (
 	"reflect"
 	"testing"
-
-	"github.com/spf13/viper"
 )
 
 func TestSetAccessLevel(t *testing.T) {
@@ -32,25 +30,33 @@ func TestSetAccessLevel(t *testing.T) {
 }
 
 func TestAccessLevel(t *testing.T) {
-	resetViper(t)
+	registerCourse(t, `
+course:
+  bare:
+    assignmentpath: a
+  guest:
+    accesslevel: guest
+  reporter:
+    accesslevel: reporter
+  maintainer:
+    accesslevel: maintainer
+  bogus:
+    accesslevel: nonsense
+`)
 
-	if got := accessLevel("course.a1"); got != Developer {
-		t.Fatalf("default accessLevel = %v", got)
-	}
-
-	viper.Set("course.a1.accesslevel", "guest")
-	if got := accessLevel("course.a1"); got != Guest {
-		t.Fatalf("guest accessLevel = %v", got)
-	}
-
-	viper.Set("course.a1.accesslevel", "reporter")
-	if got := accessLevel("course.a1"); got != Reporter {
-		t.Fatalf("reporter accessLevel = %v", got)
-	}
-
-	viper.Set("course.a1.accesslevel", "maintainer")
-	if got := accessLevel("course.a1"); got != Maintainer {
-		t.Fatalf("maintainer accessLevel = %v", got)
+	for _, tt := range []struct {
+		assignment string
+		want       AccessLevel
+	}{
+		{"bare", Developer},
+		{"guest", Guest},
+		{"reporter", Reporter},
+		{"maintainer", Maintainer},
+		{"bogus", Developer},
+	} {
+		if got := mustAssignmentConfig(t, "course", tt.assignment).AccessLevel; got != tt.want {
+			t.Errorf("%s: AccessLevel = %v, want %v", tt.assignment, got, tt.want)
+		}
 	}
 }
 
@@ -71,63 +77,128 @@ func TestMkStudentsClassifiesIdentifiers(t *testing.T) {
 	}
 }
 
+// Assignment-level students are appended to the course-level list, then sorted.
 func TestStudentsMergeFilterAndSort(t *testing.T) {
-	resetViper(t)
+	registerCourse(t, `
+course:
+  students:
+    - carol@example.org
+    - alice@example.org
+  a1:
+    students:
+      - bob@example.org
+`)
+	studs := mustAssignmentConfig(t, "course", "a1").Students
 
-	viper.Set("course.students", []string{"carol", "1002"})
-	viper.Set("course.a1.students", []string{"alice", "bob"})
-
-	studs := students(PerStudent, "course", "a1", "^a", "^100")
-	if len(studs) != 2 {
-		t.Fatalf("students len = %d, want 2", len(studs))
+	var got []string
+	for _, s := range studs {
+		got = append(got, s.Raw)
 	}
-
-	got := []string{studs[0].Raw, studs[1].Raw}
-	want := []string{"1002", "alice"}
+	want := []string{"alice@example.org", "bob@example.org", "carol@example.org"}
 	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("students order/filter = %#v, want %#v", got, want)
+		t.Fatalf("students = %v, want %v", got, want)
+	}
+}
+
+// The positional arguments are regexps.
+func TestStudentsFilteredByPattern(t *testing.T) {
+	registerCourse(t, `
+course:
+  students:
+    - alice@example.org
+    - bob@example.org
+    - carol@example.org
+  a1:
+    assignmentpath: a
+`)
+	studs := mustAssignmentConfig(t, "course", "a1", "^[ab]").Students
+
+	var got []string
+	for _, s := range studs {
+		got = append(got, s.Raw)
+	}
+	want := []string{"alice@example.org", "bob@example.org"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("students = %v, want %v", got, want)
 	}
 }
 
 func TestStudentsReturnsNilForGroupMode(t *testing.T) {
-	resetViper(t)
-	viper.Set("course.students", []string{"alice"})
-
-	if studs := students(PerGroup, "course", "a1"); studs != nil {
-		t.Fatalf("students for group mode = %#v, want nil", studs)
+	registerCourse(t, `
+course:
+  students:
+    - alice@example.org
+  a1:
+    per: group
+`)
+	if s := mustAssignmentConfig(t, "course", "a1").Students; s != nil {
+		t.Fatalf("students = %v, want nil for per: group", s)
 	}
 }
 
+// Assignment-level groups override course-level ones per key; names and members
+// are sorted, and the keys are lowercased the way the loader has always done.
 func TestGroupsMergeFilterAndSort(t *testing.T) {
-	resetViper(t)
+	registerCourse(t, `
+course:
+  groups:
+    grp02:
+      - carol@example.org
+      - alice@example.org
+    grp01:
+      - bob@example.org
+  a1:
+    per: group
+    groups:
+      grp01:
+        - dave@example.org
+`)
+	groups := mustAssignmentConfig(t, "course", "a1").Groups
 
-	viper.Set("course.groups", map[string][]string{
-		"g2": {"bob", "alice"},
-		"g1": {"1001"},
-	})
-	viper.Set("course.a1.groups", map[string][]string{
-		"g2": {"carol"},
-		"g3": {"dave"},
-	})
-
-	grps := groups(PerGroup, "course", "a1", "^g[23]$")
-	if len(grps) != 2 {
-		t.Fatalf("groups len = %d, want 2", len(grps))
+	if len(groups) != 2 {
+		t.Fatalf("got %d groups, want 2", len(groups))
 	}
-
-	if grps[0].Name != "g2" || len(grps[0].Members) != 1 || grps[0].Members[0].Raw != "carol" {
-		t.Fatalf("g2 members = %#v", grps[0])
+	if groups[0].Name != "grp01" || groups[1].Name != "grp02" {
+		t.Fatalf("groups = %q, %q, want them sorted", groups[0].Name, groups[1].Name)
 	}
-	if grps[1].Name != "g3" || len(grps[1].Members) != 1 || grps[1].Members[0].Raw != "dave" {
-		t.Fatalf("g3 members = %#v", grps[1])
+	if len(groups[0].Members) != 1 || groups[0].Members[0].Raw != "dave@example.org" {
+		t.Fatalf("grp01 = %v, want the assignment-level override to win", groups[0].Members)
+	}
+	if groups[1].Members[0].Raw != "alice@example.org" {
+		t.Fatalf("grp02 members = %v, want them sorted", groups[1].Members)
+	}
+}
+
+func TestGroupsFilteredByPattern(t *testing.T) {
+	registerCourse(t, `
+course:
+  groups:
+    grp01:
+      - a@example.org
+    grp02:
+      - b@example.org
+    other:
+      - c@example.org
+  a1:
+    per: group
+`)
+	groups := mustAssignmentConfig(t, "course", "a1", "^grp").Groups
+
+	if len(groups) != 2 {
+		t.Fatalf("got %d groups, want 2 matching ^grp", len(groups))
 	}
 }
 
 func TestGroupsReturnsNilForStudentMode(t *testing.T) {
-	resetViper(t)
-	viper.Set("course.groups", map[string][]string{"g1": {"alice"}})
-
-	if grps := groups(PerStudent, "course", "a1"); grps != nil {
-		t.Fatalf("groups for student mode = %#v, want nil", grps)
+	registerCourse(t, `
+course:
+  groups:
+    grp01:
+      - a@example.org
+  a1:
+    per: student
+`)
+	if g := mustAssignmentConfig(t, "course", "a1").Groups; g != nil {
+		t.Fatalf("groups = %v, want nil for per: student", g)
 	}
 }

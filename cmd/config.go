@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/logrusorgru/aurora/v4"
 	"github.com/obcode/glabs/v2/config"
@@ -45,7 +44,10 @@ it can gate a commit hook or CI.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		problems := 0
 		for _, course := range coursesToProcess(args) {
-			path := courseFilePath(course)
+			path, err := findCourseFile(course)
+			if err != nil {
+				er(err)
+			}
 			source, decoded, err := decodeCourseFile(path)
 			if err != nil {
 				er(err)
@@ -86,7 +88,7 @@ parsed configuration, not edited in place. Review the diff before committing.`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		for _, course := range args {
-			rewriteCourseFile(courseFilePath(course))
+			rewriteCourseFile(course)
 		}
 	},
 }
@@ -109,12 +111,17 @@ Comments and key order are not preserved. Review the diff before committing.`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		for _, course := range args {
-			rewriteCourseFile(courseFilePath(course))
+			rewriteCourseFile(course)
 		}
 	},
 }
 
-func rewriteCourseFile(path string) {
+func rewriteCourseFile(course string) {
+	path, err := findCourseFile(course)
+	if err != nil {
+		er(err)
+	}
+
 	source, _, err := decodeCourseFile(path)
 	if err != nil {
 		er(err)
@@ -163,19 +170,4 @@ func coursesToProcess(args []string) []string {
 		er("no courses configured; add a `courses:` list to the main config or name one explicitly")
 	}
 	return courses
-}
-
-// courseFilePath locates a course file the same way initConfig does: by name,
-// under coursesfilepath, with the extensions viper would have accepted.
-func courseFilePath(course string) string {
-	dir := viper.GetString("coursesfilepath")
-	for _, ext := range []string{".yaml", ".yml"} {
-		path := filepath.Join(dir, course+ext)
-		if _, err := os.Stat(path); err == nil {
-			return path
-		}
-	}
-	er(fmt.Sprintf("cannot find a course file for %q: looked for %s.yaml and %s.yml in %q",
-		course, course, course, dir))
-	return ""
 }

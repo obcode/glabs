@@ -1,73 +1,79 @@
 package config
 
 import (
+	"reflect"
 	"testing"
-
-	"github.com/spf13/viper"
 )
 
-func TestSeeder_NoSeeder_ReturnsNil(t *testing.T) {
-	resetViper(t)
-	if got := mustSeeder(t, "course.a1"); got != nil {
-		t.Fatalf("seeder() = %#v, want nil", got)
+func TestNoSeeder(t *testing.T) {
+	registerCourse(t, `
+course:
+  a1:
+    assignmentpath: blatt-01
+`)
+	if s := mustAssignmentConfig(t, "course", "a1").Seeder; s != nil {
+		t.Fatalf("seeder = %#v, want nil when unconfigured", s)
 	}
 }
 
-func TestSeeder_HappyPath_Defaults(t *testing.T) {
-	resetViper(t)
-	viper.Set("course.a1.seeder.cmd", "make")
-	viper.Set("course.a1.seeder.args", []string{"build", "test"})
-	viper.Set("course.a1.seeder.name", "Seed Bot")
-	viper.Set("course.a1.seeder.email", "bot@example.com")
+func TestSeederDefaults(t *testing.T) {
+	registerCourse(t, `
+course:
+  a1:
+    seeder:
+      cmd: /usr/bin/true
+`)
+	s := mustAssignmentConfig(t, "course", "a1").Seeder
 
-	got := mustSeeder(t, "course.a1")
-	if got == nil {
-		t.Fatal("seeder() returned nil, want non-nil")
+	if s.Command != "/usr/bin/true" {
+		t.Errorf("Command = %q, want %q", s.Command, "/usr/bin/true")
 	}
-	if got.Command != "make" {
-		t.Fatalf("Command = %q, want %q", got.Command, "make")
+	if s.ToBranch != "main" {
+		t.Errorf("ToBranch = %q, want the default %q", s.ToBranch, "main")
 	}
-	if got.ToBranch != "main" {
-		t.Fatalf("ToBranch = %q, want default %q", got.ToBranch, "main")
+	if s.SignKey != nil {
+		t.Error("SignKey is set, want nil when unconfigured")
 	}
-	if got.Name != "Seed Bot" {
-		t.Fatalf("Name = %q, want %q", got.Name, "Seed Bot")
-	}
-	if got.EMail != "bot@example.com" {
-		t.Fatalf("EMail = %q, want %q", got.EMail, "bot@example.com")
-	}
-	if got.SignKey != nil {
-		t.Fatal("SignKey should be nil when not set")
+	if s.ProtectToBranch {
+		t.Error("ProtectToBranch = true, want false")
 	}
 }
 
-func TestSeeder_ToBranchOverride(t *testing.T) {
-	resetViper(t)
-	viper.Set("course.a1.seeder.cmd", "make")
-	viper.Set("course.a1.seeder.toBranch", "develop")
+func TestSeederOverrides(t *testing.T) {
+	registerCourse(t, `
+course:
+  a1:
+    seeder:
+      cmd: /usr/bin/seed
+      args: ["--path", "%s"]
+      name: Seeder Bot
+      email: bot@example.org
+      toBranch: seeded
+      protectToBranch: true
+`)
+	s := mustAssignmentConfig(t, "course", "a1").Seeder
 
-	got := mustSeeder(t, "course.a1")
-	if got == nil {
-		t.Fatal("seeder() returned nil")
+	want := &Seeder{
+		Command:         "/usr/bin/seed",
+		Args:            []string{"--path", "%s"},
+		Name:            "Seeder Bot",
+		EMail:           "bot@example.org",
+		ToBranch:        "seeded",
+		ProtectToBranch: true,
 	}
-	if got.ToBranch != "develop" {
-		t.Fatalf("ToBranch = %q, want %q", got.ToBranch, "develop")
+	if !reflect.DeepEqual(s, want) {
+		t.Fatalf("seeder = %#v, want %#v", s, want)
 	}
 }
 
-func TestSeeder_WithArgs(t *testing.T) {
-	resetViper(t)
-	viper.Set("course.a1.seeder.cmd", "python")
-	viper.Set("course.a1.seeder.args", []string{"seed.py", "--verbose"})
-
-	got := mustSeeder(t, "course.a1")
-	if got == nil {
-		t.Fatal("seeder() returned nil")
-	}
-	if len(got.Args) != 2 {
-		t.Fatalf("Args = %v, want 2 elements", got.Args)
-	}
-	if got.Args[0] != "seed.py" {
-		t.Fatalf("Args[0] = %q, want seed.py", got.Args[0])
+func TestSeederWithoutCmdIsAnError(t *testing.T) {
+	registerCourse(t, `
+course:
+  a1:
+    seeder:
+      name: Seeder Bot
+`)
+	if _, err := GetAssignmentConfig("course", "a1"); err == nil {
+		t.Fatal("a seeder without cmd was accepted, want an error")
 	}
 }

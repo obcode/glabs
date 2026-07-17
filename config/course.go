@@ -1,32 +1,11 @@
 package config
 
-import (
-	"fmt"
-
-	"github.com/spf13/viper"
-)
+import "fmt"
 
 type CourseConfig struct {
 	Course   string
 	Students []*Student
 	Groups   []*Group
-}
-
-func GetCourseConfig(course string) (*CourseConfig, error) {
-	if !viper.IsSet(course) {
-		return nil, fmt.Errorf("configuration for course %s not found", course)
-	}
-
-	return &CourseConfig{
-		Course:   course,
-		Students: students(PerStudent, course, ""),
-		Groups:   groups(PerGroup, course, ""),
-	}, nil
-}
-
-// CourseExists checks if a course configuration exists
-func CourseExists(course string) bool {
-	return viper.IsSet(course)
 }
 
 // StudentKey generates a unique key for a student based on available identifiers

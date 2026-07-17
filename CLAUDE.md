@@ -14,7 +14,10 @@ go test ./...                # all unit + contract tests (fast, no network)
 go test ./config/...         # tests for a single package
 go test ./config/ -run TestName   # a single test
 gofmt -w <file> && go vet ./... && golangci-lint run   # what pre-commit / CI enforce
+go vet -tags=integration ./...   # compile-check integration tests — plain go vet/test skip them
 ```
+
+> The `integration` build tag hides those tests from `go test ./...` and `go vet ./...`, so a signature change can break them invisibly and only surface on `main` (where the integration job runs). Always `go vet -tags=integration ./...` after changing a signature the integration tests call. CI's fast-test job now does this too.
 
 Integration tests spin up GitLab CE in Testcontainers and are **opt-in** (startup takes 5–25 min). They are gated by both the `integration` build tag and the `GLABS_RUN_GITLAB_TC=1` env var:
 

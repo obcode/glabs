@@ -48,6 +48,8 @@ jobs:
         run: go mod download
       - name: Run fast tests
         run: go test -v ./...
+      - name: Vet integration-tagged code (compile only, does not run)
+        run: go vet -tags=integration ./...
 
   coverage:
     name: coverage

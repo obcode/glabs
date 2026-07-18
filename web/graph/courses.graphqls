@@ -6,6 +6,10 @@ type Course {
   name: String!
   coursePath: String!
   semesterPath: String!
+  "Whether the course name is prepended to each project path."
+  useCoursenameAsPrefix: Boolean!
+  "Whether the student's email domain is appended as a suffix (default true)."
+  useEmailDomainAsSuffix: Boolean!
   "The names of the assignments in this course, sorted."
   assignmentNames: [String!]!
   studentCount: Int!
@@ -49,6 +53,14 @@ type Mutation {
   course by that name (use setAssignment to add assignments afterwards).
   """
   createCourse(
+    name: String!
+    coursePath: String!
+    semesterPath: String!
+    useCoursenameAsPrefix: Boolean!
+    useEmailDomainAsSuffix: Boolean!
+  ): Course!
+  "Update the course-level settings of one of the caller's courses (assignments, students and groups are untouched)."
+  setCourse(
     name: String!
     coursePath: String!
     semesterPath: String!

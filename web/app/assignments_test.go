@@ -347,6 +347,40 @@ func TestCreateCourse(t *testing.T) {
 	}
 }
 
+func TestSetCourse(t *testing.T) {
+	const owner = "prof@hm.edu"
+	fs := newFakeStore()
+	fs.courses[owner+"/tc"] = storedCourse(t, owner, tcCourse)
+	a := &App{db: fs}
+	ctx := ctxAs(owner)
+
+	stored, err := a.SetCourse(ctx, "tc", "changed/path", "ws27", false, true)
+	if err != nil {
+		t.Fatalf("set course: %v", err)
+	}
+	if stored.Source.CoursePath != "changed/path" || stored.Source.SemesterPath != "ws27" {
+		t.Errorf("paths not updated: %+v", stored.Source)
+	}
+	if stored.Source.UseCoursenameAsPrefix {
+		t.Error("useCoursenameAsPrefix should be false")
+	}
+	if stored.Source.UseEmailDomainAsSuffix == nil || !*stored.Source.UseEmailDomainAsSuffix {
+		t.Error("useEmailDomainAsSuffix should be true")
+	}
+	// Assignments are preserved.
+	if _, ok := stored.Source.Assignments["blatt1"]; !ok {
+		t.Error("assignments must be preserved when editing course settings")
+	}
+	if !bytes.Contains(fs.saved.RawYAML, []byte("changed/path")) {
+		t.Errorf("rawYAML not re-marshalled:\n%s", fs.saved.RawYAML)
+	}
+
+	// A course that is not the caller's → ErrCourseNotFound.
+	if _, err := a.SetCourse(ctx, "nope", "x", "y", true, false); !errors.Is(err, db.ErrCourseNotFound) {
+		t.Errorf("expected ErrCourseNotFound, got %v", err)
+	}
+}
+
 func TestSetAssignment_upsertCreates(t *testing.T) {
 	const owner = "prof@hm.edu"
 	fs := newFakeStore()

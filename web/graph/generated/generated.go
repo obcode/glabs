@@ -48,14 +48,16 @@ type ComplexityRoot struct {
 	}
 
 	Course struct {
-		AssignmentNames func(childComplexity int) int
-		CoursePath      func(childComplexity int) int
-		GroupCount      func(childComplexity int) int
-		ImportedAt      func(childComplexity int) int
-		Name            func(childComplexity int) int
-		SemesterPath    func(childComplexity int) int
-		StudentCount    func(childComplexity int) int
-		UpdatedAt       func(childComplexity int) int
+		AssignmentNames        func(childComplexity int) int
+		CoursePath             func(childComplexity int) int
+		GroupCount             func(childComplexity int) int
+		ImportedAt             func(childComplexity int) int
+		Name                   func(childComplexity int) int
+		SemesterPath           func(childComplexity int) int
+		StudentCount           func(childComplexity int) int
+		UpdatedAt              func(childComplexity int) int
+		UseCoursenameAsPrefix  func(childComplexity int) int
+		UseEmailDomainAsSuffix func(childComplexity int) int
 	}
 
 	FieldMeta struct {
@@ -99,6 +101,7 @@ type ComplexityRoot struct {
 		ImportCourseYaml  func(childComplexity int, yaml string) int
 		RemoveGitlabToken func(childComplexity int) int
 		SetAssignment     func(childComplexity int, course string, name string, draft []*model.FieldValueInput) int
+		SetCourse         func(childComplexity int, name string, coursePath string, semesterPath string, useCoursenameAsPrefix bool, useEmailDomainAsSuffix bool) int
 		SetGitlabToken    func(childComplexity int, token string) int
 	}
 
@@ -141,6 +144,7 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	ImportCourseYaml(ctx context.Context, yaml string) (*model.Course, error)
 	CreateCourse(ctx context.Context, name string, coursePath string, semesterPath string, useCoursenameAsPrefix bool, useEmailDomainAsSuffix bool) (*model.Course, error)
+	SetCourse(ctx context.Context, name string, coursePath string, semesterPath string, useCoursenameAsPrefix bool, useEmailDomainAsSuffix bool) (*model.Course, error)
 	DeleteCourse(ctx context.Context, name string) (bool, error)
 	SetAssignment(ctx context.Context, course string, name string, draft []*model.FieldValueInput) (*model.AssignmentView, error)
 	DeleteAssignment(ctx context.Context, course string, name string) (bool, error)
@@ -269,6 +273,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Course.UpdatedAt(childComplexity), true
+	case "Course.useCoursenameAsPrefix":
+		if e.ComplexityRoot.Course.UseCoursenameAsPrefix == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Course.UseCoursenameAsPrefix(childComplexity), true
+	case "Course.useEmailDomainAsSuffix":
+		if e.ComplexityRoot.Course.UseEmailDomainAsSuffix == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Course.UseEmailDomainAsSuffix(childComplexity), true
 
 	case "FieldMeta.deprecated":
 		if e.ComplexityRoot.FieldMeta.Deprecated == nil {
@@ -450,6 +466,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.SetAssignment(childComplexity, args["course"].(string), args["name"].(string), args["draft"].([]*model.FieldValueInput)), true
+	case "Mutation.setCourse":
+		if e.ComplexityRoot.Mutation.SetCourse == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setCourse_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.SetCourse(childComplexity, args["name"].(string), args["coursePath"].(string), args["semesterPath"].(string), args["useCoursenameAsPrefix"].(bool), args["useEmailDomainAsSuffix"].(bool)), true
 	case "Mutation.setGitlabToken":
 		if e.ComplexityRoot.Mutation.SetGitlabToken == nil {
 			break
@@ -806,6 +833,10 @@ type Course {
   name: String!
   coursePath: String!
   semesterPath: String!
+  "Whether the course name is prepended to each project path."
+  useCoursenameAsPrefix: Boolean!
+  "Whether the student's email domain is appended as a suffix (default true)."
+  useEmailDomainAsSuffix: Boolean!
   "The names of the assignments in this course, sorted."
   assignmentNames: [String!]!
   studentCount: Int!
@@ -849,6 +880,14 @@ type Mutation {
   course by that name (use setAssignment to add assignments afterwards).
   """
   createCourse(
+    name: String!
+    coursePath: String!
+    semesterPath: String!
+    useCoursenameAsPrefix: Boolean!
+    useEmailDomainAsSuffix: Boolean!
+  ): Course!
+  "Update the course-level settings of one of the caller's courses (assignments, students and groups are untouched)."
+  setCourse(
     name: String!
     coursePath: String!
     semesterPath: String!
@@ -942,6 +981,10 @@ func (ec *executionContext) childFields_Course(ctx context.Context, field graphq
 		return ec.fieldContext_Course_coursePath(ctx, field)
 	case "semesterPath":
 		return ec.fieldContext_Course_semesterPath(ctx, field)
+	case "useCoursenameAsPrefix":
+		return ec.fieldContext_Course_useCoursenameAsPrefix(ctx, field)
+	case "useEmailDomainAsSuffix":
+		return ec.fieldContext_Course_useEmailDomainAsSuffix(ctx, field)
 	case "assignmentNames":
 		return ec.fieldContext_Course_assignmentNames(ctx, field)
 	case "studentCount":
@@ -1299,6 +1342,52 @@ func (ec *executionContext) field_Mutation_setAssignment_args(ctx context.Contex
 		return nil, err
 	}
 	args["draft"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_setCourse_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "name",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["name"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "coursePath",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["coursePath"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "semesterPath",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["semesterPath"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "useCoursenameAsPrefix",
+		func(ctx context.Context, v any) (bool, error) {
+			return ec.unmarshalNBoolean2bool(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["useCoursenameAsPrefix"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "useEmailDomainAsSuffix",
+		func(ctx context.Context, v any) (bool, error) {
+			return ec.unmarshalNBoolean2bool(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["useEmailDomainAsSuffix"] = arg4
 	return args, nil
 }
 
@@ -1721,6 +1810,52 @@ func (ec *executionContext) _Course_semesterPath(ctx context.Context, field grap
 }
 func (ec *executionContext) fieldContext_Course_semesterPath(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("Course", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Course_useCoursenameAsPrefix(ctx context.Context, field graphql.CollectedField, obj *model.Course) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Course_useCoursenameAsPrefix(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.UseCoursenameAsPrefix, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Course_useCoursenameAsPrefix(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Course", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _Course_useEmailDomainAsSuffix(ctx context.Context, field graphql.CollectedField, obj *model.Course) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Course_useEmailDomainAsSuffix(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.UseEmailDomainAsSuffix, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Course_useEmailDomainAsSuffix(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Course", field, false, false, errors.New("field of type Boolean does not have child fields"))
 }
 
 func (ec *executionContext) _Course_assignmentNames(ctx context.Context, field graphql.CollectedField, obj *model.Course) (ret graphql.Marshaler) {
@@ -2366,6 +2501,50 @@ func (ec *executionContext) fieldContext_Mutation_createCourse(ctx context.Conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_createCourse_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_setCourse(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_setCourse(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().SetCourse(ctx, fc.Args["name"].(string), fc.Args["coursePath"].(string), fc.Args["semesterPath"].(string), fc.Args["useCoursenameAsPrefix"].(bool), fc.Args["useEmailDomainAsSuffix"].(bool))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.Course) graphql.Marshaler {
+			return ec.marshalNCourse2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCourse(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_setCourse(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Course(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_setCourse_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -4442,6 +4621,16 @@ func (ec *executionContext) _Course(ctx context.Context, sel ast.SelectionSet, o
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "useCoursenameAsPrefix":
+			out.Values[i] = ec._Course_useCoursenameAsPrefix(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "useEmailDomainAsSuffix":
+			out.Values[i] = ec._Course_useEmailDomainAsSuffix(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "assignmentNames":
 			out.Values[i] = ec._Course_assignmentNames(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -4778,6 +4967,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createCourse":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createCourse(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "setCourse":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setCourse(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

@@ -227,7 +227,7 @@ func (c *Client) protectToBranchPerStudent(assignmentCfg *config.AssignmentConfi
 		)
 		if err != nil {
 			c.rep.Printf("cannot protect branch for project %s failed with %s", projectname, err)
-			return
+			continue
 		}
 		if err := c.protectBranchForMemberCount(assignmentCfg, project, true, 1); err != nil {
 			log.Error().Err(err).Str("group", assignmentCfg.Course).Msg("cannot protect the branch")
@@ -249,7 +249,7 @@ func (c *Client) protectToBranchPerGroup(assignmentCfg *config.AssignmentConfig)
 		)
 		if err != nil {
 			c.rep.Printf("cannot protect branch for project %s failed with %s", projectname, err)
-			return
+			continue
 		}
 		if err := c.protectBranchForMemberCount(assignmentCfg, project, true, len(grp.Members)); err != nil {
 			log.Error().Err(err).Str("group", assignmentCfg.Course).Msg("cannot protect the branch")

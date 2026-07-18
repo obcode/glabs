@@ -117,6 +117,7 @@ type ComplexityRoot struct {
 	Query struct {
 		Assignment              func(childComplexity int, course string, name string) int
 		AssignmentSchema        func(childComplexity int) int
+		BranchRuleSchema        func(childComplexity int) int
 		Course                  func(childComplexity int, name string) int
 		CourseLint              func(childComplexity int, name string) int
 		CourseYaml              func(childComplexity int, name string) int
@@ -166,6 +167,7 @@ type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
 	ServerInfo(ctx context.Context) (*model.ServerInfo, error)
 	AssignmentSchema(ctx context.Context) ([]*model.FieldMeta, error)
+	BranchRuleSchema(ctx context.Context) ([]*model.FieldMeta, error)
 	Assignment(ctx context.Context, course string, name string) (*model.AssignmentView, error)
 	ValidateAssignmentDraft(ctx context.Context, course string, name string, draft []*model.FieldValueInput) (*model.ValidationResult, error)
 	Courses(ctx context.Context) ([]*model.Course, error)
@@ -564,6 +566,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.AssignmentSchema(childComplexity), true
+	case "Query.branchRuleSchema":
+		if e.ComplexityRoot.Query.BranchRuleSchema == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.BranchRuleSchema(childComplexity), true
 	case "Query.course":
 		if e.ComplexityRoot.Query.Course == nil {
 			break
@@ -871,6 +879,8 @@ type ValidationResult {
 extend type Query {
   "Field metadata for the assignment editor (server-authoritative labels, descriptions, dropdown options)."
   assignmentSchema: [FieldMeta!]!
+  "Field metadata for one branch rule — a row of the repeat-group ` + "`" + `branches` + "`" + ` list."
+  branchRuleSchema: [FieldMeta!]!
   "One assignment of one of the caller's courses: source values, resolved preview. Null when there is no such assignment."
   assignment(course: String!, name: String!): AssignmentView
   "Validate a draft assignment against the real resolver without saving."
@@ -3169,6 +3179,38 @@ func (ec *executionContext) _Query_assignmentSchema(ctx context.Context, field g
 	)
 }
 func (ec *executionContext) fieldContext_Query_assignmentSchema(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_FieldMeta(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_branchRuleSchema(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_branchRuleSchema(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().BranchRuleSchema(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.FieldMeta) graphql.Marshaler {
+			return ec.marshalNFieldMeta2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldMetaᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_branchRuleSchema(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -5538,6 +5580,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_assignmentSchema(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "branchRuleSchema":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_branchRuleSchema(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

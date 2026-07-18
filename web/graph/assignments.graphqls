@@ -93,6 +93,8 @@ type ValidationResult {
 extend type Query {
   "Field metadata for the assignment editor (server-authoritative labels, descriptions, dropdown options)."
   assignmentSchema: [FieldMeta!]!
+  "Field metadata for one branch rule — a row of the repeat-group `branches` list."
+  branchRuleSchema: [FieldMeta!]!
   "One assignment of one of the caller's courses: source values, resolved preview. Null when there is no such assignment."
   assignment(course: String!, name: String!): AssignmentView
   "Validate a draft assignment against the real resolver without saving."

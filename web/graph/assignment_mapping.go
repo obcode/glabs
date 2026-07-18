@@ -39,6 +39,31 @@ func toGraphAssignmentSchema(fields []app.FieldMeta) []*model.FieldMeta {
 	return out
 }
 
+// draftToMap turns the GraphQL draft input into the key→value map the app uses.
+func draftToMap(draft []*model.FieldValueInput) map[string]string {
+	m := make(map[string]string, len(draft))
+	for _, d := range draft {
+		if d != nil {
+			m[d.Key] = d.Value
+		}
+	}
+	return m
+}
+
+// toGraphValidationResult projects a validation result onto the GraphQL model.
+func toGraphValidationResult(vr *app.ValidationResult) *model.ValidationResult {
+	errs := vr.Errors
+	if errs == nil {
+		errs = []string{}
+	}
+	return &model.ValidationResult{
+		Ok:           vr.OK,
+		Errors:       errs,
+		Resolved:     emptyToNil(vr.Resolved),
+		ResolveError: emptyToNil(vr.ResolveError),
+	}
+}
+
 // toGraphAssignmentView projects an assignment view onto the GraphQL model.
 func toGraphAssignmentView(view *app.AssignmentView) *model.AssignmentView {
 	own := make([]*model.FieldValue, 0, len(view.Own))

@@ -95,19 +95,21 @@ type ComplexityRoot struct {
 		DeleteCourse      func(childComplexity int, name string) int
 		ImportCourseYaml  func(childComplexity int, yaml string) int
 		RemoveGitlabToken func(childComplexity int) int
+		SetAssignment     func(childComplexity int, course string, name string, draft []*model.FieldValueInput) int
 		SetGitlabToken    func(childComplexity int, token string) int
 	}
 
 	Query struct {
-		Assignment       func(childComplexity int, course string, name string) int
-		AssignmentSchema func(childComplexity int) int
-		Course           func(childComplexity int, name string) int
-		CourseLint       func(childComplexity int, name string) int
-		CourseYaml       func(childComplexity int, name string) int
-		Courses          func(childComplexity int) int
-		GitlabToken      func(childComplexity int) int
-		Me               func(childComplexity int) int
-		ServerInfo       func(childComplexity int) int
+		Assignment              func(childComplexity int, course string, name string) int
+		AssignmentSchema        func(childComplexity int) int
+		Course                  func(childComplexity int, name string) int
+		CourseLint              func(childComplexity int, name string) int
+		CourseYaml              func(childComplexity int, name string) int
+		Courses                 func(childComplexity int) int
+		GitlabToken             func(childComplexity int) int
+		Me                      func(childComplexity int) int
+		ServerInfo              func(childComplexity int) int
+		ValidateAssignmentDraft func(childComplexity int, course string, name string, draft []*model.FieldValueInput) int
 	}
 
 	ServerInfo struct {
@@ -120,6 +122,13 @@ type ComplexityRoot struct {
 		Email func(childComplexity int) int
 		Name  func(childComplexity int) int
 	}
+
+	ValidationResult struct {
+		Errors       func(childComplexity int) int
+		Ok           func(childComplexity int) int
+		ResolveError func(childComplexity int) int
+		Resolved     func(childComplexity int) int
+	}
 }
 
 // endregion ***************************** api!.gotpl *****************************
@@ -129,6 +138,7 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	ImportCourseYaml(ctx context.Context, yaml string) (*model.Course, error)
 	DeleteCourse(ctx context.Context, name string) (bool, error)
+	SetAssignment(ctx context.Context, course string, name string, draft []*model.FieldValueInput) (*model.AssignmentView, error)
 	SetGitlabToken(ctx context.Context, token string) (*model.GitLabTokenStatus, error)
 	RemoveGitlabToken(ctx context.Context) (*model.GitLabTokenStatus, error)
 }
@@ -137,6 +147,7 @@ type QueryResolver interface {
 	ServerInfo(ctx context.Context) (*model.ServerInfo, error)
 	AssignmentSchema(ctx context.Context) ([]*model.FieldMeta, error)
 	Assignment(ctx context.Context, course string, name string) (*model.AssignmentView, error)
+	ValidateAssignmentDraft(ctx context.Context, course string, name string, draft []*model.FieldValueInput) (*model.ValidationResult, error)
 	Courses(ctx context.Context) ([]*model.Course, error)
 	Course(ctx context.Context, name string) (*model.Course, error)
 	CourseYaml(ctx context.Context, name string) (string, error)
@@ -395,6 +406,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.RemoveGitlabToken(childComplexity), true
+	case "Mutation.setAssignment":
+		if e.ComplexityRoot.Mutation.SetAssignment == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setAssignment_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.SetAssignment(childComplexity, args["course"].(string), args["name"].(string), args["draft"].([]*model.FieldValueInput)), true
 	case "Mutation.setGitlabToken":
 		if e.ComplexityRoot.Mutation.SetGitlabToken == nil {
 			break
@@ -482,6 +504,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.ServerInfo(childComplexity), true
+	case "Query.validateAssignmentDraft":
+		if e.ComplexityRoot.Query.ValidateAssignmentDraft == nil {
+			break
+		}
+
+		args, err := ec.field_Query_validateAssignmentDraft_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.ValidateAssignmentDraft(childComplexity, args["course"].(string), args["name"].(string), args["draft"].([]*model.FieldValueInput)), true
 
 	case "ServerInfo.commit":
 		if e.ComplexityRoot.ServerInfo.Commit == nil {
@@ -515,6 +548,31 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.User.Name(childComplexity), true
 
+	case "ValidationResult.errors":
+		if e.ComplexityRoot.ValidationResult.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ValidationResult.Errors(childComplexity), true
+	case "ValidationResult.ok":
+		if e.ComplexityRoot.ValidationResult.Ok == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ValidationResult.Ok(childComplexity), true
+	case "ValidationResult.resolveError":
+		if e.ComplexityRoot.ValidationResult.ResolveError == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ValidationResult.ResolveError(childComplexity), true
+	case "ValidationResult.resolved":
+		if e.ComplexityRoot.ValidationResult.Resolved == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ValidationResult.Resolved(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -522,7 +580,9 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := newExecutionContext(opCtx, e, make(chan graphql.DeferredResult))
-	inputUnmarshalMap := graphql.BuildUnmarshalerMap()
+	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputFieldValueInput,
+	)
 	first := true
 
 	switch opCtx.Operation.Operation {
@@ -666,11 +726,39 @@ type AssignmentView {
   resolveError: String
 }
 
+"One field's drafted value, keyed by FieldMeta.key. Booleans as ` + "`" + `true` + "`" + `/` + "`" + `false` + "`" + `; empty string unsets the field (so it inherits)."
+input FieldValueInput {
+  key: String!
+  value: String!
+}
+
+"""
+Result of validating a draft assignment against the real resolver (the same one
+the CLI uses), without saving.
+"""
+type ValidationResult {
+  "Whether the draft is structurally sound and could be saved."
+  ok: Boolean!
+  "Hard errors that make the draft unsaveable (empty when ok)."
+  errors: [String!]!
+  "The resolved config preview (Show() output, may contain ANSI) when the draft resolves."
+  resolved: String
+  "Why there is no preview though the draft is ok — e.g. an abstract base."
+  resolveError: String
+}
+
 extend type Query {
   "Field metadata for the assignment editor (server-authoritative labels, descriptions, dropdown options)."
   assignmentSchema: [FieldMeta!]!
   "One assignment of one of the caller's courses: source values, resolved preview. Null when there is no such assignment."
   assignment(course: String!, name: String!): AssignmentView
+  "Validate a draft assignment against the real resolver without saving."
+  validateAssignmentDraft(course: String!, name: String!, draft: [FieldValueInput!]!): ValidationResult!
+}
+
+extend type Mutation {
+  "Apply a draft to one of the caller's assignments: validate, then persist (re-marshals the course YAML). Rejects a concrete draft that does not resolve."
+  setAssignment(course: String!, name: String!, draft: [FieldValueInput!]!): AssignmentView!
 }
 `, BuiltIn: false},
 	{Name: "../courses.graphqls", Input: `"""
@@ -908,6 +996,20 @@ func (ec *executionContext) childFields_User(ctx context.Context, field graphql.
 	return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 }
 
+func (ec *executionContext) childFields_ValidationResult(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "ok":
+		return ec.fieldContext_ValidationResult_ok(ctx, field)
+	case "errors":
+		return ec.fieldContext_ValidationResult_errors(ctx, field)
+	case "resolved":
+		return ec.fieldContext_ValidationResult_resolved(ctx, field)
+	case "resolveError":
+		return ec.fieldContext_ValidationResult_resolveError(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ValidationResult", field.Name)
+}
+
 func (ec *executionContext) childFields___Directive(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "name":
@@ -1052,6 +1154,36 @@ func (ec *executionContext) field_Mutation_importCourseYAML_args(ctx context.Con
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_setAssignment_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "course",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["course"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "name",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["name"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "draft",
+		func(ctx context.Context, v any) ([]*model.FieldValueInput, error) {
+			return ec.unmarshalNFieldValueInput2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldValueInputᚄ(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["draft"] = arg2
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_setGitlabToken_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1141,6 +1273,36 @@ func (ec *executionContext) field_Query_course_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_validateAssignmentDraft_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "course",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["course"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "name",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["name"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "draft",
+		func(ctx context.Context, v any) ([]*model.FieldValueInput, error) {
+			return ec.unmarshalNFieldValueInput2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldValueInputᚄ(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["draft"] = arg2
 	return args, nil
 }
 
@@ -2069,6 +2231,50 @@ func (ec *executionContext) fieldContext_Mutation_deleteCourse(ctx context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_setAssignment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_setAssignment(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().SetAssignment(ctx, fc.Args["course"].(string), fc.Args["name"].(string), fc.Args["draft"].([]*model.FieldValueInput))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.AssignmentView) graphql.Marshaler {
+			return ec.marshalNAssignmentView2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAssignmentView(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_setAssignment(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_AssignmentView(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_setAssignment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_setGitlabToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2279,6 +2485,50 @@ func (ec *executionContext) fieldContext_Query_assignment(ctx context.Context, f
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_assignment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_validateAssignmentDraft(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_validateAssignmentDraft(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().ValidateAssignmentDraft(ctx, fc.Args["course"].(string), fc.Args["name"].(string), fc.Args["draft"].([]*model.FieldValueInput))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ValidationResult) graphql.Marshaler {
+			return ec.marshalNValidationResult2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐValidationResult(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_validateAssignmentDraft(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ValidationResult(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_validateAssignmentDraft_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -2670,6 +2920,98 @@ func (ec *executionContext) _User_name(ctx context.Context, field graphql.Collec
 }
 func (ec *executionContext) fieldContext_User_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("User", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ValidationResult_ok(ctx context.Context, field graphql.CollectedField, obj *model.ValidationResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ValidationResult_ok(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Ok, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ValidationResult_ok(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ValidationResult", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _ValidationResult_errors(ctx context.Context, field graphql.CollectedField, obj *model.ValidationResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ValidationResult_errors(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ValidationResult_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ValidationResult", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ValidationResult_resolved(ctx context.Context, field graphql.CollectedField, obj *model.ValidationResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ValidationResult_resolved(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Resolved, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ValidationResult_resolved(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ValidationResult", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ValidationResult_resolveError(ctx context.Context, field graphql.CollectedField, obj *model.ValidationResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ValidationResult_resolveError(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ResolveError, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ValidationResult_resolveError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ValidationResult", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -3731,6 +4073,43 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputFieldValueInput(ctx context.Context, obj any) (model.FieldValueInput, error) {
+	var it model.FieldValueInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"key", "value"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "key":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Key = data
+		case "value":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("value"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Value = data
+		}
+	}
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -4169,6 +4548,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "setAssignment":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setAssignment(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "setGitlabToken":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_setGitlabToken(ctx, field)
@@ -4301,6 +4687,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}()
 				res = ec._Query_assignment(ctx, field)
 				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "validateAssignmentDraft":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_validateAssignmentDraft(ctx, field)
+				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
 				return res
@@ -4525,6 +4933,59 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		case "name":
 			out.Values[i] = ec._User_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var validationResultImplementors = []string{"ValidationResult"}
+
+func (ec *executionContext) _ValidationResult(ctx context.Context, sel ast.SelectionSet, obj *model.ValidationResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, validationResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ValidationResult")
+		case "ok":
+			out.Values[i] = ec._ValidationResult_ok(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errors":
+			out.Values[i] = ec._ValidationResult_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "resolved":
+			out.Values[i] = ec._ValidationResult_resolved(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "resolveError":
+			out.Values[i] = ec._ValidationResult_resolveError(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
 				out.Invalids++
 			}
 		default:
@@ -4940,6 +5401,20 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) marshalNAssignmentView2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAssignmentView(ctx context.Context, sel ast.SelectionSet, v model.AssignmentView) graphql.Marshaler {
+	return ec._AssignmentView(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAssignmentView2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAssignmentView(ctx context.Context, sel ast.SelectionSet, v *model.AssignmentView) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AssignmentView(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v any) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -5072,6 +5547,25 @@ func (ec *executionContext) marshalNFieldValue2ᚖgithubᚗcomᚋobcodeᚋglabs�
 		return graphql.Null
 	}
 	return ec._FieldValue(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNFieldValueInput2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldValueInputᚄ(ctx context.Context, v any) ([]*model.FieldValueInput, error) {
+	vSlice := graphql.CoerceList(v)
+	var err error
+	res := make([]*model.FieldValueInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNFieldValueInput2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldValueInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNFieldValueInput2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldValueInput(ctx context.Context, v any) (*model.FieldValueInput, error) {
+	res, err := ec.unmarshalInputFieldValueInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNFinding2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFindingᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Finding) graphql.Marshaler {
@@ -5227,6 +5721,20 @@ func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3�
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNValidationResult2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐValidationResult(ctx context.Context, sel ast.SelectionSet, v model.ValidationResult) graphql.Marshaler {
+	return ec._ValidationResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNValidationResult2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐValidationResult(ctx context.Context, sel ast.SelectionSet, v *model.ValidationResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ValidationResult(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {

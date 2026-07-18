@@ -10,6 +10,7 @@ import (
 	"errors"
 
 	"github.com/obcode/glabs/v3/web/db"
+	"github.com/obcode/glabs/v3/web/graph/generated"
 	"github.com/obcode/glabs/v3/web/graph/model"
 )
 
@@ -27,3 +28,36 @@ func (r *queryResolver) AssignmentReport(ctx context.Context, course string, nam
 	}
 	return toGraphAssignmentReport(rep), nil
 }
+
+// AssignmentReportProgress is the resolver for the assignmentReportProgress field.
+func (r *subscriptionResolver) AssignmentReportProgress(ctx context.Context, course string, name string) (<-chan *model.ReportProgress, error) {
+	events, err := r.app.StreamAssignmentReport(ctx, course, name)
+	if err != nil {
+		return nil, err
+	}
+	out := make(chan *model.ReportProgress)
+	go func() {
+		defer close(out)
+		for ev := range events {
+			p := &model.ReportProgress{Message: ev.Message, Done: ev.Done}
+			if ev.Error != "" {
+				msg := ev.Error
+				p.Error = &msg
+			}
+			if ev.Report != nil {
+				p.Report = toGraphAssignmentReport(ev.Report)
+			}
+			select {
+			case out <- p:
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return out, nil
+}
+
+// Subscription returns generated.SubscriptionResolver implementation.
+func (r *Resolver) Subscription() generated.SubscriptionResolver { return &subscriptionResolver{r} }
+
+type subscriptionResolver struct{ *Resolver }

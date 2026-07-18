@@ -31,6 +31,7 @@ type Config = graphql.Config[ResolverRoot, DirectiveRoot, ComplexityRoot]
 type ResolverRoot interface {
 	Mutation() MutationResolver
 	Query() QueryResolver
+	Subscription() SubscriptionResolver
 }
 
 type DirectiveRoot struct {
@@ -204,10 +205,21 @@ type ComplexityRoot struct {
 		URL func(childComplexity int) int
 	}
 
+	ReportProgress struct {
+		Done    func(childComplexity int) int
+		Error   func(childComplexity int) int
+		Message func(childComplexity int) int
+		Report  func(childComplexity int) int
+	}
+
 	ServerInfo struct {
 		Commit  func(childComplexity int) int
 		Date    func(childComplexity int) int
 		Version func(childComplexity int) int
+	}
+
+	Subscription struct {
+		AssignmentReportProgress func(childComplexity int, course string, name string) int
 	}
 
 	User struct {
@@ -256,6 +268,9 @@ type QueryResolver interface {
 	CourseLint(ctx context.Context, name string) ([]*model.Finding, error)
 	GitlabToken(ctx context.Context) (*model.GitLabTokenStatus, error)
 	AssignmentReport(ctx context.Context, course string, name string) (*model.AssignmentReport, error)
+}
+type SubscriptionResolver interface {
+	AssignmentReportProgress(ctx context.Context, course string, name string) (<-chan *model.ReportProgress, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -1024,6 +1039,31 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.RepoUrl.URL(childComplexity), true
 
+	case "ReportProgress.done":
+		if e.ComplexityRoot.ReportProgress.Done == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ReportProgress.Done(childComplexity), true
+	case "ReportProgress.error":
+		if e.ComplexityRoot.ReportProgress.Error == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ReportProgress.Error(childComplexity), true
+	case "ReportProgress.message":
+		if e.ComplexityRoot.ReportProgress.Message == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ReportProgress.Message(childComplexity), true
+	case "ReportProgress.report":
+		if e.ComplexityRoot.ReportProgress.Report == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ReportProgress.Report(childComplexity), true
+
 	case "ServerInfo.commit":
 		if e.ComplexityRoot.ServerInfo.Commit == nil {
 			break
@@ -1042,6 +1082,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ServerInfo.Version(childComplexity), true
+
+	case "Subscription.assignmentReportProgress":
+		if e.ComplexityRoot.Subscription.AssignmentReportProgress == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_assignmentReportProgress_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Subscription.AssignmentReportProgress(childComplexity, args["course"].(string), args["name"].(string)), true
 
 	case "User.email":
 		if e.ComplexityRoot.User.Email == nil {
@@ -1134,6 +1186,23 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			ctx = graphql.WithUnmarshalerMap(ctx, inputUnmarshalMap)
 			data := ec._Mutation(ctx, opCtx.Operation.SelectionSet)
 			var buf bytes.Buffer
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
+		}
+	case ast.Subscription:
+		next := ec._Subscription(ctx, opCtx.Operation.SelectionSet)
+
+		var buf bytes.Buffer
+		return func(ctx context.Context) *graphql.Response {
+			buf.Reset()
+			data := next(ctx)
+
+			if data == nil {
+				return nil
+			}
 			data.MarshalGQL(&buf)
 
 			return &graphql.Response{
@@ -1508,6 +1577,30 @@ extend type Query {
   """
   assignmentReport(course: String!, name: String!): AssignmentReport
 }
+
+"""
+One event while a report is being generated: a progress line as it is fetched, or
+the single final event (done = true) carrying the finished report or an error.
+"""
+type ReportProgress {
+  "A human-readable progress line; empty on the final event."
+  message: String!
+  "True on the final event; then no more events follow."
+  done: Boolean!
+  "The finished report — set only on the final event, and only if it succeeded."
+  report: AssignmentReport
+  "Why generation failed — set only on the final event on failure."
+  error: String
+}
+
+type Subscription {
+  """
+  Generate an assignment report and stream the GitLab client's progress as it
+  goes, ending with one done event carrying the report (or an error). Same
+  semantics as the assignmentReport query, but with live progress.
+  """
+  assignmentReportProgress(course: String!, name: String!): ReportProgress!
+}
 `, BuiltIn: false},
 	{Name: "../schema.graphqls", Input: `"""
 An authenticated user of glabs-web. Identity comes from the auth proxy; there
@@ -1807,6 +1900,20 @@ func (ec *executionContext) childFields_RepoUrl(ctx context.Context, field graph
 		return ec.fieldContext_RepoUrl_url(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type RepoUrl", field.Name)
+}
+
+func (ec *executionContext) childFields_ReportProgress(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "message":
+		return ec.fieldContext_ReportProgress_message(ctx, field)
+	case "done":
+		return ec.fieldContext_ReportProgress_done(ctx, field)
+	case "report":
+		return ec.fieldContext_ReportProgress_report(ctx, field)
+	case "error":
+		return ec.fieldContext_ReportProgress_error(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ReportProgress", field.Name)
 }
 
 func (ec *executionContext) childFields_ServerInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -2362,6 +2469,28 @@ func (ec *executionContext) field_Query_validateAssignmentDraft_args(ctx context
 		return nil, err
 	}
 	args["draft"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Subscription_assignmentReportProgress_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "course",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["course"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "name",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["name"] = arg1
 	return args, nil
 }
 
@@ -5499,6 +5628,107 @@ func (ec *executionContext) fieldContext_RepoUrl_url(_ context.Context, field gr
 	return graphql.NewScalarFieldContext("RepoUrl", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _ReportProgress_message(ctx context.Context, field graphql.CollectedField, obj *model.ReportProgress) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ReportProgress_message(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Message, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ReportProgress_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ReportProgress", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ReportProgress_done(ctx context.Context, field graphql.CollectedField, obj *model.ReportProgress) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ReportProgress_done(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Done, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ReportProgress_done(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ReportProgress", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _ReportProgress_report(ctx context.Context, field graphql.CollectedField, obj *model.ReportProgress) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ReportProgress_report(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Report, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.AssignmentReport) graphql.Marshaler {
+			return ec.marshalOAssignmentReport2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAssignmentReport(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ReportProgress_report(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReportProgress",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_AssignmentReport(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReportProgress_error(ctx context.Context, field graphql.CollectedField, obj *model.ReportProgress) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ReportProgress_error(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Error, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ReportProgress_error(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ReportProgress", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _ServerInfo_version(ctx context.Context, field graphql.CollectedField, obj *model.ServerInfo) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5566,6 +5796,50 @@ func (ec *executionContext) _ServerInfo_date(ctx context.Context, field graphql.
 }
 func (ec *executionContext) fieldContext_ServerInfo_date(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("ServerInfo", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Subscription_assignmentReportProgress(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	return graphql.ResolveFieldStream(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Subscription_assignmentReportProgress(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Subscription().AssignmentReportProgress(ctx, fc.Args["course"].(string), fc.Args["name"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ReportProgress) graphql.Marshaler {
+			return ec.marshalNReportProgress2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐReportProgress(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Subscription_assignmentReportProgress(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ReportProgress(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Subscription_assignmentReportProgress_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _User_email(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -8349,6 +8623,59 @@ func (ec *executionContext) _RepoUrl(ctx context.Context, sel ast.SelectionSet, 
 	return out
 }
 
+var reportProgressImplementors = []string{"ReportProgress"}
+
+func (ec *executionContext) _ReportProgress(ctx context.Context, sel ast.SelectionSet, obj *model.ReportProgress) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, reportProgressImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ReportProgress")
+		case "message":
+			out.Values[i] = ec._ReportProgress_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "done":
+			out.Values[i] = ec._ReportProgress_done(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "report":
+			out.Values[i] = ec._ReportProgress_report(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "error":
+			out.Values[i] = ec._ReportProgress_error(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var serverInfoImplementors = []string{"ServerInfo"}
 
 func (ec *executionContext) _ServerInfo(ctx context.Context, sel ast.SelectionSet, obj *model.ServerInfo) graphql.Marshaler {
@@ -8395,6 +8722,26 @@ func (ec *executionContext) _ServerInfo(ctx context.Context, sel ast.SelectionSe
 	})
 
 	return out
+}
+
+var subscriptionImplementors = []string{"Subscription"}
+
+func (ec *executionContext) _Subscription(ctx context.Context, sel ast.SelectionSet) func(ctx context.Context) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Subscription",
+	})
+	if len(fields) != 1 {
+		graphql.AddErrorf(ctx, "must subscribe to exactly one stream")
+		return nil
+	}
+
+	switch fields[0].Name {
+	case "assignmentReportProgress":
+		return ec._Subscription_assignmentReportProgress(ctx, fields[0])
+	default:
+		panic("unknown field " + strconv.Quote(fields[0].Name))
+	}
 }
 
 var userImplementors = []string{"User"}
@@ -9265,6 +9612,20 @@ func (ec *executionContext) marshalNRepoUrl2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv
 		return graphql.Null
 	}
 	return ec._RepoUrl(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNReportProgress2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐReportProgress(ctx context.Context, sel ast.SelectionSet, v model.ReportProgress) graphql.Marshaler {
+	return ec._ReportProgress(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNReportProgress2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐReportProgress(ctx context.Context, sel ast.SelectionSet, v *model.ReportProgress) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ReportProgress(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNServerInfo2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐServerInfo(ctx context.Context, sel ast.SelectionSet, v model.ServerInfo) graphql.Marshaler {

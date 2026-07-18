@@ -82,3 +82,27 @@ extend type Query {
   """
   assignmentReport(course: String!, name: String!): AssignmentReport
 }
+
+"""
+One event while a report is being generated: a progress line as it is fetched, or
+the single final event (done = true) carrying the finished report or an error.
+"""
+type ReportProgress {
+  "A human-readable progress line; empty on the final event."
+  message: String!
+  "True on the final event; then no more events follow."
+  done: Boolean!
+  "The finished report — set only on the final event, and only if it succeeded."
+  report: AssignmentReport
+  "Why generation failed — set only on the final event on failure."
+  error: String
+}
+
+type Subscription {
+  """
+  Generate an assignment report and stream the GitLab client's progress as it
+  goes, ending with one done event carrying the report (or an error). Same
+  semantics as the assignmentReport query, but with live progress.
+  """
+  assignmentReportProgress(course: String!, name: String!): ReportProgress!
+}

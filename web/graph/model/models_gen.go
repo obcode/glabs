@@ -219,11 +219,27 @@ type RepoURL struct {
 	URL string `json:"url"`
 }
 
+// One event while a report is being generated: a progress line as it is fetched, or
+// the single final event (done = true) carrying the finished report or an error.
+type ReportProgress struct {
+	// A human-readable progress line; empty on the final event.
+	Message string `json:"message"`
+	// True on the final event; then no more events follow.
+	Done bool `json:"done"`
+	// The finished report — set only on the final event, and only if it succeeded.
+	Report *AssignmentReport `json:"report,omitempty"`
+	// Why generation failed — set only on the final event on failure.
+	Error *string `json:"error,omitempty"`
+}
+
 // Version and build metadata for the running server.
 type ServerInfo struct {
 	Version string `json:"version"`
 	Commit  string `json:"commit"`
 	Date    string `json:"date"`
+}
+
+type Subscription struct {
 }
 
 // Result of validating a draft assignment against the real resolver (the same one

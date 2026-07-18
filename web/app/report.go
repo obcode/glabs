@@ -11,9 +11,10 @@ import (
 
 // gitlabClientFor builds a GitLab client from the caller's stored PAT. This is the
 // single place in the web server where the plaintext token exists: it is
-// decrypted here, handed straight to the client, and never logged or returned. A
-// discard reporter keeps the client from writing progress to the server's stdout.
-func (a *App) gitlabClientFor(ctx context.Context, owner string) (*gitlab.Client, error) {
+// decrypted here, handed straight to the client, and never logged or returned.
+// The reporter receives the client's progress: a discard reporter for one-shot
+// queries, or a streaming one for the report subscription.
+func (a *App) gitlabClientFor(ctx context.Context, owner string, rep reporter.Reporter) (*gitlab.Client, error) {
 	if a.sealer == nil {
 		return nil, fmt.Errorf("secret storage is unavailable: set secrets.key in the server config")
 	}
@@ -31,7 +32,7 @@ func (a *App) gitlabClientFor(ctx context.Context, owner string) (*gitlab.Client
 	return gitlab.NewClient(
 		gitlab.WithHost(a.gitlabHost),
 		gitlab.WithToken(token),
-		gitlab.WithReporter(reporter.NewDiscardReporter()),
+		gitlab.WithReporter(rep),
 	)
 }
 
@@ -52,7 +53,7 @@ func (a *App) AssignmentReport(ctx context.Context, course, name string) (*repor
 	if cfg == nil {
 		return nil, nil
 	}
-	client, err := a.gitlabClientFor(ctx, o)
+	client, err := a.gitlabClientFor(ctx, o, reporter.NewDiscardReporter())
 	if err != nil {
 		return nil, err
 	}

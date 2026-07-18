@@ -215,4 +215,28 @@ var assignmentFields = []FieldMeta{
 		Group:       "Merge-Request",
 		Kind:        KindBool,
 	},
+
+	// --- Issues: welche Issues aus dem Startercode in die Studi-Repos kommen ---
+	{
+		Key:         "issues.replicateFromStartercode",
+		Label:       "Issues aus Startercode übernehmen",
+		Description: "Issues des Startercode-Repos in die erzeugten Repos replizieren.",
+		Group:       "Issues",
+		Kind:        KindBool,
+	},
+	{
+		Key:         "issues.issueNumbers",
+		Label:       "Issue-Nummern",
+		Description: "Nur diese Issue-Nummern übernehmen (kommagetrennt). Leer = alle.",
+		Group:       "Issues",
+		Kind:        KindStringList,
+		Example:     "1, 2, 5",
+	},
+	{
+		Key:         "issues.includeChildTasks",
+		Label:       "Unteraufgaben einschließen",
+		Description: "Auch die Child-Tasks der übernommenen Issues replizieren.",
+		Group:       "Issues",
+		Kind:        KindBool,
+	},
 }

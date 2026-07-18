@@ -437,6 +437,48 @@ func TestDeleteAssignment(t *testing.T) {
 	}
 }
 
+func TestSetAssignment_issuesBlock(t *testing.T) {
+	const owner = "prof@hm.edu"
+	fs := newFakeStore()
+	fs.courses[owner+"/tc"] = storedCourse(t, owner, tcCourse)
+	a := &App{db: fs, gitlabHost: "https://gl"}
+	ctx := ctxAs(owner)
+
+	view, err := a.SetAssignment(ctx, "tc", "blatt1", map[string]string{
+		"issues.replicateFromStartercode": "true",
+		"issues.issueNumbers":             "1, 2, foo, 5",
+		"issues.includeChildTasks":        "true",
+	})
+	if err != nil {
+		t.Fatalf("set: %v", err)
+	}
+	own := ownMap(view.Own)
+	if own["issues.replicateFromStartercode"] != "true" {
+		t.Errorf("own[replicate] = %q", own["issues.replicateFromStartercode"])
+	}
+	// non-numeric "foo" is dropped, order preserved.
+	if own["issues.issueNumbers"] != "1, 2, 5" {
+		t.Errorf("own[issueNumbers] = %q, want '1, 2, 5'", own["issues.issueNumbers"])
+	}
+	if got := fs.saved.Source.Assignments["blatt1"].Issues; got == nil || len(got.IssueNumbers) != 3 {
+		t.Errorf("stored issue numbers wrong: %+v", got)
+	}
+
+	// Unsetting everything removes the block.
+	view2, err := a.SetAssignment(ctx, "tc", "blatt1", map[string]string{
+		"issues.replicateFromStartercode": "false",
+		"issues.issueNumbers":             "",
+		"issues.includeChildTasks":        "false",
+	})
+	if err != nil {
+		t.Fatalf("set (unset): %v", err)
+	}
+	if ownMap(view2.Own)["issues.replicateFromStartercode"] != "false" ||
+		fs.saved.Source.Assignments["blatt1"].Issues != nil {
+		t.Error("an all-empty issues block should be removed (nil)")
+	}
+}
+
 func TestSetAssignment_rejectsUnresolvable(t *testing.T) {
 	const owner = "prof@hm.edu"
 	fs := newFakeStore()

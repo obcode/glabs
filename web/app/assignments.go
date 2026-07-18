@@ -60,7 +60,28 @@ func assignmentOwn(src *config.AssignmentSource) []FieldValue {
 		{Key: "mergeRequest.skippedPipelinesAreSuccessful", Value: mrBool(src.MergeRequest, func(m *config.MergeRequestSource) bool { return m.SkippedPipelinesAreSuccessful })},
 		{Key: "mergeRequest.allThreadsMustBeResolved", Value: mrBool(src.MergeRequest, func(m *config.MergeRequestSource) bool { return m.AllThreadsMustBeResolved })},
 		{Key: "mergeRequest.statusChecksMustSucceed", Value: mrBool(src.MergeRequest, func(m *config.MergeRequestSource) bool { return m.StatusChecksMustSucceed })},
+		{Key: "issues.replicateFromStartercode", Value: issuesBool(src.Issues, func(i *config.IssuesSource) bool { return i.ReplicateFromStartercode })},
+		{Key: "issues.issueNumbers", Value: issueNumbersStr(src.Issues)},
+		{Key: "issues.includeChildTasks", Value: issuesBool(src.Issues, func(i *config.IssuesSource) bool { return i.IncludeChildTasks })},
 	}
+}
+
+func issuesBool(i *config.IssuesSource, f func(*config.IssuesSource) bool) string {
+	if i == nil {
+		return "false"
+	}
+	return strconv.FormatBool(f(i))
+}
+
+func issueNumbersStr(i *config.IssuesSource) string {
+	if i == nil || len(i.IssueNumbers) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(i.IssueNumbers))
+	for _, n := range i.IssueNumbers {
+		parts = append(parts, strconv.Itoa(n))
+	}
+	return strings.Join(parts, ", ")
 }
 
 func mrStr(m *config.MergeRequestSource, f func(*config.MergeRequestSource) string) string {
@@ -173,7 +194,56 @@ func applyDraft(src *config.AssignmentSource, draft map[string]string) *config.A
 	}
 	c.Startercode = applyStartercodeDraft(src.Startercode, draft)
 	c.MergeRequest = applyMergeRequestDraft(src.MergeRequest, draft)
+	c.Issues = applyIssuesDraft(src.Issues, draft)
 	return &c
+}
+
+// applyIssuesDraft rebuilds the issues block from the draft's issues.* keys into
+// a NEW struct (never mutating the shared original) and nils it when every field
+// is empty. issueNumbers is a comma-separated list of integers; non-numeric
+// entries are dropped.
+func applyIssuesDraft(orig *config.IssuesSource, draft map[string]string) *config.IssuesSource {
+	touched := false
+	for k := range draft {
+		if strings.HasPrefix(k, "issues.") {
+			touched = true
+			break
+		}
+	}
+	if !touched {
+		return orig
+	}
+
+	var is config.IssuesSource
+	if orig != nil {
+		is = *orig
+	}
+	for k, v := range draft {
+		switch k {
+		case "issues.replicateFromStartercode":
+			is.ReplicateFromStartercode = v == "true"
+		case "issues.includeChildTasks":
+			is.IncludeChildTasks = v == "true"
+		case "issues.issueNumbers":
+			is.IssueNumbers = splitIntList(v)
+		}
+	}
+	if !is.ReplicateFromStartercode && !is.IncludeChildTasks && len(is.IssueNumbers) == 0 {
+		return nil
+	}
+	return &is
+}
+
+// splitIntList parses a comma-/newline-separated list of integers, dropping
+// blank and non-numeric entries.
+func splitIntList(s string) []int {
+	var out []int
+	for _, f := range splitList(s) {
+		if n, err := strconv.Atoi(f); err == nil {
+			out = append(out, n)
+		}
+	}
+	return out
 }
 
 // applyMergeRequestDraft rebuilds the mergeRequest block from the draft's

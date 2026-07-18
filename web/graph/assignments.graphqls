@@ -1,0 +1,63 @@
+"""
+The assignment editor is schema-driven: the GUI renders a guided, validated form
+from this server-authoritative metadata, so labels, help text and dropdown
+options live in exactly one place.
+"""
+type FieldMeta {
+  "Config key, e.g. `per` or `accesslevel`."
+  key: String!
+  "Human-readable label for the form."
+  label: String!
+  "Short help text describing what the field does."
+  description: String!
+  "The input shape the GUI should render."
+  kind: FieldKind!
+  "Whether the field must be set for a concrete (non-abstract) assignment."
+  required: Boolean!
+  "Whether the field is deprecated (shown but discouraged)."
+  deprecated: Boolean!
+  "An example value for the input placeholder, if any."
+  example: String
+  "Dropdown options for an ENUM field (empty otherwise)."
+  options: [FieldOption!]!
+}
+
+"One choice of an ENUM field — a dropdown entry with its own short description."
+type FieldOption {
+  value: String!
+  label: String!
+  description: String!
+}
+
+"The input shape the GUI should render for a field."
+enum FieldKind {
+  STRING
+  BOOL
+  ENUM
+  INT
+  STRINGLIST
+}
+
+"""
+One assignment in source (own) form plus its resolved preview — the same
+rendering `glabs show` produces, so inheritance is visible.
+"""
+type AssignmentView {
+  course: String!
+  name: String!
+  "The assignment this one inherits from, if any (`extends`)."
+  extends: String
+  "Whether this is an abstract base (a template for `extends`)."
+  abstract: Boolean!
+  "The resolved config rendered as text (may contain ANSI); empty when resolveError is set."
+  resolved: String!
+  "Why the assignment could not be resolved (e.g. abstract base, missing parent) — not an error."
+  resolveError: String
+}
+
+extend type Query {
+  "Field metadata for the assignment editor (server-authoritative labels, descriptions, dropdown options)."
+  assignmentSchema: [FieldMeta!]!
+  "One assignment of one of the caller's courses: source values, resolved preview. Null when there is no such assignment."
+  assignment(course: String!, name: String!): AssignmentView
+}

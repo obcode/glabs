@@ -37,6 +37,15 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	AssignmentView struct {
+		Abstract     func(childComplexity int) int
+		Course       func(childComplexity int) int
+		Extends      func(childComplexity int) int
+		Name         func(childComplexity int) int
+		ResolveError func(childComplexity int) int
+		Resolved     func(childComplexity int) int
+	}
+
 	Course struct {
 		AssignmentNames func(childComplexity int) int
 		CoursePath      func(childComplexity int) int
@@ -46,6 +55,23 @@ type ComplexityRoot struct {
 		SemesterPath    func(childComplexity int) int
 		StudentCount    func(childComplexity int) int
 		UpdatedAt       func(childComplexity int) int
+	}
+
+	FieldMeta struct {
+		Deprecated  func(childComplexity int) int
+		Description func(childComplexity int) int
+		Example     func(childComplexity int) int
+		Key         func(childComplexity int) int
+		Kind        func(childComplexity int) int
+		Label       func(childComplexity int) int
+		Options     func(childComplexity int) int
+		Required    func(childComplexity int) int
+	}
+
+	FieldOption struct {
+		Description func(childComplexity int) int
+		Label       func(childComplexity int) int
+		Value       func(childComplexity int) int
 	}
 
 	Finding struct {
@@ -67,13 +93,15 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Course      func(childComplexity int, name string) int
-		CourseLint  func(childComplexity int, name string) int
-		CourseYaml  func(childComplexity int, name string) int
-		Courses     func(childComplexity int) int
-		GitlabToken func(childComplexity int) int
-		Me          func(childComplexity int) int
-		ServerInfo  func(childComplexity int) int
+		Assignment       func(childComplexity int, course string, name string) int
+		AssignmentSchema func(childComplexity int) int
+		Course           func(childComplexity int, name string) int
+		CourseLint       func(childComplexity int, name string) int
+		CourseYaml       func(childComplexity int, name string) int
+		Courses          func(childComplexity int) int
+		GitlabToken      func(childComplexity int) int
+		Me               func(childComplexity int) int
+		ServerInfo       func(childComplexity int) int
 	}
 
 	ServerInfo struct {
@@ -101,6 +129,8 @@ type MutationResolver interface {
 type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
 	ServerInfo(ctx context.Context) (*model.ServerInfo, error)
+	AssignmentSchema(ctx context.Context) ([]*model.FieldMeta, error)
+	Assignment(ctx context.Context, course string, name string) (*model.AssignmentView, error)
 	Courses(ctx context.Context) ([]*model.Course, error)
 	Course(ctx context.Context, name string) (*model.Course, error)
 	CourseYaml(ctx context.Context, name string) (string, error)
@@ -125,6 +155,43 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := newExecutionContext(nil, e, nil)
 	_ = ec
 	switch typeName + "." + field {
+
+	case "AssignmentView.abstract":
+		if e.ComplexityRoot.AssignmentView.Abstract == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AssignmentView.Abstract(childComplexity), true
+	case "AssignmentView.course":
+		if e.ComplexityRoot.AssignmentView.Course == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AssignmentView.Course(childComplexity), true
+	case "AssignmentView.extends":
+		if e.ComplexityRoot.AssignmentView.Extends == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AssignmentView.Extends(childComplexity), true
+	case "AssignmentView.name":
+		if e.ComplexityRoot.AssignmentView.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AssignmentView.Name(childComplexity), true
+	case "AssignmentView.resolveError":
+		if e.ComplexityRoot.AssignmentView.ResolveError == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AssignmentView.ResolveError(childComplexity), true
+	case "AssignmentView.resolved":
+		if e.ComplexityRoot.AssignmentView.Resolved == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AssignmentView.Resolved(childComplexity), true
 
 	case "Course.assignmentNames":
 		if e.ComplexityRoot.Course.AssignmentNames == nil {
@@ -174,6 +241,74 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Course.UpdatedAt(childComplexity), true
+
+	case "FieldMeta.deprecated":
+		if e.ComplexityRoot.FieldMeta.Deprecated == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FieldMeta.Deprecated(childComplexity), true
+	case "FieldMeta.description":
+		if e.ComplexityRoot.FieldMeta.Description == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FieldMeta.Description(childComplexity), true
+	case "FieldMeta.example":
+		if e.ComplexityRoot.FieldMeta.Example == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FieldMeta.Example(childComplexity), true
+	case "FieldMeta.key":
+		if e.ComplexityRoot.FieldMeta.Key == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FieldMeta.Key(childComplexity), true
+	case "FieldMeta.kind":
+		if e.ComplexityRoot.FieldMeta.Kind == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FieldMeta.Kind(childComplexity), true
+	case "FieldMeta.label":
+		if e.ComplexityRoot.FieldMeta.Label == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FieldMeta.Label(childComplexity), true
+	case "FieldMeta.options":
+		if e.ComplexityRoot.FieldMeta.Options == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FieldMeta.Options(childComplexity), true
+	case "FieldMeta.required":
+		if e.ComplexityRoot.FieldMeta.Required == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FieldMeta.Required(childComplexity), true
+
+	case "FieldOption.description":
+		if e.ComplexityRoot.FieldOption.Description == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FieldOption.Description(childComplexity), true
+	case "FieldOption.label":
+		if e.ComplexityRoot.FieldOption.Label == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FieldOption.Label(childComplexity), true
+	case "FieldOption.value":
+		if e.ComplexityRoot.FieldOption.Value == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FieldOption.Value(childComplexity), true
 
 	case "Finding.message":
 		if e.ComplexityRoot.Finding.Message == nil {
@@ -247,6 +382,23 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Mutation.SetGitlabToken(childComplexity, args["token"].(string)), true
 
+	case "Query.assignment":
+		if e.ComplexityRoot.Query.Assignment == nil {
+			break
+		}
+
+		args, err := ec.field_Query_assignment_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.Assignment(childComplexity, args["course"].(string), args["name"].(string)), true
+	case "Query.assignmentSchema":
+		if e.ComplexityRoot.Query.AssignmentSchema == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.AssignmentSchema(childComplexity), true
 	case "Query.course":
 		if e.ComplexityRoot.Query.Course == nil {
 			break
@@ -420,6 +572,70 @@ func newExecutionContext(
 }
 
 var sources = []*ast.Source{
+	{Name: "../assignments.graphqls", Input: `"""
+The assignment editor is schema-driven: the GUI renders a guided, validated form
+from this server-authoritative metadata, so labels, help text and dropdown
+options live in exactly one place.
+"""
+type FieldMeta {
+  "Config key, e.g. ` + "`" + `per` + "`" + ` or ` + "`" + `accesslevel` + "`" + `."
+  key: String!
+  "Human-readable label for the form."
+  label: String!
+  "Short help text describing what the field does."
+  description: String!
+  "The input shape the GUI should render."
+  kind: FieldKind!
+  "Whether the field must be set for a concrete (non-abstract) assignment."
+  required: Boolean!
+  "Whether the field is deprecated (shown but discouraged)."
+  deprecated: Boolean!
+  "An example value for the input placeholder, if any."
+  example: String
+  "Dropdown options for an ENUM field (empty otherwise)."
+  options: [FieldOption!]!
+}
+
+"One choice of an ENUM field — a dropdown entry with its own short description."
+type FieldOption {
+  value: String!
+  label: String!
+  description: String!
+}
+
+"The input shape the GUI should render for a field."
+enum FieldKind {
+  STRING
+  BOOL
+  ENUM
+  INT
+  STRINGLIST
+}
+
+"""
+One assignment in source (own) form plus its resolved preview — the same
+rendering ` + "`" + `glabs show` + "`" + ` produces, so inheritance is visible.
+"""
+type AssignmentView {
+  course: String!
+  name: String!
+  "The assignment this one inherits from, if any (` + "`" + `extends` + "`" + `)."
+  extends: String
+  "Whether this is an abstract base (a template for ` + "`" + `extends` + "`" + `)."
+  abstract: Boolean!
+  "The resolved config rendered as text (may contain ANSI); empty when resolveError is set."
+  resolved: String!
+  "Why the assignment could not be resolved (e.g. abstract base, missing parent) — not an error."
+  resolveError: String
+}
+
+extend type Query {
+  "Field metadata for the assignment editor (server-authoritative labels, descriptions, dropdown options)."
+  assignmentSchema: [FieldMeta!]!
+  "One assignment of one of the caller's courses: source values, resolved preview. Null when there is no such assignment."
+  assignment(course: String!, name: String!): AssignmentView
+}
+`, BuiltIn: false},
 	{Name: "../courses.graphqls", Input: `"""
 A course as stored for the current user. Each user sees only their own courses;
 there is no way to reach another user's course.
@@ -525,6 +741,24 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // Each function is generated once per unique object type, deduplicating the
 // switch statements that were previously inlined in every fieldContext_* function.
 
+func (ec *executionContext) childFields_AssignmentView(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "course":
+		return ec.fieldContext_AssignmentView_course(ctx, field)
+	case "name":
+		return ec.fieldContext_AssignmentView_name(ctx, field)
+	case "extends":
+		return ec.fieldContext_AssignmentView_extends(ctx, field)
+	case "abstract":
+		return ec.fieldContext_AssignmentView_abstract(ctx, field)
+	case "resolved":
+		return ec.fieldContext_AssignmentView_resolved(ctx, field)
+	case "resolveError":
+		return ec.fieldContext_AssignmentView_resolveError(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AssignmentView", field.Name)
+}
+
 func (ec *executionContext) childFields_Course(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "name":
@@ -545,6 +779,40 @@ func (ec *executionContext) childFields_Course(ctx context.Context, field graphq
 		return ec.fieldContext_Course_updatedAt(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Course", field.Name)
+}
+
+func (ec *executionContext) childFields_FieldMeta(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "key":
+		return ec.fieldContext_FieldMeta_key(ctx, field)
+	case "label":
+		return ec.fieldContext_FieldMeta_label(ctx, field)
+	case "description":
+		return ec.fieldContext_FieldMeta_description(ctx, field)
+	case "kind":
+		return ec.fieldContext_FieldMeta_kind(ctx, field)
+	case "required":
+		return ec.fieldContext_FieldMeta_required(ctx, field)
+	case "deprecated":
+		return ec.fieldContext_FieldMeta_deprecated(ctx, field)
+	case "example":
+		return ec.fieldContext_FieldMeta_example(ctx, field)
+	case "options":
+		return ec.fieldContext_FieldMeta_options(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FieldMeta", field.Name)
+}
+
+func (ec *executionContext) childFields_FieldOption(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "value":
+		return ec.fieldContext_FieldOption_value(ctx, field)
+	case "label":
+		return ec.fieldContext_FieldOption_label(ctx, field)
+	case "description":
+		return ec.fieldContext_FieldOption_description(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FieldOption", field.Name)
 }
 
 func (ec *executionContext) childFields_Finding(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -763,6 +1031,28 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_assignment_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "course",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["course"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "name",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["name"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_courseLint_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -864,6 +1154,144 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ***************************** args.gotpl *****************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _AssignmentView_course(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AssignmentView_course(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Course, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AssignmentView_course(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AssignmentView", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AssignmentView_name(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AssignmentView_name(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AssignmentView_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AssignmentView", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AssignmentView_extends(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AssignmentView_extends(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Extends, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_AssignmentView_extends(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AssignmentView", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AssignmentView_abstract(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AssignmentView_abstract(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Abstract, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AssignmentView_abstract(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AssignmentView", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _AssignmentView_resolved(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AssignmentView_resolved(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Resolved, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AssignmentView_resolved(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AssignmentView", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AssignmentView_resolveError(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AssignmentView_resolveError(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ResolveError, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_AssignmentView_resolveError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AssignmentView", field, false, false, errors.New("field of type String does not have child fields"))
+}
 
 func (ec *executionContext) _Course_name(ctx context.Context, field graphql.CollectedField, obj *model.Course) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
@@ -1047,6 +1475,268 @@ func (ec *executionContext) _Course_updatedAt(ctx context.Context, field graphql
 }
 func (ec *executionContext) fieldContext_Course_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("Course", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _FieldMeta_key(ctx context.Context, field graphql.CollectedField, obj *model.FieldMeta) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FieldMeta_key(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FieldMeta_key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FieldMeta", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FieldMeta_label(ctx context.Context, field graphql.CollectedField, obj *model.FieldMeta) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FieldMeta_label(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Label, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FieldMeta_label(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FieldMeta", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FieldMeta_description(ctx context.Context, field graphql.CollectedField, obj *model.FieldMeta) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FieldMeta_description(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FieldMeta_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FieldMeta", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FieldMeta_kind(ctx context.Context, field graphql.CollectedField, obj *model.FieldMeta) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FieldMeta_kind(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Kind, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v model.FieldKind) graphql.Marshaler {
+			return ec.marshalNFieldKind2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldKind(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FieldMeta_kind(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FieldMeta", field, false, false, errors.New("field of type FieldKind does not have child fields"))
+}
+
+func (ec *executionContext) _FieldMeta_required(ctx context.Context, field graphql.CollectedField, obj *model.FieldMeta) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FieldMeta_required(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Required, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FieldMeta_required(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FieldMeta", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _FieldMeta_deprecated(ctx context.Context, field graphql.CollectedField, obj *model.FieldMeta) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FieldMeta_deprecated(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Deprecated, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FieldMeta_deprecated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FieldMeta", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _FieldMeta_example(ctx context.Context, field graphql.CollectedField, obj *model.FieldMeta) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FieldMeta_example(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Example, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_FieldMeta_example(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FieldMeta", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FieldMeta_options(ctx context.Context, field graphql.CollectedField, obj *model.FieldMeta) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FieldMeta_options(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Options, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.FieldOption) graphql.Marshaler {
+			return ec.marshalNFieldOption2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldOptionᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FieldMeta_options(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FieldMeta",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_FieldOption(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FieldOption_value(ctx context.Context, field graphql.CollectedField, obj *model.FieldOption) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FieldOption_value(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Value, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FieldOption_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FieldOption", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FieldOption_label(ctx context.Context, field graphql.CollectedField, obj *model.FieldOption) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FieldOption_label(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Label, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FieldOption_label(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FieldOption", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FieldOption_description(ctx context.Context, field graphql.CollectedField, obj *model.FieldOption) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FieldOption_description(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FieldOption_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FieldOption", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _Finding_path(ctx context.Context, field graphql.CollectedField, obj *model.Finding) (ret graphql.Marshaler) {
@@ -1388,6 +2078,82 @@ func (ec *executionContext) fieldContext_Query_serverInfo(_ context.Context, fie
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_ServerInfo(ctx, field)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_assignmentSchema(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_assignmentSchema(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().AssignmentSchema(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.FieldMeta) graphql.Marshaler {
+			return ec.marshalNFieldMeta2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldMetaᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_assignmentSchema(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_FieldMeta(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_assignment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_assignment(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().Assignment(ctx, fc.Args["course"].(string), fc.Args["name"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.AssignmentView) graphql.Marshaler {
+			return ec.marshalOAssignmentView2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAssignmentView(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Query_assignment(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_AssignmentView(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_assignment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -2846,6 +3612,69 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** object.gotpl ****************************
 
+var assignmentViewImplementors = []string{"AssignmentView"}
+
+func (ec *executionContext) _AssignmentView(ctx context.Context, sel ast.SelectionSet, obj *model.AssignmentView) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, assignmentViewImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AssignmentView")
+		case "course":
+			out.Values[i] = ec._AssignmentView_course(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._AssignmentView_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "extends":
+			out.Values[i] = ec._AssignmentView_extends(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "abstract":
+			out.Values[i] = ec._AssignmentView_abstract(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "resolved":
+			out.Values[i] = ec._AssignmentView_resolved(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "resolveError":
+			out.Values[i] = ec._AssignmentView_resolveError(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var courseImplementors = []string{"Course"}
 
 func (ec *executionContext) _Course(ctx context.Context, sel ast.SelectionSet, obj *model.Course) graphql.Marshaler {
@@ -2895,6 +3724,127 @@ func (ec *executionContext) _Course(ctx context.Context, sel ast.SelectionSet, o
 			}
 		case "updatedAt":
 			out.Values[i] = ec._Course_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var fieldMetaImplementors = []string{"FieldMeta"}
+
+func (ec *executionContext) _FieldMeta(ctx context.Context, sel ast.SelectionSet, obj *model.FieldMeta) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, fieldMetaImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FieldMeta")
+		case "key":
+			out.Values[i] = ec._FieldMeta_key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "label":
+			out.Values[i] = ec._FieldMeta_label(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "description":
+			out.Values[i] = ec._FieldMeta_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "kind":
+			out.Values[i] = ec._FieldMeta_kind(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "required":
+			out.Values[i] = ec._FieldMeta_required(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deprecated":
+			out.Values[i] = ec._FieldMeta_deprecated(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "example":
+			out.Values[i] = ec._FieldMeta_example(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "options":
+			out.Values[i] = ec._FieldMeta_options(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var fieldOptionImplementors = []string{"FieldOption"}
+
+func (ec *executionContext) _FieldOption(ctx context.Context, sel ast.SelectionSet, obj *model.FieldOption) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, fieldOptionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FieldOption")
+		case "value":
+			out.Values[i] = ec._FieldOption_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "label":
+			out.Values[i] = ec._FieldOption_label(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "description":
+			out.Values[i] = ec._FieldOption_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -3132,6 +4082,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}()
 				res = ec._Query_serverInfo(ctx, field)
 				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "assignmentSchema":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_assignmentSchema(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "assignment":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_assignment(ctx, field)
+				if res == graphql.RequiredNull {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
 				return res
@@ -3817,6 +4811,68 @@ func (ec *executionContext) marshalNCourse2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3
 	return ec._Course(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNFieldKind2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldKind(ctx context.Context, v any) (model.FieldKind, error) {
+	var res model.FieldKind
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFieldKind2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldKind(ctx context.Context, sel ast.SelectionSet, v model.FieldKind) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNFieldMeta2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldMetaᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.FieldMeta) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNFieldMeta2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldMeta(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNFieldMeta2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldMeta(ctx context.Context, sel ast.SelectionSet, v *model.FieldMeta) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._FieldMeta(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNFieldOption2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldOptionᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.FieldOption) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNFieldOption2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldOption(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNFieldOption2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldOption(ctx context.Context, sel ast.SelectionSet, v *model.FieldOption) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._FieldOption(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNFinding2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFindingᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Finding) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
@@ -4110,6 +5166,13 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalOAssignmentView2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAssignmentView(ctx context.Context, sel ast.SelectionSet, v *model.AssignmentView) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AssignmentView(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v any) (bool, error) {

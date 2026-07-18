@@ -36,10 +36,13 @@ type App struct {
 	// configured, in which case token operations fail closed rather than storing
 	// a token in plaintext.
 	sealer *secrets.Sealer
+	// gitlabHost is the base URL glabs builds project URLs against; it feeds the
+	// resolved-config preview so the web shows the same URLs the CLI would.
+	gitlabHost string
 }
 
-func New(database *db.DB, sealer *secrets.Sealer) *App {
-	return &App{db: database, sealer: sealer}
+func New(database *db.DB, sealer *secrets.Sealer, gitlabHost string) *App {
+	return &App{db: database, sealer: sealer, gitlabHost: gitlabHost}
 }
 
 // GetUserByEmail looks up a user for the auth middleware's allowlist check.

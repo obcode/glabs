@@ -320,6 +320,89 @@ func TestSetAssignment_mergeRequestBlock(t *testing.T) {
 	}
 }
 
+func TestCreateCourse(t *testing.T) {
+	const owner = "prof@hm.edu"
+	fs := newFakeStore()
+	a := &App{db: fs}
+	ctx := ctxAs(owner)
+
+	stored, err := a.CreateCourse(ctx, "newcourse", "nc/sem", "ss26", true, false)
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	if stored.Source.CoursePath != "nc/sem" || stored.Source.SemesterPath != "ss26" {
+		t.Errorf("paths not stored: %+v", stored.Source)
+	}
+	if len(stored.RawYAML) == 0 {
+		t.Error("expected rawYAML to be marshalled")
+	}
+
+	// Creating the same name again fails.
+	if _, err := a.CreateCourse(ctx, "newcourse", "x", "y", true, false); err == nil {
+		t.Error("expected an error creating a course that already exists")
+	}
+	// Invalid name is rejected.
+	if _, err := a.CreateCourse(ctx, "bad name!", "x", "y", true, false); err == nil {
+		t.Error("expected an error for an invalid course name")
+	}
+}
+
+func TestSetAssignment_upsertCreates(t *testing.T) {
+	const owner = "prof@hm.edu"
+	fs := newFakeStore()
+	fs.courses[owner+"/tc"] = storedCourse(t, owner, tcCourse)
+	a := &App{db: fs, gitlabHost: "https://gl"}
+	ctx := ctxAs(owner)
+
+	// The assignment "neu" does not exist yet; a valid draft creates it.
+	view, err := a.SetAssignment(ctx, "tc", "neu", map[string]string{
+		"per":         "student",
+		"description": "Brand new",
+	})
+	if err != nil {
+		t.Fatalf("upsert: %v", err)
+	}
+	if ownMap(view.Own)["description"] != "Brand new" {
+		t.Errorf("own[description] = %q", ownMap(view.Own)["description"])
+	}
+	if _, ok := fs.saved.Source.Assignments["neu"]; !ok {
+		t.Error("the new assignment was not persisted")
+	}
+
+	// An invalid assignment name is rejected on create.
+	if _, err := a.SetAssignment(ctx, "tc", "bad name!", map[string]string{"per": "student"}); err == nil {
+		t.Error("expected an error for an invalid new-assignment name")
+	}
+}
+
+func TestDeleteAssignment(t *testing.T) {
+	const owner = "prof@hm.edu"
+	fs := newFakeStore()
+	fs.courses[owner+"/tc"] = storedCourse(t, owner, tcCourse)
+	a := &App{db: fs}
+	ctx := ctxAs(owner)
+
+	ok, err := a.DeleteAssignment(ctx, "tc", "blatt1")
+	if err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+	if !ok {
+		t.Error("expected delete to report true")
+	}
+	if _, exists := fs.saved.Source.Assignments["blatt1"]; exists {
+		t.Error("blatt1 should be gone from the stored source")
+	}
+
+	// Deleting a non-existent assignment reports false.
+	got, err := a.DeleteAssignment(ctx, "tc", "nope")
+	if err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+	if got {
+		t.Error("deleting a missing assignment should report false")
+	}
+}
+
 func TestSetAssignment_rejectsUnresolvable(t *testing.T) {
 	const owner = "prof@hm.edu"
 	fs := newFakeStore()

@@ -23,6 +23,11 @@ func (r *mutationResolver) SetAssignment(ctx context.Context, course string, nam
 	return toGraphAssignmentView(view), nil
 }
 
+// DeleteAssignment is the resolver for the deleteAssignment field.
+func (r *mutationResolver) DeleteAssignment(ctx context.Context, course string, name string) (bool, error) {
+	return r.app.DeleteAssignment(ctx, course, name)
+}
+
 // AssignmentSchema is the resolver for the assignmentSchema field.
 func (r *queryResolver) AssignmentSchema(ctx context.Context) ([]*model.FieldMeta, error) {
 	return toGraphAssignmentSchema(app.AssignmentSchema()), nil

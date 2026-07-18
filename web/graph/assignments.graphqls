@@ -100,6 +100,8 @@ extend type Query {
 }
 
 extend type Mutation {
-  "Apply a draft to one of the caller's assignments: validate, then persist (re-marshals the course YAML). Rejects a concrete draft that does not resolve."
+  "Apply a draft to one of the caller's assignments, creating it if it does not exist: validate, then persist (re-marshals the course YAML). Rejects a concrete draft that does not resolve."
   setAssignment(course: String!, name: String!, draft: [FieldValueInput!]!): AssignmentView!
+  "Delete one assignment from one of the caller's courses. Returns false if there was no such assignment."
+  deleteAssignment(course: String!, name: String!): Boolean!
 }

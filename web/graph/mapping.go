@@ -36,6 +36,26 @@ func toGraphCourse(s *db.StoredCourse) *model.Course {
 		}
 		sort.Strings(names)
 		c.AssignmentNames = names
+
+		c.Students = append([]string{}, s.Source.Students...)
+		groupNames := make([]string, 0, len(s.Source.Groups))
+		for gname := range s.Source.Groups {
+			groupNames = append(groupNames, gname)
+		}
+		sort.Strings(groupNames)
+		c.Groups = make([]*model.Group, 0, len(groupNames))
+		for _, gname := range groupNames {
+			c.Groups = append(c.Groups, &model.Group{
+				Name:    gname,
+				Members: append([]string{}, s.Source.Groups[gname]...),
+			})
+		}
+	}
+	if c.Students == nil {
+		c.Students = []string{}
+	}
+	if c.Groups == nil {
+		c.Groups = []*model.Group{}
 	}
 	return c
 }

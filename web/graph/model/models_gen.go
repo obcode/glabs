@@ -38,11 +38,15 @@ type Course struct {
 	// Whether the student's email domain is appended as a suffix (default true).
 	UseEmailDomainAsSuffix bool `json:"useEmailDomainAsSuffix"`
 	// The names of the assignments in this course, sorted.
-	AssignmentNames []string  `json:"assignmentNames"`
-	StudentCount    int       `json:"studentCount"`
-	GroupCount      int       `json:"groupCount"`
-	ImportedAt      time.Time `json:"importedAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
+	AssignmentNames []string `json:"assignmentNames"`
+	// The course-level students (emails), as stored.
+	Students []string `json:"students"`
+	// The course-level groups, sorted by name.
+	Groups       []*Group  `json:"groups"`
+	StudentCount int       `json:"studentCount"`
+	GroupCount   int       `json:"groupCount"`
+	ImportedAt   time.Time `json:"importedAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
 }
 
 // The assignment editor is schema-driven: the GUI renders a guided, validated form
@@ -102,6 +106,18 @@ type Finding struct {
 type GitLabTokenStatus struct {
 	Set       bool       `json:"set"`
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
+}
+
+// A named group of members (emails).
+type Group struct {
+	Name    string   `json:"name"`
+	Members []string `json:"members"`
+}
+
+// A named group of members (emails), for setCourseGroups.
+type GroupInput struct {
+	Name    string   `json:"name"`
+	Members []string `json:"members"`
 }
 
 type Mutation struct {

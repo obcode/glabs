@@ -167,6 +167,78 @@ func (a *App) SetCourse(ctx context.Context, name, coursePath, semesterPath stri
 	return stored, nil
 }
 
+// cleanEmails trims, drops blanks, and de-duplicates (case-insensitively, keeping
+// the first spelling) a list of addresses.
+func cleanEmails(in []string) []string {
+	seen := map[string]bool{}
+	out := make([]string, 0, len(in))
+	for _, e := range in {
+		e = strings.TrimSpace(e)
+		if e == "" {
+			continue
+		}
+		key := strings.ToLower(e)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		out = append(out, e)
+	}
+	return out
+}
+
+// saveCourseSource re-marshals a modified course source and persists it.
+func (a *App) saveCourseSource(ctx context.Context, stored *db.StoredCourse, newSource *config.CourseSource) (*db.StoredCourse, error) {
+	raw, err := config.EncodeCourse(newSource)
+	if err != nil {
+		return nil, err
+	}
+	stored.Source = newSource
+	stored.RawYAML = raw
+	stored.UpdatedAt = time.Now()
+	if err := a.db.SaveCourse(ctx, stored); err != nil {
+		return nil, err
+	}
+	return stored, nil
+}
+
+// SetCourseStudents replaces the course-level students of one of the caller's
+// courses (the GUI merges additively before calling this).
+func (a *App) SetCourseStudents(ctx context.Context, name string, students []string) (*db.StoredCourse, error) {
+	stored, err := a.Course(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	newSource := *stored.Source
+	newSource.Students = cleanEmails(students)
+	return a.saveCourseSource(ctx, stored, &newSource)
+}
+
+// SetCourseGroups replaces the course-level groups of one of the caller's
+// courses. Groups with a blank name or no members after cleaning are dropped.
+func (a *App) SetCourseGroups(ctx context.Context, name string, groups map[string][]string) (*db.StoredCourse, error) {
+	stored, err := a.Course(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	cleaned := make(map[string][]string, len(groups))
+	for gname, members := range groups {
+		gname = strings.TrimSpace(gname)
+		m := cleanEmails(members)
+		if gname == "" || len(m) == 0 {
+			continue
+		}
+		cleaned[gname] = m
+	}
+	newSource := *stored.Source
+	if len(cleaned) == 0 {
+		newSource.Groups = nil
+	} else {
+		newSource.Groups = cleaned
+	}
+	return a.saveCourseSource(ctx, stored, &newSource)
+}
+
 // DeleteCourse removes one of the caller's own courses.
 func (a *App) DeleteCourse(ctx context.Context, name string) error {
 	o, err := owner(ctx)

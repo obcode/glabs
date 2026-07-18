@@ -10,6 +10,25 @@ import (
 	"time"
 )
 
+// A live report over the repositories of one assignment — one row per project
+// (repo) with activity, last commit, open issues/merge requests, members and an
+// optional release status. Fetched from GitLab using the caller's stored token.
+type AssignmentReport struct {
+	Course     string `json:"course"`
+	Assignment string `json:"assignment"`
+	// The assignment-level group URL.
+	URL         string `json:"url"`
+	Description string `json:"description"`
+	// When the report was generated.
+	Generated *time.Time `json:"generated,omitempty"`
+	// Whether the assignment configures a release merge request (adds that column).
+	HasReleaseMergeRequest bool `json:"hasReleaseMergeRequest"`
+	// Whether the assignment configures release docker images (adds that column).
+	HasReleaseDockerImages bool `json:"hasReleaseDockerImages"`
+	// One entry per repository in the assignment's group, sorted by name.
+	Projects []*ProjectReport `json:"projects"`
+}
+
 // The repository URLs for one assignment: the assignment-level group URL plus one
 // URL per student or per group. Read-only and derived purely from the resolved
 // configuration — no GitLab token or API call is involved.
@@ -39,6 +58,14 @@ type AssignmentView struct {
 	ResolveError *string `json:"resolveError,omitempty"`
 }
 
+// The most recent commit across a repository's branches.
+type CommitReport struct {
+	Title         string     `json:"title"`
+	CommitterName string     `json:"committerName"`
+	CommittedDate *time.Time `json:"committedDate,omitempty"`
+	WebURL        string     `json:"webUrl"`
+}
+
 // A course as stored for the current user. Each user sees only their own courses;
 // there is no way to reach another user's course.
 type Course struct {
@@ -59,6 +86,16 @@ type Course struct {
 	GroupCount   int       `json:"groupCount"`
 	ImportedAt   time.Time `json:"importedAt"`
 	UpdatedAt    time.Time `json:"updatedAt"`
+}
+
+type DockerImageReport struct {
+	Wanted string  `json:"wanted"`
+	Image  *string `json:"image,omitempty"`
+}
+
+type DockerImagesReport struct {
+	Status string               `json:"status"`
+	Images []*DockerImageReport `json:"images"`
 }
 
 // The assignment editor is schema-driven: the GUI renders a guided, validated form
@@ -135,7 +172,43 @@ type GroupInput struct {
 type Mutation struct {
 }
 
+// A member of a repository (only the display fields, never GitLab-internal ids).
+type ProjectMemberReport struct {
+	Name     string `json:"name"`
+	Username string `json:"username"`
+	WebURL   string `json:"webUrl"`
+}
+
+// The report for one repository.
+type ProjectReport struct {
+	Name string `json:"name"`
+	// Whether there was any activity beyond creation (or any commits).
+	Active                 bool                   `json:"active"`
+	EmptyRepo              bool                   `json:"emptyRepo"`
+	Commits                int                    `json:"commits"`
+	CreatedAt              *time.Time             `json:"createdAt,omitempty"`
+	LastActivity           *time.Time             `json:"lastActivity,omitempty"`
+	LastCommit             *CommitReport          `json:"lastCommit,omitempty"`
+	OpenIssuesCount        int                    `json:"openIssuesCount"`
+	OpenMergeRequestsCount int                    `json:"openMergeRequestsCount"`
+	WebURL                 string                 `json:"webUrl"`
+	Members                []*ProjectMemberReport `json:"members"`
+	Release                *ReleaseReport         `json:"release,omitempty"`
+}
+
 type Query struct {
+}
+
+type ReleaseMergeRequestReport struct {
+	Found          bool   `json:"found"`
+	WebURL         string `json:"webUrl"`
+	PipelineStatus string `json:"pipelineStatus"`
+}
+
+// The release status of a repository, when the assignment configures a release.
+type ReleaseReport struct {
+	MergeRequest *ReleaseMergeRequestReport `json:"mergeRequest,omitempty"`
+	DockerImages *DockerImagesReport        `json:"dockerImages,omitempty"`
 }
 
 // One repository URL together with who it belongs to.

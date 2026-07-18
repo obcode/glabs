@@ -1,0 +1,84 @@
+"""
+A live report over the repositories of one assignment — one row per project
+(repo) with activity, last commit, open issues/merge requests, members and an
+optional release status. Fetched from GitLab using the caller's stored token.
+"""
+type AssignmentReport {
+  course: String!
+  assignment: String!
+  "The assignment-level group URL."
+  url: String!
+  description: String!
+  "When the report was generated."
+  generated: Time
+  "Whether the assignment configures a release merge request (adds that column)."
+  hasReleaseMergeRequest: Boolean!
+  "Whether the assignment configures release docker images (adds that column)."
+  hasReleaseDockerImages: Boolean!
+  "One entry per repository in the assignment's group, sorted by name."
+  projects: [ProjectReport!]!
+}
+
+"The report for one repository."
+type ProjectReport {
+  name: String!
+  "Whether there was any activity beyond creation (or any commits)."
+  active: Boolean!
+  emptyRepo: Boolean!
+  commits: Int!
+  createdAt: Time
+  lastActivity: Time
+  lastCommit: CommitReport
+  openIssuesCount: Int!
+  openMergeRequestsCount: Int!
+  webUrl: String!
+  members: [ProjectMemberReport!]!
+  release: ReleaseReport
+}
+
+"The most recent commit across a repository's branches."
+type CommitReport {
+  title: String!
+  committerName: String!
+  committedDate: Time
+  webUrl: String!
+}
+
+"A member of a repository (only the display fields, never GitLab-internal ids)."
+type ProjectMemberReport {
+  name: String!
+  username: String!
+  webUrl: String!
+}
+
+"The release status of a repository, when the assignment configures a release."
+type ReleaseReport {
+  mergeRequest: ReleaseMergeRequestReport
+  dockerImages: DockerImagesReport
+}
+
+type ReleaseMergeRequestReport {
+  found: Boolean!
+  webUrl: String!
+  pipelineStatus: String!
+}
+
+type DockerImagesReport {
+  status: String!
+  images: [DockerImageReport!]!
+}
+
+type DockerImageReport {
+  wanted: String!
+  image: String
+}
+
+extend type Query {
+  """
+  A live report over the repositories of one assignment, fetched from GitLab with
+  the caller's stored token. Null when there is no such assignment or it cannot be
+  resolved (e.g. an abstract base). Errors when no token is stored or GitLab is
+  unreachable.
+  """
+  assignmentReport(course: String!, name: String!): AssignmentReport
+}

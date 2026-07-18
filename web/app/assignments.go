@@ -79,7 +79,59 @@ func assignmentOwn(src *config.AssignmentSource) []FieldValue {
 			FieldValue{Key: p + "codeOwnerApprovalRequired", Value: strconv.FormatBool(b.CodeOwnerApprovalRequired)},
 		)
 	}
+
+	// mergeRequest.approvals (settings tri-state + rules repeat group), keyed
+	// flat as approvals.* so they render as their own section.
+	var appr *config.ApprovalsSource
+	if src.MergeRequest != nil {
+		appr = src.MergeRequest.Approvals
+	}
+	var settings *config.ApprovalSettingsSource
+	if appr != nil {
+		settings = appr.Settings
+	}
+	own = append(own,
+		FieldValue{Key: "approvals.settings.preventApprovalByMergeRequestCreator", Value: triBool(settings, func(s *config.ApprovalSettingsSource) *bool { return s.PreventApprovalByMergeRequestCreator })},
+		FieldValue{Key: "approvals.settings.preventApprovalsByUsersWhoAddCommits", Value: triBool(settings, func(s *config.ApprovalSettingsSource) *bool { return s.PreventApprovalsByUsersWhoAddCommits })},
+		FieldValue{Key: "approvals.settings.preventEditingApprovalRulesInMergeRequests", Value: triBool(settings, func(s *config.ApprovalSettingsSource) *bool { return s.PreventEditingApprovalRulesInMergeRequests })},
+		FieldValue{Key: "approvals.settings.requireUserReauthenticationToApprove", Value: triBool(settings, func(s *config.ApprovalSettingsSource) *bool { return s.RequireUserReauthenticationToApprove })},
+		FieldValue{Key: "approvals.settings.whenCommitAdded", Value: optStr(settings)},
+	)
+	var rules []config.ApprovalRuleSource
+	if appr != nil {
+		rules = appr.Rules
+	}
+	own = append(own, FieldValue{Key: "approvals.rules.count", Value: strconv.Itoa(len(rules))})
+	for i, r := range rules {
+		p := fmt.Sprintf("approvals.rules.%d.", i)
+		own = append(own,
+			FieldValue{Key: p + "name", Value: r.Name},
+			FieldValue{Key: p + "requiredApprovals", Value: strconv.Itoa(r.RequiredApprovals)},
+			FieldValue{Key: p + "usernames", Value: strings.Join(r.Usernames, ", ")},
+			FieldValue{Key: p + "groups", Value: strings.Join(r.Groups, ", ")},
+			FieldValue{Key: p + "branches", Value: strings.Join(r.Branches, ", ")},
+			FieldValue{Key: p + "multiMemberGroupsOnly", Value: strconv.FormatBool(r.MultiMemberGroupsOnly)},
+		)
+	}
 	return own
+}
+
+func triBool(s *config.ApprovalSettingsSource, f func(*config.ApprovalSettingsSource) *bool) string {
+	if s == nil {
+		return ""
+	}
+	b := f(s)
+	if b == nil {
+		return ""
+	}
+	return strconv.FormatBool(*b)
+}
+
+func optStr(s *config.ApprovalSettingsSource) string {
+	if s == nil || s.WhenCommitAdded == nil {
+		return ""
+	}
+	return *s.WhenCommitAdded
 }
 
 func issuesBool(i *config.IssuesSource, f func(*config.IssuesSource) bool) string {
@@ -292,14 +344,13 @@ func splitIntList(s string) []int {
 	return out
 }
 
-// applyMergeRequestDraft rebuilds the mergeRequest block from the draft's
-// mergeRequest.* keys into a NEW struct (never mutating the shared original) and
-// nils it when every editable field is empty AND there is no approvals block.
-// The (not-yet-editable) approvals block is carried over untouched.
+// applyMergeRequestDraft rebuilds the mergeRequest block (scalars + approvals)
+// from the draft into a NEW struct (never mutating the shared original) and nils
+// it when every field is empty and there is no approvals block.
 func applyMergeRequestDraft(orig *config.MergeRequestSource, draft map[string]string) *config.MergeRequestSource {
 	touched := false
 	for k := range draft {
-		if strings.HasPrefix(k, "mergeRequest.") {
+		if strings.HasPrefix(k, "mergeRequest.") || strings.HasPrefix(k, "approvals.") {
 			touched = true
 			break
 		}
@@ -328,12 +379,88 @@ func applyMergeRequestDraft(orig *config.MergeRequestSource, draft map[string]st
 			mr.StatusChecksMustSucceed = v == "true"
 		}
 	}
+	mr.Approvals = buildApprovals(mr.Approvals, draft)
+
 	if mr.MergeMethod == "" && mr.SquashOption == "" && !mr.Pipeline &&
 		!mr.SkippedPipelinesAreSuccessful && !mr.AllThreadsMustBeResolved &&
 		!mr.StatusChecksMustSucceed && mr.Approvals == nil {
 		return nil
 	}
 	return &mr
+}
+
+// buildApprovals rebuilds the approvals block from the draft's approvals.* keys
+// into a NEW struct; returns the original when the draft does not address
+// approvals, and nil when there are neither settings nor rules.
+func buildApprovals(orig *config.ApprovalsSource, draft map[string]string) *config.ApprovalsSource {
+	touched := false
+	for k := range draft {
+		if strings.HasPrefix(k, "approvals.") {
+			touched = true
+			break
+		}
+	}
+	if !touched {
+		return orig
+	}
+	settings := buildApprovalSettings(draft)
+	rules := buildApprovalRules(draft)
+	if settings == nil && len(rules) == 0 {
+		return nil
+	}
+	return &config.ApprovalsSource{Settings: settings, Rules: rules}
+}
+
+func buildApprovalSettings(draft map[string]string) *config.ApprovalSettingsSource {
+	s := config.ApprovalSettingsSource{}
+	any := false
+	setTri := func(key string, dst **bool) {
+		if v, ok := draft[key]; ok && v != "" {
+			b := v == "true"
+			*dst = &b
+			any = true
+		}
+	}
+	setTri("approvals.settings.preventApprovalByMergeRequestCreator", &s.PreventApprovalByMergeRequestCreator)
+	setTri("approvals.settings.preventApprovalsByUsersWhoAddCommits", &s.PreventApprovalsByUsersWhoAddCommits)
+	setTri("approvals.settings.preventEditingApprovalRulesInMergeRequests", &s.PreventEditingApprovalRulesInMergeRequests)
+	setTri("approvals.settings.requireUserReauthenticationToApprove", &s.RequireUserReauthenticationToApprove)
+	if v, ok := draft["approvals.settings.whenCommitAdded"]; ok {
+		if w := strings.TrimSpace(v); w != "" {
+			s.WhenCommitAdded = &w
+			any = true
+		}
+	}
+	if !any {
+		return nil
+	}
+	return &s
+}
+
+func buildApprovalRules(draft map[string]string) []config.ApprovalRuleSource {
+	countStr, ok := draft["approvals.rules.count"]
+	if !ok {
+		return nil
+	}
+	n, _ := strconv.Atoi(countStr)
+	var rules []config.ApprovalRuleSource
+	for i := 0; i < n; i++ {
+		p := fmt.Sprintf("approvals.rules.%d.", i)
+		name := strings.TrimSpace(draft[p+"name"])
+		if name == "" {
+			continue
+		}
+		ra, _ := strconv.Atoi(strings.TrimSpace(draft[p+"requiredApprovals"]))
+		rules = append(rules, config.ApprovalRuleSource{
+			Name:                  name,
+			Branches:              splitList(draft[p+"branches"]),
+			Usernames:             splitList(draft[p+"usernames"]),
+			Groups:                splitList(draft[p+"groups"]),
+			MultiMemberGroupsOnly: draft[p+"multiMemberGroupsOnly"] == "true",
+			RequiredApprovals:     ra,
+		})
+	}
+	return rules
 }
 
 // applyStartercodeDraft rebuilds the startercode block from the draft's

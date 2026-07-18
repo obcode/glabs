@@ -95,6 +95,10 @@ extend type Query {
   assignmentSchema: [FieldMeta!]!
   "Field metadata for one branch rule — a row of the repeat-group `branches` list."
   branchRuleSchema: [FieldMeta!]!
+  "Field metadata for the mergeRequest approval settings (tri-state; empty ENUM option means unset)."
+  approvalSettingsSchema: [FieldMeta!]!
+  "Field metadata for one approval rule — a row of the repeat-group `approvals.rules` list."
+  approvalRuleSchema: [FieldMeta!]!
   "One assignment of one of the caller's courses: source values, resolved preview. Null when there is no such assignment."
   assignment(course: String!, name: String!): AssignmentView
   "Validate a draft assignment against the real resolver without saving."

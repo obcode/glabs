@@ -38,6 +38,16 @@ func (r *queryResolver) BranchRuleSchema(ctx context.Context) ([]*model.FieldMet
 	return toGraphAssignmentSchema(app.AssignmentBranchSchema()), nil
 }
 
+// ApprovalSettingsSchema is the resolver for the approvalSettingsSchema field.
+func (r *queryResolver) ApprovalSettingsSchema(ctx context.Context) ([]*model.FieldMeta, error) {
+	return toGraphAssignmentSchema(app.AssignmentApprovalSettingsSchema()), nil
+}
+
+// ApprovalRuleSchema is the resolver for the approvalRuleSchema field.
+func (r *queryResolver) ApprovalRuleSchema(ctx context.Context) ([]*model.FieldMeta, error) {
+	return toGraphAssignmentSchema(app.AssignmentApprovalRuleSchema()), nil
+}
+
 // Assignment is the resolver for the assignment field.
 func (r *queryResolver) Assignment(ctx context.Context, course string, name string) (*model.AssignmentView, error) {
 	view, err := r.app.Assignment(ctx, course, name)

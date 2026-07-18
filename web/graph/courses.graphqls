@@ -44,6 +44,17 @@ extend type Query {
 type Mutation {
   "Import a course from an uploaded YAML file, replacing any course of the same name."
   importCourseYAML(yaml: String!): Course!
+  """
+  Create a new, empty course from scratch. Fails if the caller already has a
+  course by that name (use setAssignment to add assignments afterwards).
+  """
+  createCourse(
+    name: String!
+    coursePath: String!
+    semesterPath: String!
+    useCoursenameAsPrefix: Boolean!
+    useEmailDomainAsSuffix: Boolean!
+  ): Course!
   "Delete one of the current user's courses."
   deleteCourse(name: String!): Boolean!
 }

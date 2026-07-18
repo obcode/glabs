@@ -334,7 +334,7 @@ func (a *App) draftedAssignment(ctx context.Context, course, name string, draft 
 	}
 	orig, ok := stored.Source.Assignments[name]
 	if !ok || orig == nil {
-		return nil, nil, fmt.Errorf("assignment %q not found in course %q", name, course)
+		orig = &config.AssignmentSource{} // upsert: validate as a new assignment
 	}
 	drafted := applyDraft(orig, draft)
 	return courseWithDraft(stored.Source, name, drafted), drafted, nil
@@ -360,7 +360,12 @@ func (a *App) SetAssignment(ctx context.Context, course, name string, draft map[
 	}
 	orig, ok := stored.Source.Assignments[name]
 	if !ok || orig == nil {
-		return nil, fmt.Errorf("assignment %q not found in course %q", name, course)
+		// Upsert: create the assignment. Validate its name, since it becomes a
+		// GitLab path segment.
+		if !nameRe.MatchString(strings.TrimSpace(name)) {
+			return nil, fmt.Errorf("invalid assignment name %q: use only letters, digits, '.', '-' and '_'", name)
+		}
+		orig = &config.AssignmentSource{}
 	}
 	drafted := applyDraft(orig, draft)
 	newCourse := courseWithDraft(stored.Source, name, drafted)
@@ -380,4 +385,38 @@ func (a *App) SetAssignment(ctx context.Context, course, name string, draft map[
 		return nil, err
 	}
 	return a.Assignment(ctx, course, name)
+}
+
+// DeleteAssignment removes one assignment from one of the caller's courses and
+// re-marshals the course YAML. It returns false when there was no such
+// assignment (and does not touch the course).
+func (a *App) DeleteAssignment(ctx context.Context, course, name string) (bool, error) {
+	stored, err := a.Course(ctx, course)
+	if err != nil {
+		return false, err
+	}
+	if _, ok := stored.Source.Assignments[name]; !ok {
+		return false, nil
+	}
+
+	newCourse := *stored.Source
+	assignments := make(map[string]*config.AssignmentSource, len(stored.Source.Assignments))
+	for k, v := range stored.Source.Assignments {
+		if k != name {
+			assignments[k] = v
+		}
+	}
+	newCourse.Assignments = assignments
+
+	raw, err := config.EncodeCourse(&newCourse)
+	if err != nil {
+		return false, err
+	}
+	stored.Source = &newCourse
+	stored.RawYAML = raw
+	stored.UpdatedAt = time.Now()
+	if err := a.db.SaveCourse(ctx, stored); err != nil {
+		return false, err
+	}
+	return true, nil
 }

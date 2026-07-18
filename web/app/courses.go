@@ -2,13 +2,20 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/obcode/glabs/v3/config"
 	"github.com/obcode/glabs/v3/web/db"
 	"github.com/obcode/glabs/v3/web/principal"
 )
+
+// nameRe restricts course and assignment names to characters that are safe as a
+// path segment (they become part of the GitLab group/project path).
+var nameRe = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
 
 // owner returns the email of the authenticated user, which scopes every course
 // operation. It comes from the request context — set by the auth middleware —
@@ -73,6 +80,54 @@ func (a *App) ImportCourseYAML(ctx context.Context, yaml string) (*db.StoredCour
 		Source:     source,
 		RawYAML:    []byte(yaml),
 		ImportedAt: importedAt,
+		UpdatedAt:  now,
+	}
+	if err := a.db.SaveCourse(ctx, stored); err != nil {
+		return nil, err
+	}
+	return stored, nil
+}
+
+// CreateCourse creates a new, empty course from scratch for the caller. It fails
+// if the caller already has a course by that name — assignments are added
+// afterwards with SetAssignment.
+func (a *App) CreateCourse(ctx context.Context, name, coursePath, semesterPath string, useCoursenameAsPrefix, useEmailDomainAsSuffix bool) (*db.StoredCourse, error) {
+	o, err := owner(ctx)
+	if err != nil {
+		return nil, err
+	}
+	name = strings.TrimSpace(name)
+	if !nameRe.MatchString(name) {
+		return nil, fmt.Errorf("invalid course name %q: use only letters, digits, '.', '-' and '_'", name)
+	}
+
+	existing, err := a.db.CourseOf(ctx, o, name)
+	if err != nil && !errors.Is(err, db.ErrCourseNotFound) {
+		return nil, err
+	}
+	if existing != nil {
+		return nil, fmt.Errorf("a course named %q already exists", name)
+	}
+
+	ueds := useEmailDomainAsSuffix
+	source := &config.CourseSource{
+		Name:                   name,
+		CoursePath:             strings.TrimSpace(coursePath),
+		SemesterPath:           strings.TrimSpace(semesterPath),
+		UseCoursenameAsPrefix:  useCoursenameAsPrefix,
+		UseEmailDomainAsSuffix: &ueds,
+	}
+	raw, err := config.EncodeCourse(source)
+	if err != nil {
+		return nil, err
+	}
+	now := time.Now()
+	stored := &db.StoredCourse{
+		Owner:      o,
+		Name:       name,
+		Source:     source,
+		RawYAML:    raw,
+		ImportedAt: now,
 		UpdatedAt:  now,
 	}
 	if err := a.db.SaveCourse(ctx, stored); err != nil {

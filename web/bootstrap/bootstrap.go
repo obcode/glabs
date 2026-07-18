@@ -74,7 +74,7 @@ func Serve() error {
 		log.Error().Err(err).Msg("invalid secrets.key — storing GitLab tokens is disabled until it is fixed")
 	}
 
-	a := app.New(database_, sealer)
+	a := app.New(database_, sealer, viper.GetString("gitlab.host"))
 	if err := seedUsers(ctx, database_); err != nil {
 		return err
 	}

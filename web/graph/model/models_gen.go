@@ -10,6 +10,21 @@ import (
 	"time"
 )
 
+// One assignment in source (own) form plus its resolved preview — the same
+// rendering `glabs show` produces, so inheritance is visible.
+type AssignmentView struct {
+	Course string `json:"course"`
+	Name   string `json:"name"`
+	// The assignment this one inherits from, if any (`extends`).
+	Extends *string `json:"extends,omitempty"`
+	// Whether this is an abstract base (a template for `extends`).
+	Abstract bool `json:"abstract"`
+	// The resolved config rendered as text (may contain ANSI); empty when resolveError is set.
+	Resolved string `json:"resolved"`
+	// Why the assignment could not be resolved (e.g. abstract base, missing parent) — not an error.
+	ResolveError *string `json:"resolveError,omitempty"`
+}
+
 // A course as stored for the current user. Each user sees only their own courses;
 // there is no way to reach another user's course.
 type Course struct {
@@ -22,6 +37,35 @@ type Course struct {
 	GroupCount      int       `json:"groupCount"`
 	ImportedAt      time.Time `json:"importedAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
+}
+
+// The assignment editor is schema-driven: the GUI renders a guided, validated form
+// from this server-authoritative metadata, so labels, help text and dropdown
+// options live in exactly one place.
+type FieldMeta struct {
+	// Config key, e.g. `per` or `accesslevel`.
+	Key string `json:"key"`
+	// Human-readable label for the form.
+	Label string `json:"label"`
+	// Short help text describing what the field does.
+	Description string `json:"description"`
+	// The input shape the GUI should render.
+	Kind FieldKind `json:"kind"`
+	// Whether the field must be set for a concrete (non-abstract) assignment.
+	Required bool `json:"required"`
+	// Whether the field is deprecated (shown but discouraged).
+	Deprecated bool `json:"deprecated"`
+	// An example value for the input placeholder, if any.
+	Example *string `json:"example,omitempty"`
+	// Dropdown options for an ENUM field (empty otherwise).
+	Options []*FieldOption `json:"options"`
+}
+
+// One choice of an ENUM field — a dropdown entry with its own short description.
+type FieldOption struct {
+	Value       string `json:"value"`
+	Label       string `json:"label"`
+	Description string `json:"description"`
 }
 
 // One lint finding: configuration that does not do what it looks like it does.
@@ -49,6 +93,68 @@ type ServerInfo struct {
 	Version string `json:"version"`
 	Commit  string `json:"commit"`
 	Date    string `json:"date"`
+}
+
+// The input shape the GUI should render for a field.
+type FieldKind string
+
+const (
+	FieldKindString     FieldKind = "STRING"
+	FieldKindBool       FieldKind = "BOOL"
+	FieldKindEnum       FieldKind = "ENUM"
+	FieldKindInt        FieldKind = "INT"
+	FieldKindStringlist FieldKind = "STRINGLIST"
+)
+
+var AllFieldKind = []FieldKind{
+	FieldKindString,
+	FieldKindBool,
+	FieldKindEnum,
+	FieldKindInt,
+	FieldKindStringlist,
+}
+
+func (e FieldKind) IsValid() bool {
+	switch e {
+	case FieldKindString, FieldKindBool, FieldKindEnum, FieldKindInt, FieldKindStringlist:
+		return true
+	}
+	return false
+}
+
+func (e FieldKind) String() string {
+	return string(e)
+}
+
+func (e *FieldKind) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = FieldKind(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid FieldKind", str)
+	}
+	return nil
+}
+
+func (e FieldKind) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *FieldKind) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e FieldKind) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
 
 type FindingSeverity string

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"errors"
 	"strings"
 	"testing"
@@ -8,6 +9,14 @@ import (
 	"github.com/obcode/glabs/v3/config"
 	"github.com/obcode/glabs/v3/web/db"
 )
+
+func ownMap(fvs []FieldValue) map[string]string {
+	m := map[string]string{}
+	for _, fv := range fvs {
+		m[fv.Key] = fv.Value
+	}
+	return m
+}
 
 func TestAssignmentSchema(t *testing.T) {
 	fields := AssignmentSchema()
@@ -153,5 +162,88 @@ func TestAssignment_unknownAssignmentAndCourse(t *testing.T) {
 	// Course not the caller's → ErrCourseNotFound propagates.
 	if _, err := a.Assignment(ctx, "other", "x"); !errors.Is(err, db.ErrCourseNotFound) {
 		t.Errorf("expected ErrCourseNotFound, got %v", err)
+	}
+}
+
+func TestValidateAssignmentDraft(t *testing.T) {
+	const owner = "prof@hm.edu"
+	fs := newFakeStore()
+	fs.courses[owner+"/tc"] = storedCourse(t, owner, tcCourse)
+	a := &App{db: fs, gitlabHost: "https://gl"}
+	ctx := ctxAs(owner)
+
+	// A valid draft resolves: ok, preview present, no errors.
+	vr, err := a.ValidateAssignmentDraft(ctx, "tc", "blatt1", map[string]string{"description": "Changed"})
+	if err != nil {
+		t.Fatalf("validate: %v", err)
+	}
+	if !vr.OK || vr.Resolved == "" || len(vr.Errors) != 0 {
+		t.Errorf("valid draft: ok=%v resolvedLen=%d errors=%v", vr.OK, len(vr.Resolved), vr.Errors)
+	}
+
+	// A concrete draft that cannot resolve (missing parent) is a hard error.
+	bad, err := a.ValidateAssignmentDraft(ctx, "tc", "blatt1", map[string]string{"extends": "nope"})
+	if err != nil {
+		t.Fatalf("validate: %v", err)
+	}
+	if bad.OK || len(bad.Errors) == 0 {
+		t.Errorf("unresolvable draft should be not-ok with errors, got ok=%v errors=%v", bad.OK, bad.Errors)
+	}
+
+	// Validation is read-only: nothing persisted, stored source unchanged.
+	if fs.saved != nil {
+		t.Error("validate must not persist")
+	}
+	if got := fs.courses[owner+"/tc"].Source.Assignments["blatt1"].Description; got != "First sheet" {
+		t.Errorf("validate mutated the stored source: description = %q", got)
+	}
+}
+
+func TestSetAssignment_persists(t *testing.T) {
+	const owner = "prof@hm.edu"
+	fs := newFakeStore()
+	fs.courses[owner+"/tc"] = storedCourse(t, owner, tcCourse)
+	a := &App{db: fs, gitlabHost: "https://gl"}
+	ctx := ctxAs(owner)
+
+	view, err := a.SetAssignment(ctx, "tc", "blatt1", map[string]string{"description": "Changed sheet"})
+	if err != nil {
+		t.Fatalf("set: %v", err)
+	}
+
+	// The returned view reflects the new own value and still resolves (per is
+	// still inherited from base).
+	if own := ownMap(view.Own); own["description"] != "Changed sheet" {
+		t.Errorf("own[description] = %q, want 'Changed sheet'", own["description"])
+	}
+	if !strings.Contains(view.Resolved, "student") {
+		t.Errorf("resolved preview lost the inherited per=student:\n%s", view.Resolved)
+	}
+
+	// Persisted: SaveCourse was called, the source is updated, and rawYAML was
+	// re-marshalled to reflect the edit.
+	if fs.saved == nil {
+		t.Fatal("SetAssignment did not persist")
+	}
+	if got := fs.saved.Source.Assignments["blatt1"].Description; got != "Changed sheet" {
+		t.Errorf("stored source description = %q", got)
+	}
+	if !bytes.Contains(fs.saved.RawYAML, []byte("Changed sheet")) {
+		t.Errorf("rawYAML was not re-marshalled with the edit:\n%s", fs.saved.RawYAML)
+	}
+}
+
+func TestSetAssignment_rejectsUnresolvable(t *testing.T) {
+	const owner = "prof@hm.edu"
+	fs := newFakeStore()
+	fs.courses[owner+"/tc"] = storedCourse(t, owner, tcCourse)
+	a := &App{db: fs, gitlabHost: "https://gl"}
+	ctx := ctxAs(owner)
+
+	if _, err := a.SetAssignment(ctx, "tc", "blatt1", map[string]string{"extends": "nope"}); err == nil {
+		t.Error("expected SetAssignment to reject an unresolvable concrete draft")
+	}
+	if fs.saved != nil {
+		t.Error("an invalid draft must not be persisted")
 	}
 }

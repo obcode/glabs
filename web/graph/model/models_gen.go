@@ -78,6 +78,12 @@ type FieldValue struct {
 	Value string `json:"value"`
 }
 
+// One field's drafted value, keyed by FieldMeta.key. Booleans as `true`/`false`; empty string unsets the field (so it inherits).
+type FieldValueInput struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 // One lint finding: configuration that does not do what it looks like it does.
 type Finding struct {
 	Path     string          `json:"path"`
@@ -103,6 +109,19 @@ type ServerInfo struct {
 	Version string `json:"version"`
 	Commit  string `json:"commit"`
 	Date    string `json:"date"`
+}
+
+// Result of validating a draft assignment against the real resolver (the same one
+// the CLI uses), without saving.
+type ValidationResult struct {
+	// Whether the draft is structurally sound and could be saved.
+	Ok bool `json:"ok"`
+	// Hard errors that make the draft unsaveable (empty when ok).
+	Errors []string `json:"errors"`
+	// The resolved config preview (Show() output, may contain ANSI) when the draft resolves.
+	Resolved *string `json:"resolved,omitempty"`
+	// Why there is no preview though the draft is ok — e.g. an abstract base.
+	ResolveError *string `json:"resolveError,omitempty"`
 }
 
 // The input shape the GUI should render for a field.

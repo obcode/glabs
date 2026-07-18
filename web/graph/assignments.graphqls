@@ -67,9 +67,37 @@ type AssignmentView {
   resolveError: String
 }
 
+"One field's drafted value, keyed by FieldMeta.key. Booleans as `true`/`false`; empty string unsets the field (so it inherits)."
+input FieldValueInput {
+  key: String!
+  value: String!
+}
+
+"""
+Result of validating a draft assignment against the real resolver (the same one
+the CLI uses), without saving.
+"""
+type ValidationResult {
+  "Whether the draft is structurally sound and could be saved."
+  ok: Boolean!
+  "Hard errors that make the draft unsaveable (empty when ok)."
+  errors: [String!]!
+  "The resolved config preview (Show() output, may contain ANSI) when the draft resolves."
+  resolved: String
+  "Why there is no preview though the draft is ok — e.g. an abstract base."
+  resolveError: String
+}
+
 extend type Query {
   "Field metadata for the assignment editor (server-authoritative labels, descriptions, dropdown options)."
   assignmentSchema: [FieldMeta!]!
   "One assignment of one of the caller's courses: source values, resolved preview. Null when there is no such assignment."
   assignment(course: String!, name: String!): AssignmentView
+  "Validate a draft assignment against the real resolver without saving."
+  validateAssignmentDraft(course: String!, name: String!, draft: [FieldValueInput!]!): ValidationResult!
+}
+
+extend type Mutation {
+  "Apply a draft to one of the caller's assignments: validate, then persist (re-marshals the course YAML). Rejects a concrete draft that does not resolve."
+  setAssignment(course: String!, name: String!, draft: [FieldValueInput!]!): AssignmentView!
 }

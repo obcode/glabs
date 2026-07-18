@@ -14,6 +14,15 @@ import (
 	"github.com/obcode/glabs/v3/web/graph/model"
 )
 
+// SetAssignment is the resolver for the setAssignment field.
+func (r *mutationResolver) SetAssignment(ctx context.Context, course string, name string, draft []*model.FieldValueInput) (*model.AssignmentView, error) {
+	view, err := r.app.SetAssignment(ctx, course, name, draftToMap(draft))
+	if err != nil {
+		return nil, err
+	}
+	return toGraphAssignmentView(view), nil
+}
+
 // AssignmentSchema is the resolver for the assignmentSchema field.
 func (r *queryResolver) AssignmentSchema(ctx context.Context) ([]*model.FieldMeta, error) {
 	return toGraphAssignmentSchema(app.AssignmentSchema()), nil
@@ -32,4 +41,13 @@ func (r *queryResolver) Assignment(ctx context.Context, course string, name stri
 		return nil, nil
 	}
 	return toGraphAssignmentView(view), nil
+}
+
+// ValidateAssignmentDraft is the resolver for the validateAssignmentDraft field.
+func (r *queryResolver) ValidateAssignmentDraft(ctx context.Context, course string, name string, draft []*model.FieldValueInput) (*model.ValidationResult, error) {
+	vr, err := r.app.ValidateAssignmentDraft(ctx, course, name, draftToMap(draft))
+	if err != nil {
+		return nil, err
+	}
+	return toGraphValidationResult(vr), nil
 }

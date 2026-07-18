@@ -1,0 +1,59 @@
+"A mutating GitLab operation. None of them touch git — pure GitLab API calls."
+enum Op {
+  SETACCESS
+  PROTECT
+  ARCHIVE
+  DELETE
+}
+
+"Optional parameters for an operation (op-specific; unset fields fall back to the assignment config)."
+input OpParams {
+  "setaccess: the access level to grant (guest|reporter|developer|maintainer)."
+  accessLevel: String
+  "protect: the branch to protect."
+  branch: String
+  "archive: unarchive instead of archive."
+  unarchive: Boolean
+}
+
+"One repository an operation would touch."
+type PlannedTarget {
+  "The student's email (or username/id) or the group's name."
+  for: String!
+  "The repository's project name."
+  repo: String!
+  "The full web URL of the repository."
+  url: String!
+}
+
+"""
+The preview of a mutating operation before it runs: the resolved config, the
+repositories it would touch, warnings, and an opaque confirm token (5 min TTL) that
+carries a hash of the resolved config — so runOp can reject a plan whose config
+changed underneath it.
+"""
+type OpPlan {
+  op: Op!
+  course: String!
+  assignment: String!
+  "The resolved config, exactly as `glabs show` renders it (may contain ANSI)."
+  resolved: String!
+  targets: [PlannedTarget!]!
+  warnings: [String!]!
+  "Whether the operation is destructive (archive/delete) and needs the confirm phrase."
+  destructive: Boolean!
+  "For destructive ops: the phrase the user must type to confirm (the assignment path)."
+  confirmPhrase: String
+  "Opaque, single-use confirm token to pass to runOp/scheduleOp."
+  token: String!
+  expiresAt: Time!
+}
+
+extend type Mutation {
+  """
+  Plan a mutating GitLab operation: resolve the assignment, list the repositories it
+  would touch and any warnings, and return a confirm token (5 min TTL) carrying a
+  hash of the resolved config. No GitLab call is made — this is a token-free preview.
+  """
+  planOp(op: Op!, course: String!, assignment: String!, params: OpParams, onlyFor: [String!]): OpPlan!
+}

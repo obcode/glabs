@@ -581,3 +581,28 @@ func TestShow_NoFmtArtifacts(t *testing.T) {
 		t.Fatalf("Show() output contains fmt artifacts: %q", out)
 	}
 }
+
+func TestRepoTargets_PerStudent_IncludesRepoName(t *testing.T) {
+	mail := "a@hm.edu"
+	cfg := &AssignmentConfig{
+		URL:                   "https://gitlab.example.org/mpd/ss26/blatt-01",
+		Name:                  "blatt01",
+		Course:                "mpd",
+		UseCoursenameAsPrefix: true,
+		Per:                   PerStudent,
+		Students:              []*Student{{Email: &mail, Raw: "a@hm.edu"}},
+	}
+	got := cfg.RepoTargets()
+	if len(got) != 1 {
+		t.Fatalf("RepoTargets() len = %d, want 1", len(got))
+	}
+	if got[0].For != "a@hm.edu" {
+		t.Errorf("For = %q, want the email", got[0].For)
+	}
+	if got[0].Repo != cfg.RepoNameForStudent(cfg.Students[0]) {
+		t.Errorf("Repo = %q, want the resolved repo name", got[0].Repo)
+	}
+	if got[0].URL != cfg.URL+"/"+got[0].Repo {
+		t.Errorf("URL = %q, want group URL + repo", got[0].URL)
+	}
+}

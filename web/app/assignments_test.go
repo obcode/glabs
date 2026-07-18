@@ -520,6 +520,62 @@ func TestSetAssignment_issuesBlock(t *testing.T) {
 	}
 }
 
+func TestSetAssignment_branchesRepeatGroup(t *testing.T) {
+	const owner = "prof@hm.edu"
+	fs := newFakeStore()
+	fs.courses[owner+"/tc"] = storedCourse(t, owner, tcCourse)
+	a := &App{db: fs, gitlabHost: "https://gl"}
+	ctx := ctxAs(owner)
+
+	// Two branch rules via indexed keys.
+	view, err := a.SetAssignment(ctx, "tc", "blatt1", map[string]string{
+		"branches.count":       "2",
+		"branches.0.name":      "main",
+		"branches.0.protect":   "true",
+		"branches.0.mergeOnly": "true",
+		"branches.1.name":      "dev",
+		"branches.1.default":   "true",
+	})
+	if err != nil {
+		t.Fatalf("set: %v", err)
+	}
+	br := fs.saved.Source.Assignments["blatt1"].Branches
+	if len(br) != 2 {
+		t.Fatalf("branches = %+v, want 2", br)
+	}
+	if br[0].Name != "main" || !br[0].Protect || !br[0].MergeOnly {
+		t.Errorf("branch 0 = %+v", br[0])
+	}
+	if br[1].Name != "dev" || !br[1].Default {
+		t.Errorf("branch 1 = %+v", br[1])
+	}
+	own := ownMap(view.Own)
+	if own["branches.count"] != "2" || own["branches.0.name"] != "main" || own["branches.1.default"] != "true" {
+		t.Errorf("own branch keys wrong: count=%q b0.name=%q b1.default=%q",
+			own["branches.count"], own["branches.0.name"], own["branches.1.default"])
+	}
+
+	// A nameless row is dropped.
+	if _, err := a.SetAssignment(ctx, "tc", "blatt1", map[string]string{
+		"branches.count":  "2",
+		"branches.0.name": "main",
+		"branches.1.name": "   ",
+	}); err != nil {
+		t.Fatalf("set: %v", err)
+	}
+	if got := fs.saved.Source.Assignments["blatt1"].Branches; len(got) != 1 {
+		t.Errorf("nameless row should be dropped, got %+v", got)
+	}
+
+	// count 0 clears the list.
+	if _, err := a.SetAssignment(ctx, "tc", "blatt1", map[string]string{"branches.count": "0"}); err != nil {
+		t.Fatalf("set: %v", err)
+	}
+	if got := fs.saved.Source.Assignments["blatt1"].Branches; got != nil {
+		t.Errorf("branches should be cleared, got %+v", got)
+	}
+}
+
 func TestSetAssignment_rejectsUnresolvable(t *testing.T) {
 	const owner = "prof@hm.edu"
 	fs := newFakeStore()

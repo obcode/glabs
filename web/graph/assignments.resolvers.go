@@ -33,6 +33,11 @@ func (r *queryResolver) AssignmentSchema(ctx context.Context) ([]*model.FieldMet
 	return toGraphAssignmentSchema(app.AssignmentSchema()), nil
 }
 
+// BranchRuleSchema is the resolver for the branchRuleSchema field.
+func (r *queryResolver) BranchRuleSchema(ctx context.Context) ([]*model.FieldMeta, error) {
+	return toGraphAssignmentSchema(app.AssignmentBranchSchema()), nil
+}
+
 // Assignment is the resolver for the assignment field.
 func (r *queryResolver) Assignment(ctx context.Context, course string, name string) (*model.AssignmentView, error) {
 	view, err := r.app.Assignment(ctx, course, name)

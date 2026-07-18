@@ -49,6 +49,53 @@ func AssignmentSchema() []FieldMeta {
 	return assignmentFields
 }
 
+// AssignmentBranchSchema returns the metadata for one branch rule — a row of the
+// repeat-group `branches` list. The GUI renders one such control set per row.
+func AssignmentBranchSchema() []FieldMeta {
+	return branchFields
+}
+
+var branchFields = []FieldMeta{
+	{
+		Key:         "name",
+		Label:       "Branch",
+		Description: "Name des Branches, z. B. main.",
+		Kind:        KindString,
+		Required:    true,
+		Example:     "main",
+	},
+	{
+		Key:         "protect",
+		Label:       "Geschützt",
+		Description: "Branch schützen (Push-Regeln, kein versehentliches Löschen).",
+		Kind:        KindBool,
+	},
+	{
+		Key:         "mergeOnly",
+		Label:       "Nur via Merge",
+		Description: "Änderungen nur über Merge-Requests, kein direkter Push.",
+		Kind:        KindBool,
+	},
+	{
+		Key:         "default",
+		Label:       "Default-Branch",
+		Description: "Diesen Branch als Standard-Branch des Repos setzen.",
+		Kind:        KindBool,
+	},
+	{
+		Key:         "allowForcePush",
+		Label:       "Force-Push erlauben",
+		Description: "Force-Push auf den geschützten Branch zulassen.",
+		Kind:        KindBool,
+	},
+	{
+		Key:         "codeOwnerApprovalRequired",
+		Label:       "Code-Owner-Approval",
+		Description: "Freigabe durch Code-Owner erforderlich.",
+		Kind:        KindBool,
+	},
+}
+
 var assignmentFields = []FieldMeta{
 	{
 		Key:         "extends",

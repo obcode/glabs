@@ -39,7 +39,7 @@ func assignmentOwn(src *config.AssignmentSource) []FieldValue {
 		addBranches = strings.Join(sc.AdditionalBranches, ", ")
 	}
 
-	return []FieldValue{
+	own := []FieldValue{
 		{Key: "extends", Value: src.Extends},
 		{Key: "abstract", Value: strconv.FormatBool(src.Abstract)},
 		{Key: "per", Value: src.Per},
@@ -64,6 +64,22 @@ func assignmentOwn(src *config.AssignmentSource) []FieldValue {
 		{Key: "issues.issueNumbers", Value: issueNumbersStr(src.Issues)},
 		{Key: "issues.includeChildTasks", Value: issuesBool(src.Issues, func(i *config.IssuesSource) bool { return i.IncludeChildTasks })},
 	}
+
+	// branches (repeat group): a count sentinel plus indexed keys per rule, so
+	// the whole list rides in the same flat draft as the scalar fields.
+	own = append(own, FieldValue{Key: "branches.count", Value: strconv.Itoa(len(src.Branches))})
+	for i, b := range src.Branches {
+		p := fmt.Sprintf("branches.%d.", i)
+		own = append(own,
+			FieldValue{Key: p + "name", Value: b.Name},
+			FieldValue{Key: p + "protect", Value: strconv.FormatBool(b.Protect)},
+			FieldValue{Key: p + "mergeOnly", Value: strconv.FormatBool(b.MergeOnly)},
+			FieldValue{Key: p + "default", Value: strconv.FormatBool(b.Default)},
+			FieldValue{Key: p + "allowForcePush", Value: strconv.FormatBool(b.AllowForcePush)},
+			FieldValue{Key: p + "codeOwnerApprovalRequired", Value: strconv.FormatBool(b.CodeOwnerApprovalRequired)},
+		)
+	}
+	return own
 }
 
 func issuesBool(i *config.IssuesSource, f func(*config.IssuesSource) bool) string {
@@ -195,7 +211,37 @@ func applyDraft(src *config.AssignmentSource, draft map[string]string) *config.A
 	c.Startercode = applyStartercodeDraft(src.Startercode, draft)
 	c.MergeRequest = applyMergeRequestDraft(src.MergeRequest, draft)
 	c.Issues = applyIssuesDraft(src.Issues, draft)
+	c.Branches = applyBranchesDraft(src.Branches, draft)
 	return &c
+}
+
+// applyBranchesDraft rebuilds the branches list from the draft's indexed keys
+// (branches.<i>.<field>), driven by the branches.count sentinel so the GUI can
+// also clear the list. Rows without a name are dropped. Returns the original when
+// the draft does not address branches at all.
+func applyBranchesDraft(orig []config.BranchRuleSource, draft map[string]string) []config.BranchRuleSource {
+	countStr, ok := draft["branches.count"]
+	if !ok {
+		return orig
+	}
+	n, _ := strconv.Atoi(countStr)
+	var rules []config.BranchRuleSource
+	for i := 0; i < n; i++ {
+		p := fmt.Sprintf("branches.%d.", i)
+		name := strings.TrimSpace(draft[p+"name"])
+		if name == "" {
+			continue
+		}
+		rules = append(rules, config.BranchRuleSource{
+			Name:                      name,
+			Protect:                   draft[p+"protect"] == "true",
+			MergeOnly:                 draft[p+"mergeOnly"] == "true",
+			Default:                   draft[p+"default"] == "true",
+			AllowForcePush:            draft[p+"allowForcePush"] == "true",
+			CodeOwnerApprovalRequired: draft[p+"codeOwnerApprovalRequired"] == "true",
+		})
+	}
+	return rules
 }
 
 // applyIssuesDraft rebuilds the issues block from the draft's issues.* keys into

@@ -65,6 +65,22 @@ type ComplexityRoot struct {
 		Resolved     func(childComplexity int) int
 	}
 
+	CheckProgress struct {
+		Done    func(childComplexity int) int
+		Error   func(childComplexity int) int
+		Message func(childComplexity int) int
+		Result  func(childComplexity int) int
+	}
+
+	CheckResult struct {
+		Course     func(childComplexity int) int
+		Duplicates func(childComplexity int) int
+		Errors     func(childComplexity int) int
+		Groups     func(childComplexity int) int
+		Ok         func(childComplexity int) int
+		Students   func(childComplexity int) int
+	}
+
 	CommitReport struct {
 		CommittedDate func(childComplexity int) int
 		CommitterName func(childComplexity int) int
@@ -95,6 +111,11 @@ type ComplexityRoot struct {
 	DockerImagesReport struct {
 		Images func(childComplexity int) int
 		Status func(childComplexity int) int
+	}
+
+	DuplicateCheck struct {
+		Groups  func(childComplexity int) int
+		Student func(childComplexity int) int
 	}
 
 	FieldMeta struct {
@@ -132,6 +153,11 @@ type ComplexityRoot struct {
 	}
 
 	Group struct {
+		Members func(childComplexity int) int
+		Name    func(childComplexity int) int
+	}
+
+	GroupCheck struct {
 		Members func(childComplexity int) int
 		Name    func(childComplexity int) int
 	}
@@ -180,6 +206,7 @@ type ComplexityRoot struct {
 		AssignmentUrls          func(childComplexity int, course string, name string) int
 		BranchRuleSchema        func(childComplexity int) int
 		Course                  func(childComplexity int, name string) int
+		CourseCheck             func(childComplexity int, name string) int
 		CourseLint              func(childComplexity int, name string) int
 		CourseYaml              func(childComplexity int, name string) int
 		Courses                 func(childComplexity int) int
@@ -218,8 +245,15 @@ type ComplexityRoot struct {
 		Version func(childComplexity int) int
 	}
 
+	StudentCheck struct {
+		Input   func(childComplexity int) int
+		Message func(childComplexity int) int
+		Status  func(childComplexity int) int
+	}
+
 	Subscription struct {
 		AssignmentReportProgress func(childComplexity int, course string, name string) int
+		CourseCheckProgress      func(childComplexity int, name string) int
 	}
 
 	User struct {
@@ -262,6 +296,7 @@ type QueryResolver interface {
 	Assignment(ctx context.Context, course string, name string) (*model.AssignmentView, error)
 	ValidateAssignmentDraft(ctx context.Context, course string, name string, draft []*model.FieldValueInput) (*model.ValidationResult, error)
 	AssignmentUrls(ctx context.Context, course string, name string) (*model.AssignmentUrls, error)
+	CourseCheck(ctx context.Context, name string) (*model.CheckResult, error)
 	Courses(ctx context.Context) ([]*model.Course, error)
 	Course(ctx context.Context, name string) (*model.Course, error)
 	CourseYaml(ctx context.Context, name string) (string, error)
@@ -271,6 +306,7 @@ type QueryResolver interface {
 }
 type SubscriptionResolver interface {
 	AssignmentReportProgress(ctx context.Context, course string, name string) (<-chan *model.ReportProgress, error)
+	CourseCheckProgress(ctx context.Context, name string) (<-chan *model.CheckProgress, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -402,6 +438,68 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.AssignmentView.Resolved(childComplexity), true
 
+	case "CheckProgress.done":
+		if e.ComplexityRoot.CheckProgress.Done == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CheckProgress.Done(childComplexity), true
+	case "CheckProgress.error":
+		if e.ComplexityRoot.CheckProgress.Error == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CheckProgress.Error(childComplexity), true
+	case "CheckProgress.message":
+		if e.ComplexityRoot.CheckProgress.Message == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CheckProgress.Message(childComplexity), true
+	case "CheckProgress.result":
+		if e.ComplexityRoot.CheckProgress.Result == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CheckProgress.Result(childComplexity), true
+
+	case "CheckResult.course":
+		if e.ComplexityRoot.CheckResult.Course == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CheckResult.Course(childComplexity), true
+	case "CheckResult.duplicates":
+		if e.ComplexityRoot.CheckResult.Duplicates == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CheckResult.Duplicates(childComplexity), true
+	case "CheckResult.errors":
+		if e.ComplexityRoot.CheckResult.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CheckResult.Errors(childComplexity), true
+	case "CheckResult.groups":
+		if e.ComplexityRoot.CheckResult.Groups == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CheckResult.Groups(childComplexity), true
+	case "CheckResult.ok":
+		if e.ComplexityRoot.CheckResult.Ok == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CheckResult.Ok(childComplexity), true
+	case "CheckResult.students":
+		if e.ComplexityRoot.CheckResult.Students == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CheckResult.Students(childComplexity), true
+
 	case "CommitReport.committedDate":
 		if e.ComplexityRoot.CommitReport.CommittedDate == nil {
 			break
@@ -525,6 +623,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.DockerImagesReport.Status(childComplexity), true
+
+	case "DuplicateCheck.groups":
+		if e.ComplexityRoot.DuplicateCheck.Groups == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DuplicateCheck.Groups(childComplexity), true
+	case "DuplicateCheck.student":
+		if e.ComplexityRoot.DuplicateCheck.Student == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DuplicateCheck.Student(childComplexity), true
 
 	case "FieldMeta.deprecated":
 		if e.ComplexityRoot.FieldMeta.Deprecated == nil {
@@ -657,6 +768,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Group.Name(childComplexity), true
+
+	case "GroupCheck.members":
+		if e.ComplexityRoot.GroupCheck.Members == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GroupCheck.Members(childComplexity), true
+	case "GroupCheck.name":
+		if e.ComplexityRoot.GroupCheck.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.GroupCheck.Name(childComplexity), true
 
 	case "Mutation.createCourse":
 		if e.ComplexityRoot.Mutation.CreateCourse == nil {
@@ -935,6 +1059,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Course(childComplexity, args["name"].(string)), true
+	case "Query.courseCheck":
+		if e.ComplexityRoot.Query.CourseCheck == nil {
+			break
+		}
+
+		args, err := ec.field_Query_courseCheck_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.CourseCheck(childComplexity, args["name"].(string)), true
 	case "Query.courseLint":
 		if e.ComplexityRoot.Query.CourseLint == nil {
 			break
@@ -1083,6 +1218,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ServerInfo.Version(childComplexity), true
 
+	case "StudentCheck.input":
+		if e.ComplexityRoot.StudentCheck.Input == nil {
+			break
+		}
+
+		return e.ComplexityRoot.StudentCheck.Input(childComplexity), true
+	case "StudentCheck.message":
+		if e.ComplexityRoot.StudentCheck.Message == nil {
+			break
+		}
+
+		return e.ComplexityRoot.StudentCheck.Message(childComplexity), true
+	case "StudentCheck.status":
+		if e.ComplexityRoot.StudentCheck.Status == nil {
+			break
+		}
+
+		return e.ComplexityRoot.StudentCheck.Status(childComplexity), true
+
 	case "Subscription.assignmentReportProgress":
 		if e.ComplexityRoot.Subscription.AssignmentReportProgress == nil {
 			break
@@ -1094,6 +1248,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Subscription.AssignmentReportProgress(childComplexity, args["course"].(string), args["name"].(string)), true
+	case "Subscription.courseCheckProgress":
+		if e.ComplexityRoot.Subscription.CourseCheckProgress == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_courseCheckProgress_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Subscription.CourseCheckProgress(childComplexity, args["name"].(string)), true
 
 	case "User.email":
 		if e.ComplexityRoot.User.Email == nil {
@@ -1373,6 +1538,86 @@ extend type Mutation {
   importAssignmentYAML(course: String!, yaml: String!): AssignmentView!
   "Delete one assignment from one of the caller's courses. Returns false if there was no such assignment."
   deleteAssignment(course: String!, name: String!): Boolean!
+}
+`, BuiltIn: false},
+	{Name: "../check.graphqls", Input: `"""
+The result of checking a course's roster against GitLab: each roster entry
+classified, plus the students that appear in more than one group. Fetched with the
+caller's stored token.
+"""
+type CheckResult {
+  course: String!
+  "The course-level students, classified in configured order."
+  students: [StudentCheck!]!
+  "The course's groups, each with its members classified."
+  groups: [GroupCheck!]!
+  "Students that appear in more than one group."
+  duplicates: [DuplicateCheck!]!
+  "Number of hard problems (unresolvable entries + duplicates)."
+  errors: Int!
+  "Whether the whole course checks out (errors = 0)."
+  ok: Boolean!
+}
+
+"One roster entry classified against GitLab."
+type StudentCheck {
+  "The raw roster entry, as written."
+  input: String!
+  status: StudentCheckStatus!
+  "Human-readable detail (the resolved user, or why it failed)."
+  message: String!
+}
+
+"How a roster entry resolved against GitLab."
+enum StudentCheckStatus {
+  "Resolved (pinned by ID, or matched uniquely by email)."
+  OK
+  "No GitLab user yet, but there is an email → will be invited."
+  INVITE
+  "Resolved by username — works, but pinning by ID is safer."
+  DEPRECATED
+  "Cannot resolve and there is no email to fall back to."
+  ERROR
+}
+
+"One group's members, classified."
+type GroupCheck {
+  name: String!
+  members: [StudentCheck!]!
+}
+
+"One student that appears in more than one group."
+type DuplicateCheck {
+  student: String!
+  groups: [String!]!
+}
+
+"""
+One event while a course check runs: a progress line as each entry is checked, or
+the single final event (done = true) carrying the result or an error.
+"""
+type CheckProgress {
+  message: String!
+  done: Boolean!
+  result: CheckResult
+  error: String
+}
+
+extend type Query {
+  """
+  Check a course's roster against GitLab with the caller's stored token (one-shot,
+  no progress). Null when there is no such course; errors when no token is stored
+  or GitLab is unreachable.
+  """
+  courseCheck(name: String!): CheckResult
+}
+
+extend type Subscription {
+  """
+  Check a course's roster and stream progress per entry, ending with one done event
+  carrying the result. Same semantics as courseCheck, but with live progress.
+  """
+  courseCheckProgress(name: String!): CheckProgress!
 }
 `, BuiltIn: false},
 	{Name: "../courses.graphqls", Input: `"""
@@ -1686,6 +1931,38 @@ func (ec *executionContext) childFields_AssignmentView(ctx context.Context, fiel
 	return nil, fmt.Errorf("no field named %q was found under type AssignmentView", field.Name)
 }
 
+func (ec *executionContext) childFields_CheckProgress(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "message":
+		return ec.fieldContext_CheckProgress_message(ctx, field)
+	case "done":
+		return ec.fieldContext_CheckProgress_done(ctx, field)
+	case "result":
+		return ec.fieldContext_CheckProgress_result(ctx, field)
+	case "error":
+		return ec.fieldContext_CheckProgress_error(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type CheckProgress", field.Name)
+}
+
+func (ec *executionContext) childFields_CheckResult(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "course":
+		return ec.fieldContext_CheckResult_course(ctx, field)
+	case "students":
+		return ec.fieldContext_CheckResult_students(ctx, field)
+	case "groups":
+		return ec.fieldContext_CheckResult_groups(ctx, field)
+	case "duplicates":
+		return ec.fieldContext_CheckResult_duplicates(ctx, field)
+	case "errors":
+		return ec.fieldContext_CheckResult_errors(ctx, field)
+	case "ok":
+		return ec.fieldContext_CheckResult_ok(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type CheckResult", field.Name)
+}
+
 func (ec *executionContext) childFields_CommitReport(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "title":
@@ -1748,6 +2025,16 @@ func (ec *executionContext) childFields_DockerImagesReport(ctx context.Context, 
 		return ec.fieldContext_DockerImagesReport_images(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type DockerImagesReport", field.Name)
+}
+
+func (ec *executionContext) childFields_DuplicateCheck(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "student":
+		return ec.fieldContext_DuplicateCheck_student(ctx, field)
+	case "groups":
+		return ec.fieldContext_DuplicateCheck_groups(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type DuplicateCheck", field.Name)
 }
 
 func (ec *executionContext) childFields_FieldMeta(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -1826,6 +2113,16 @@ func (ec *executionContext) childFields_Group(ctx context.Context, field graphql
 		return ec.fieldContext_Group_members(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
+}
+
+func (ec *executionContext) childFields_GroupCheck(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "name":
+		return ec.fieldContext_GroupCheck_name(ctx, field)
+	case "members":
+		return ec.fieldContext_GroupCheck_members(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type GroupCheck", field.Name)
 }
 
 func (ec *executionContext) childFields_ProjectMemberReport(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -1926,6 +2223,18 @@ func (ec *executionContext) childFields_ServerInfo(ctx context.Context, field gr
 		return ec.fieldContext_ServerInfo_date(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type ServerInfo", field.Name)
+}
+
+func (ec *executionContext) childFields_StudentCheck(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "input":
+		return ec.fieldContext_StudentCheck_input(ctx, field)
+	case "status":
+		return ec.fieldContext_StudentCheck_status(ctx, field)
+	case "message":
+		return ec.fieldContext_StudentCheck_message(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type StudentCheck", field.Name)
 }
 
 func (ec *executionContext) childFields_User(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -2400,6 +2709,20 @@ func (ec *executionContext) field_Query_assignment_args(ctx context.Context, raw
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_courseCheck_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "name",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["name"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_courseLint_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2491,6 +2814,20 @@ func (ec *executionContext) field_Subscription_assignmentReportProgress_args(ctx
 		return nil, err
 	}
 	args["name"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Subscription_courseCheckProgress_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "name",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["name"] = arg0
 	return args, nil
 }
 
@@ -2995,6 +3332,272 @@ func (ec *executionContext) fieldContext_AssignmentView_resolveError(_ context.C
 	return graphql.NewScalarFieldContext("AssignmentView", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _CheckProgress_message(ctx context.Context, field graphql.CollectedField, obj *model.CheckProgress) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CheckProgress_message(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Message, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CheckProgress_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("CheckProgress", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _CheckProgress_done(ctx context.Context, field graphql.CollectedField, obj *model.CheckProgress) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CheckProgress_done(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Done, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CheckProgress_done(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("CheckProgress", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _CheckProgress_result(ctx context.Context, field graphql.CollectedField, obj *model.CheckProgress) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CheckProgress_result(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Result, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.CheckResult) graphql.Marshaler {
+			return ec.marshalOCheckResult2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCheckResult(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_CheckProgress_result(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CheckProgress",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_CheckResult(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CheckProgress_error(ctx context.Context, field graphql.CollectedField, obj *model.CheckProgress) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CheckProgress_error(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Error, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_CheckProgress_error(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("CheckProgress", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _CheckResult_course(ctx context.Context, field graphql.CollectedField, obj *model.CheckResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CheckResult_course(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Course, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CheckResult_course(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("CheckResult", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _CheckResult_students(ctx context.Context, field graphql.CollectedField, obj *model.CheckResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CheckResult_students(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Students, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.StudentCheck) graphql.Marshaler {
+			return ec.marshalNStudentCheck2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐStudentCheckᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CheckResult_students(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CheckResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_StudentCheck(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CheckResult_groups(ctx context.Context, field graphql.CollectedField, obj *model.CheckResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CheckResult_groups(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Groups, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.GroupCheck) graphql.Marshaler {
+			return ec.marshalNGroupCheck2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐGroupCheckᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CheckResult_groups(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CheckResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_GroupCheck(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CheckResult_duplicates(ctx context.Context, field graphql.CollectedField, obj *model.CheckResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CheckResult_duplicates(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Duplicates, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.DuplicateCheck) graphql.Marshaler {
+			return ec.marshalNDuplicateCheck2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐDuplicateCheckᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CheckResult_duplicates(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CheckResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_DuplicateCheck(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CheckResult_errors(ctx context.Context, field graphql.CollectedField, obj *model.CheckResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CheckResult_errors(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CheckResult_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("CheckResult", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _CheckResult_ok(ctx context.Context, field graphql.CollectedField, obj *model.CheckResult) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CheckResult_ok(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Ok, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CheckResult_ok(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("CheckResult", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
 func (ec *executionContext) _CommitReport_title(ctx context.Context, field graphql.CollectedField, obj *model.CommitReport) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3471,6 +4074,52 @@ func (ec *executionContext) fieldContext_DockerImagesReport_images(_ context.Con
 		},
 	}
 	return fc, nil
+}
+
+func (ec *executionContext) _DuplicateCheck_student(ctx context.Context, field graphql.CollectedField, obj *model.DuplicateCheck) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DuplicateCheck_student(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Student, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DuplicateCheck_student(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DuplicateCheck", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _DuplicateCheck_groups(ctx context.Context, field graphql.CollectedField, obj *model.DuplicateCheck) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DuplicateCheck_groups(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Groups, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DuplicateCheck_groups(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DuplicateCheck", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _FieldMeta_key(ctx context.Context, field graphql.CollectedField, obj *model.FieldMeta) (ret graphql.Marshaler) {
@@ -3963,6 +4612,61 @@ func (ec *executionContext) _Group_members(ctx context.Context, field graphql.Co
 }
 func (ec *executionContext) fieldContext_Group_members(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("Group", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _GroupCheck_name(ctx context.Context, field graphql.CollectedField, obj *model.GroupCheck) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GroupCheck_name(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GroupCheck_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("GroupCheck", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _GroupCheck_members(ctx context.Context, field graphql.CollectedField, obj *model.GroupCheck) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_GroupCheck_members(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Members, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.StudentCheck) graphql.Marshaler {
+			return ec.marshalNStudentCheck2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐStudentCheckᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_GroupCheck_members(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "GroupCheck",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_StudentCheck(ctx, field)
+		},
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _Mutation_importCourseYAML(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -5133,6 +5837,50 @@ func (ec *executionContext) fieldContext_Query_assignmentUrls(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_courseCheck(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_courseCheck(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().CourseCheck(ctx, fc.Args["name"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.CheckResult) graphql.Marshaler {
+			return ec.marshalOCheckResult2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCheckResult(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Query_courseCheck(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_CheckResult(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_courseCheck_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_courses(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5798,6 +6546,75 @@ func (ec *executionContext) fieldContext_ServerInfo_date(_ context.Context, fiel
 	return graphql.NewScalarFieldContext("ServerInfo", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _StudentCheck_input(ctx context.Context, field graphql.CollectedField, obj *model.StudentCheck) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_StudentCheck_input(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Input, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_StudentCheck_input(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("StudentCheck", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _StudentCheck_status(ctx context.Context, field graphql.CollectedField, obj *model.StudentCheck) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_StudentCheck_status(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Status, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v model.StudentCheckStatus) graphql.Marshaler {
+			return ec.marshalNStudentCheckStatus2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐStudentCheckStatus(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_StudentCheck_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("StudentCheck", field, false, false, errors.New("field of type StudentCheckStatus does not have child fields"))
+}
+
+func (ec *executionContext) _StudentCheck_message(ctx context.Context, field graphql.CollectedField, obj *model.StudentCheck) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_StudentCheck_message(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Message, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_StudentCheck_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("StudentCheck", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _Subscription_assignmentReportProgress(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
 	return graphql.ResolveFieldStream(
 		ctx,
@@ -5836,6 +6653,50 @@ func (ec *executionContext) fieldContext_Subscription_assignmentReportProgress(c
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Subscription_assignmentReportProgress_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Subscription_courseCheckProgress(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	return graphql.ResolveFieldStream(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Subscription_courseCheckProgress(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Subscription().CourseCheckProgress(ctx, fc.Args["name"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.CheckProgress) graphql.Marshaler {
+			return ec.marshalNCheckProgress2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCheckProgress(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Subscription_courseCheckProgress(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_CheckProgress(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Subscription_courseCheckProgress_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -7310,6 +8171,122 @@ func (ec *executionContext) _AssignmentView(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var checkProgressImplementors = []string{"CheckProgress"}
+
+func (ec *executionContext) _CheckProgress(ctx context.Context, sel ast.SelectionSet, obj *model.CheckProgress) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, checkProgressImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CheckProgress")
+		case "message":
+			out.Values[i] = ec._CheckProgress_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "done":
+			out.Values[i] = ec._CheckProgress_done(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "result":
+			out.Values[i] = ec._CheckProgress_result(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "error":
+			out.Values[i] = ec._CheckProgress_error(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var checkResultImplementors = []string{"CheckResult"}
+
+func (ec *executionContext) _CheckResult(ctx context.Context, sel ast.SelectionSet, obj *model.CheckResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, checkResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CheckResult")
+		case "course":
+			out.Values[i] = ec._CheckResult_course(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "students":
+			out.Values[i] = ec._CheckResult_students(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "groups":
+			out.Values[i] = ec._CheckResult_groups(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "duplicates":
+			out.Values[i] = ec._CheckResult_duplicates(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errors":
+			out.Values[i] = ec._CheckResult_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "ok":
+			out.Values[i] = ec._CheckResult_ok(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var commitReportImplementors = []string{"CommitReport"}
 
 func (ec *executionContext) _CommitReport(ctx context.Context, sel ast.SelectionSet, obj *model.CommitReport) graphql.Marshaler {
@@ -7518,6 +8495,49 @@ func (ec *executionContext) _DockerImagesReport(ctx context.Context, sel ast.Sel
 			}
 		case "images":
 			out.Values[i] = ec._DockerImagesReport_images(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var duplicateCheckImplementors = []string{"DuplicateCheck"}
+
+func (ec *executionContext) _DuplicateCheck(ctx context.Context, sel ast.SelectionSet, obj *model.DuplicateCheck) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, duplicateCheckImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DuplicateCheck")
+		case "student":
+			out.Values[i] = ec._DuplicateCheck_student(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "groups":
+			out.Values[i] = ec._DuplicateCheck_groups(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -7821,6 +8841,49 @@ func (ec *executionContext) _Group(ctx context.Context, sel ast.SelectionSet, ob
 			}
 		case "members":
 			out.Values[i] = ec._Group_members(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var groupCheckImplementors = []string{"GroupCheck"}
+
+func (ec *executionContext) _GroupCheck(ctx context.Context, sel ast.SelectionSet, obj *model.GroupCheck) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, groupCheckImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GroupCheck")
+		case "name":
+			out.Values[i] = ec._GroupCheck_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "members":
+			out.Values[i] = ec._GroupCheck_members(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -8322,6 +9385,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "courseCheck":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_courseCheck(ctx, field)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "courses":
 			field := field
 
@@ -8724,6 +9809,54 @@ func (ec *executionContext) _ServerInfo(ctx context.Context, sel ast.SelectionSe
 	return out
 }
 
+var studentCheckImplementors = []string{"StudentCheck"}
+
+func (ec *executionContext) _StudentCheck(ctx context.Context, sel ast.SelectionSet, obj *model.StudentCheck) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, studentCheckImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("StudentCheck")
+		case "input":
+			out.Values[i] = ec._StudentCheck_input(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "status":
+			out.Values[i] = ec._StudentCheck_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "message":
+			out.Values[i] = ec._StudentCheck_message(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var subscriptionImplementors = []string{"Subscription"}
 
 func (ec *executionContext) _Subscription(ctx context.Context, sel ast.SelectionSet) func(ctx context.Context) graphql.Marshaler {
@@ -8739,6 +9872,8 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 	switch fields[0].Name {
 	case "assignmentReportProgress":
 		return ec._Subscription_assignmentReportProgress(ctx, fields[0])
+	case "courseCheckProgress":
+		return ec._Subscription_courseCheckProgress(ctx, fields[0])
 	default:
 		panic("unknown field " + strconv.Quote(fields[0].Name))
 	}
@@ -9262,6 +10397,20 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNCheckProgress2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCheckProgress(ctx context.Context, sel ast.SelectionSet, v model.CheckProgress) graphql.Marshaler {
+	return ec._CheckProgress(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCheckProgress2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCheckProgress(ctx context.Context, sel ast.SelectionSet, v *model.CheckProgress) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CheckProgress(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNCourse2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCourse(ctx context.Context, sel ast.SelectionSet, v model.Course) graphql.Marshaler {
 	return ec._Course(ctx, sel, &v)
 }
@@ -9316,6 +10465,32 @@ func (ec *executionContext) marshalNDockerImageReport2ᚖgithubᚗcomᚋobcode�
 		return graphql.Null
 	}
 	return ec._DockerImageReport(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDuplicateCheck2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐDuplicateCheckᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.DuplicateCheck) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNDuplicateCheck2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐDuplicateCheck(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNDuplicateCheck2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐDuplicateCheck(ctx context.Context, sel ast.SelectionSet, v *model.DuplicateCheck) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DuplicateCheck(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNFieldKind2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldKind(ctx context.Context, v any) (model.FieldKind, error) {
@@ -9499,6 +10674,32 @@ func (ec *executionContext) marshalNGroup2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3�
 		return graphql.Null
 	}
 	return ec._Group(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNGroupCheck2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐGroupCheckᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.GroupCheck) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNGroupCheck2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐGroupCheck(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNGroupCheck2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐGroupCheck(ctx context.Context, sel ast.SelectionSet, v *model.GroupCheck) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._GroupCheck(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNGroupInput2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐGroupInputᚄ(ctx context.Context, v any) ([]*model.GroupInput, error) {
@@ -9685,6 +10886,42 @@ func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalNStudentCheck2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐStudentCheckᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.StudentCheck) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNStudentCheck2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐStudentCheck(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNStudentCheck2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐStudentCheck(ctx context.Context, sel ast.SelectionSet, v *model.StudentCheck) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._StudentCheck(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNStudentCheckStatus2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐStudentCheckStatus(ctx context.Context, v any) (model.StudentCheckStatus, error) {
+	var res model.StudentCheckStatus
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNStudentCheckStatus2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐStudentCheckStatus(ctx context.Context, sel ast.SelectionSet, v model.StudentCheckStatus) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v any) (time.Time, error) {
@@ -9920,6 +11157,13 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	_ = ctx
 	res := graphql.MarshalBoolean(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOCheckResult2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCheckResult(ctx context.Context, sel ast.SelectionSet, v *model.CheckResult) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._CheckResult(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOCommitReport2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCommitReport(ctx context.Context, sel ast.SelectionSet, v *model.CommitReport) graphql.Marshaler {

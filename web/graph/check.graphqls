@@ -1,0 +1,79 @@
+"""
+The result of checking a course's roster against GitLab: each roster entry
+classified, plus the students that appear in more than one group. Fetched with the
+caller's stored token.
+"""
+type CheckResult {
+  course: String!
+  "The course-level students, classified in configured order."
+  students: [StudentCheck!]!
+  "The course's groups, each with its members classified."
+  groups: [GroupCheck!]!
+  "Students that appear in more than one group."
+  duplicates: [DuplicateCheck!]!
+  "Number of hard problems (unresolvable entries + duplicates)."
+  errors: Int!
+  "Whether the whole course checks out (errors = 0)."
+  ok: Boolean!
+}
+
+"One roster entry classified against GitLab."
+type StudentCheck {
+  "The raw roster entry, as written."
+  input: String!
+  status: StudentCheckStatus!
+  "Human-readable detail (the resolved user, or why it failed)."
+  message: String!
+}
+
+"How a roster entry resolved against GitLab."
+enum StudentCheckStatus {
+  "Resolved (pinned by ID, or matched uniquely by email)."
+  OK
+  "No GitLab user yet, but there is an email → will be invited."
+  INVITE
+  "Resolved by username — works, but pinning by ID is safer."
+  DEPRECATED
+  "Cannot resolve and there is no email to fall back to."
+  ERROR
+}
+
+"One group's members, classified."
+type GroupCheck {
+  name: String!
+  members: [StudentCheck!]!
+}
+
+"One student that appears in more than one group."
+type DuplicateCheck {
+  student: String!
+  groups: [String!]!
+}
+
+"""
+One event while a course check runs: a progress line as each entry is checked, or
+the single final event (done = true) carrying the result or an error.
+"""
+type CheckProgress {
+  message: String!
+  done: Boolean!
+  result: CheckResult
+  error: String
+}
+
+extend type Query {
+  """
+  Check a course's roster against GitLab with the caller's stored token (one-shot,
+  no progress). Null when there is no such course; errors when no token is stored
+  or GitLab is unreachable.
+  """
+  courseCheck(name: String!): CheckResult
+}
+
+extend type Subscription {
+  """
+  Check a course's roster and stream progress per entry, ending with one done event
+  carrying the result. Same semantics as courseCheck, but with live progress.
+  """
+  courseCheckProgress(name: String!): CheckProgress!
+}

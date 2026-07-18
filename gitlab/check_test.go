@@ -153,3 +153,64 @@ func TestCheckCourseReturnsFalseOnMissingUserAndDuplicate(t *testing.T) {
 		t.Fatal("CheckCourse() = true, want false")
 	}
 }
+
+func TestCheckCourseData_classifies(t *testing.T) {
+	id := 1001
+	alice := "alice"
+	email := "new.user@example.org"
+	missing := "missing"
+	dup := "dup"
+
+	client := newTestClient(t,
+		map[int]string{1001: "id-user"},
+		map[string][]string{
+			"alice":   {"alice"},
+			email:     {},
+			"missing": {},
+			"dup":     {"dup"},
+		},
+	)
+
+	cfg := &config.CourseConfig{
+		Course: "c",
+		Students: []*config.Student{
+			{Id: &id, Raw: "1001"},           // resolved by ID  -> OK
+			{Username: &alice, Raw: "alice"}, // by username    -> DEPRECATED
+			{Email: &email, Raw: email},      // not found + mail -> INVITE
+		},
+		Groups: []*config.Group{
+			{Name: "g1", Members: []*config.Student{
+				{Username: &missing, Raw: "missing"}, // not found, no mail -> ERROR
+				{Username: &dup, Raw: "dup"},
+			}},
+			{Name: "g2", Members: []*config.Student{
+				{Username: &dup, Raw: "dup"}, // dup is in g1 and g2 -> duplicate
+			}},
+		},
+	}
+
+	res := client.CheckCourseData(cfg)
+
+	if len(res.Students) != 3 {
+		t.Fatalf("students = %d, want 3", len(res.Students))
+	}
+	if res.Students[0].Status != CheckOK {
+		t.Errorf("id student status = %q, want ok", res.Students[0].Status)
+	}
+	if res.Students[1].Status != CheckDeprecated {
+		t.Errorf("username student status = %q, want deprecated", res.Students[1].Status)
+	}
+	if res.Students[2].Status != CheckInvite {
+		t.Errorf("email student status = %q, want invite", res.Students[2].Status)
+	}
+	if len(res.Groups) != 2 || res.Groups[0].Members[0].Status != CheckError {
+		t.Errorf("g1 first member status = %q, want error", res.Groups[0].Members[0].Status)
+	}
+	if len(res.Duplicates) != 1 || res.Duplicates[0].Student != "dup" {
+		t.Fatalf("duplicates = %#v, want one for dup", res.Duplicates)
+	}
+	// errors = missing (1) + duplicate dup (1) = 2
+	if res.Errors != 2 || res.OK {
+		t.Errorf("errors = %d ok = %v, want 2 and false", res.Errors, res.OK)
+	}
+}

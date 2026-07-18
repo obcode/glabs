@@ -576,6 +576,75 @@ func TestSetAssignment_branchesRepeatGroup(t *testing.T) {
 	}
 }
 
+func TestSetAssignment_approvals(t *testing.T) {
+	const owner = "prof@hm.edu"
+	fs := newFakeStore()
+	fs.courses[owner+"/tc"] = storedCourse(t, owner, tcCourse)
+	a := &App{db: fs, gitlabHost: "https://gl"}
+	ctx := ctxAs(owner)
+
+	view, err := a.SetAssignment(ctx, "tc", "blatt1", map[string]string{
+		"mergeRequest.mergeMethod":                                "merge",
+		"approvals.settings.preventApprovalByMergeRequestCreator": "true",
+		"approvals.settings.requireUserReauthenticationToApprove": "false",
+		"approvals.settings.whenCommitAdded":                      "keepApprovals",
+		"approvals.rules.count":                                   "1",
+		"approvals.rules.0.name":                                  "Tutoren",
+		"approvals.rules.0.requiredApprovals":                     "2",
+		"approvals.rules.0.usernames":                             "a, b",
+		"approvals.rules.0.multiMemberGroupsOnly":                 "true",
+	})
+	if err != nil {
+		t.Fatalf("set: %v", err)
+	}
+	mr := fs.saved.Source.Assignments["blatt1"].MergeRequest
+	if mr == nil || mr.Approvals == nil {
+		t.Fatalf("approvals missing: %+v", mr)
+	}
+	s := mr.Approvals.Settings
+	if s == nil || s.PreventApprovalByMergeRequestCreator == nil || !*s.PreventApprovalByMergeRequestCreator {
+		t.Errorf("prevent-creator tri-state should be true: %+v", s)
+	}
+	if s.RequireUserReauthenticationToApprove == nil || *s.RequireUserReauthenticationToApprove {
+		t.Errorf("reauth tri-state should be false")
+	}
+	if s.PreventApprovalsByUsersWhoAddCommits != nil {
+		t.Errorf("unset tri-state should stay nil")
+	}
+	if s.WhenCommitAdded == nil || *s.WhenCommitAdded != "keepApprovals" {
+		t.Errorf("whenCommitAdded = %v", s.WhenCommitAdded)
+	}
+	if len(mr.Approvals.Rules) != 1 {
+		t.Fatalf("want 1 rule, got %+v", mr.Approvals.Rules)
+	}
+	r := mr.Approvals.Rules[0]
+	if r.Name != "Tutoren" || r.RequiredApprovals != 2 || len(r.Usernames) != 2 || !r.MultiMemberGroupsOnly {
+		t.Errorf("rule = %+v", r)
+	}
+
+	own := ownMap(view.Own)
+	if own["approvals.settings.preventApprovalByMergeRequestCreator"] != "true" ||
+		own["approvals.settings.preventApprovalsByUsersWhoAddCommits"] != "" ||
+		own["approvals.rules.count"] != "1" || own["approvals.rules.0.usernames"] != "a, b" {
+		t.Errorf("own approval keys wrong: %v", own)
+	}
+
+	// Clearing settings + rules removes the approvals block; the MR itself stays.
+	if _, err := a.SetAssignment(ctx, "tc", "blatt1", map[string]string{
+		"mergeRequest.mergeMethod":                                "merge",
+		"approvals.settings.preventApprovalByMergeRequestCreator": "",
+		"approvals.settings.requireUserReauthenticationToApprove": "",
+		"approvals.settings.whenCommitAdded":                      "",
+		"approvals.rules.count":                                   "0",
+	}); err != nil {
+		t.Fatalf("set (clear): %v", err)
+	}
+	mr2 := fs.saved.Source.Assignments["blatt1"].MergeRequest
+	if mr2 == nil || mr2.Approvals != nil {
+		t.Errorf("approvals should be cleared while the MR is kept: %+v", mr2)
+	}
+}
+
 func TestSetAssignment_rejectsUnresolvable(t *testing.T) {
 	const owner = "prof@hm.edu"
 	fs := newFakeStore()

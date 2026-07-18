@@ -55,6 +55,108 @@ func AssignmentBranchSchema() []FieldMeta {
 	return branchFields
 }
 
+// AssignmentApprovalSettingsSchema returns the metadata for the mergeRequest
+// approval settings. These are tri-state: an ENUM whose empty option means
+// "not set" (inherit), so `an`/`aus` map to *bool true/false and "" to nil.
+func AssignmentApprovalSettingsSchema() []FieldMeta {
+	return approvalSettingsFields
+}
+
+// AssignmentApprovalRuleSchema returns the metadata for one approval rule — a row
+// of the repeat-group `approvals.rules` list.
+func AssignmentApprovalRuleSchema() []FieldMeta {
+	return approvalRuleFields
+}
+
+var triStateOptions = []FieldOption{
+	{Value: "true", Label: "an", Description: "aktiviert"},
+	{Value: "false", Label: "aus", Description: "deaktiviert"},
+}
+
+var approvalSettingsFields = []FieldMeta{
+	{
+		Key:         "preventApprovalByMergeRequestCreator",
+		Label:       "Ersteller darf nicht selbst freigeben",
+		Description: "Die MR-Erstellerin/der Ersteller kann den eigenen MR nicht approven.",
+		Kind:        KindEnum,
+		Options:     triStateOptions,
+	},
+	{
+		Key:         "preventApprovalsByUsersWhoAddCommits",
+		Label:       "Committer dürfen nicht freigeben",
+		Description: "Wer Commits hinzufügt, kann den MR nicht approven.",
+		Kind:        KindEnum,
+		Options:     triStateOptions,
+	},
+	{
+		Key:         "preventEditingApprovalRulesInMergeRequests",
+		Label:       "Approval-Regeln im MR sperren",
+		Description: "Approval-Regeln können im einzelnen MR nicht geändert werden.",
+		Kind:        KindEnum,
+		Options:     triStateOptions,
+	},
+	{
+		Key:         "requireUserReauthenticationToApprove",
+		Label:       "Re-Authentifizierung zum Freigeben",
+		Description: "Approven erfordert erneute Authentifizierung.",
+		Kind:        KindEnum,
+		Options:     triStateOptions,
+	},
+	{
+		Key:         "whenCommitAdded",
+		Label:       "Bei neuem Commit",
+		Description: "Was mit bestehenden Approvals passiert, wenn ein Commit hinzukommt (leer = GitLab-Default).",
+		Kind:        KindEnum,
+		Options: []FieldOption{
+			{Value: "keepApprovals", Label: "Behalten", Description: "Approvals bleiben bestehen."},
+			{Value: "removeAllApprovals", Label: "Alle entfernen", Description: "Alle Approvals werden zurückgesetzt."},
+			{Value: "removeCodeOwnerApprovalsIfTheirFilesChanged", Label: "Code-Owner (geänderte Dateien)", Description: "Nur Code-Owner-Approvals entfernen, wenn deren Dateien geändert wurden."},
+		},
+	},
+}
+
+var approvalRuleFields = []FieldMeta{
+	{
+		Key:         "name",
+		Label:       "Regelname",
+		Description: "Name der Approval-Regel.",
+		Kind:        KindString,
+		Required:    true,
+		Example:     "Tutoren",
+	},
+	{
+		Key:         "requiredApprovals",
+		Label:       "Erforderliche Freigaben",
+		Description: "Anzahl nötiger Approvals für diese Regel.",
+		Kind:        KindInt,
+		Example:     "1",
+	},
+	{
+		Key:         "usernames",
+		Label:       "Usernames",
+		Description: "GitLab-Usernames, die freigeben dürfen (kommagetrennt).",
+		Kind:        KindStringList,
+	},
+	{
+		Key:         "groups",
+		Label:       "Gruppen",
+		Description: "GitLab-Gruppen(pfade), die freigeben dürfen (kommagetrennt).",
+		Kind:        KindStringList,
+	},
+	{
+		Key:         "branches",
+		Label:       "Branches",
+		Description: "Branches, für die die Regel gilt (kommagetrennt; leer = alle).",
+		Kind:        KindStringList,
+	},
+	{
+		Key:         "multiMemberGroupsOnly",
+		Label:       "Nur mehrköpfige Gruppen",
+		Description: "Nur Gruppen mit mehr als einem Mitglied zählen.",
+		Kind:        KindBool,
+	},
+}
+
 var branchFields = []FieldMeta{
 	{
 		Key:         "name",

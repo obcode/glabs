@@ -57,3 +57,31 @@ extend type Mutation {
   """
   planOp(op: Op!, course: String!, assignment: String!, params: OpParams, onlyFor: [String!]): OpPlan!
 }
+
+"The severity/kind of one streamed output line."
+enum LogLevel {
+  INFO
+  WARN
+  ERROR
+  PROGRESS
+  RESULT
+  DONE
+}
+
+"One line of a running operation's streamed output."
+type LogLine {
+  level: LogLevel!
+  "The line text (ANSI stripped)."
+  text: String!
+}
+
+extend type Subscription {
+  """
+  Run a planned operation against GitLab (from planOp's token) and stream its output
+  line by line, ending with a DONE line. The operation keeps running server-side even
+  if the client disconnects (closing the tab does NOT abort it). A second operation on
+  the same assignment is rejected while one runs. For a destructive op (archive/delete)
+  confirmPhrase must equal the plan's confirmPhrase.
+  """
+  runOp(token: String!, confirmPhrase: String): LogLine!
+}

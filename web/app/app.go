@@ -39,10 +39,12 @@ type App struct {
 	// gitlabHost is the base URL glabs builds project URLs against; it feeds the
 	// resolved-config preview so the web shows the same URLs the CLI would.
 	gitlabHost string
+	// ops serializes mutating operations per (owner, course, assignment).
+	ops *opGuard
 }
 
 func New(database *db.DB, sealer *secrets.Sealer, gitlabHost string) *App {
-	return &App{db: database, sealer: sealer, gitlabHost: gitlabHost}
+	return &App{db: database, sealer: sealer, gitlabHost: gitlabHost, ops: newOpGuard()}
 }
 
 // GetUserByEmail looks up a user for the auth middleware's allowlist check.

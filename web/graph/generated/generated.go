@@ -162,6 +162,11 @@ type ComplexityRoot struct {
 		Name    func(childComplexity int) int
 	}
 
+	LogLine struct {
+		Level func(childComplexity int) int
+		Text  func(childComplexity int) int
+	}
+
 	Mutation struct {
 		CreateCourse         func(childComplexity int, name string, coursePath string, semesterPath string, useCoursenameAsPrefix bool, useEmailDomainAsSuffix bool) int
 		DeleteAssignment     func(childComplexity int, course string, name string) int
@@ -274,6 +279,7 @@ type ComplexityRoot struct {
 	Subscription struct {
 		AssignmentReportProgress func(childComplexity int, course string, name string) int
 		CourseCheckProgress      func(childComplexity int, name string) int
+		RunOp                    func(childComplexity int, token string, confirmPhrase *string) int
 	}
 
 	User struct {
@@ -328,6 +334,7 @@ type QueryResolver interface {
 type SubscriptionResolver interface {
 	AssignmentReportProgress(ctx context.Context, course string, name string) (<-chan *model.ReportProgress, error)
 	CourseCheckProgress(ctx context.Context, name string) (<-chan *model.CheckProgress, error)
+	RunOp(ctx context.Context, token string, confirmPhrase *string) (<-chan *model.LogLine, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -802,6 +809,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.GroupCheck.Name(childComplexity), true
+
+	case "LogLine.level":
+		if e.ComplexityRoot.LogLine.Level == nil {
+			break
+		}
+
+		return e.ComplexityRoot.LogLine.Level(childComplexity), true
+	case "LogLine.text":
+		if e.ComplexityRoot.LogLine.Text == nil {
+			break
+		}
+
+		return e.ComplexityRoot.LogLine.Text(childComplexity), true
 
 	case "Mutation.createCourse":
 		if e.ComplexityRoot.Mutation.CreateCourse == nil {
@@ -1371,6 +1391,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Subscription.CourseCheckProgress(childComplexity, args["name"].(string)), true
+	case "Subscription.runOp":
+		if e.ComplexityRoot.Subscription.RunOp == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_runOp_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Subscription.RunOp(childComplexity, args["token"].(string), args["confirmPhrase"].(*string)), true
 
 	case "User.email":
 		if e.ComplexityRoot.User.Email == nil {
@@ -1910,6 +1941,34 @@ extend type Mutation {
   """
   planOp(op: Op!, course: String!, assignment: String!, params: OpParams, onlyFor: [String!]): OpPlan!
 }
+
+"The severity/kind of one streamed output line."
+enum LogLevel {
+  INFO
+  WARN
+  ERROR
+  PROGRESS
+  RESULT
+  DONE
+}
+
+"One line of a running operation's streamed output."
+type LogLine {
+  level: LogLevel!
+  "The line text (ANSI stripped)."
+  text: String!
+}
+
+extend type Subscription {
+  """
+  Run a planned operation against GitLab (from planOp's token) and stream its output
+  line by line, ending with a DONE line. The operation keeps running server-side even
+  if the client disconnects (closing the tab does NOT abort it). A second operation on
+  the same assignment is rejected while one runs. For a destructive op (archive/delete)
+  confirmPhrase must equal the plan's confirmPhrase.
+  """
+  runOp(token: String!, confirmPhrase: String): LogLine!
+}
 `, BuiltIn: false},
 	{Name: "../report.graphqls", Input: `"""
 A live report over the repositories of one assignment — one row per project
@@ -2296,6 +2355,16 @@ func (ec *executionContext) childFields_GroupCheck(ctx context.Context, field gr
 		return ec.fieldContext_GroupCheck_members(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type GroupCheck", field.Name)
+}
+
+func (ec *executionContext) childFields_LogLine(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "level":
+		return ec.fieldContext_LogLine_level(ctx, field)
+	case "text":
+		return ec.fieldContext_LogLine_text(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type LogLine", field.Name)
 }
 
 func (ec *executionContext) childFields_OpPlan(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -3085,6 +3154,28 @@ func (ec *executionContext) field_Subscription_courseCheckProgress_args(ctx cont
 		return nil, err
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Subscription_runOp_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "token",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["token"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "confirmPhrase",
+		func(ctx context.Context, v any) (*string, error) {
+			return ec.unmarshalOString2ᚖstring(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["confirmPhrase"] = arg1
 	return args, nil
 }
 
@@ -4924,6 +5015,52 @@ func (ec *executionContext) fieldContext_GroupCheck_members(_ context.Context, f
 		},
 	}
 	return fc, nil
+}
+
+func (ec *executionContext) _LogLine_level(ctx context.Context, field graphql.CollectedField, obj *model.LogLine) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_LogLine_level(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Level, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v model.LogLevel) graphql.Marshaler {
+			return ec.marshalNLogLevel2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐLogLevel(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_LogLine_level(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("LogLine", field, false, false, errors.New("field of type LogLevel does not have child fields"))
+}
+
+func (ec *executionContext) _LogLine_text(ctx context.Context, field graphql.CollectedField, obj *model.LogLine) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_LogLine_text(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Text, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_LogLine_text(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("LogLine", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _Mutation_importCourseYAML(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -7312,6 +7449,50 @@ func (ec *executionContext) fieldContext_Subscription_courseCheckProgress(ctx co
 	return fc, nil
 }
 
+func (ec *executionContext) _Subscription_runOp(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	return graphql.ResolveFieldStream(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Subscription_runOp(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Subscription().RunOp(ctx, fc.Args["token"].(string), fc.Args["confirmPhrase"].(*string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.LogLine) graphql.Marshaler {
+			return ec.marshalNLogLine2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐLogLine(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Subscription_runOp(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_LogLine(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Subscription_runOp_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _User_email(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -9561,6 +9742,49 @@ func (ec *executionContext) _GroupCheck(ctx context.Context, sel ast.SelectionSe
 	return out
 }
 
+var logLineImplementors = []string{"LogLine"}
+
+func (ec *executionContext) _LogLine(ctx context.Context, sel ast.SelectionSet, obj *model.LogLine) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, logLineImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("LogLine")
+		case "level":
+			out.Values[i] = ec._LogLine_level(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "text":
+			out.Values[i] = ec._LogLine_text(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -10665,6 +10889,8 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 		return ec._Subscription_assignmentReportProgress(ctx, fields[0])
 	case "courseCheckProgress":
 		return ec._Subscription_courseCheckProgress(ctx, fields[0])
+	case "runOp":
+		return ec._Subscription_runOp(ctx, fields[0])
 	default:
 		panic("unknown field " + strconv.Quote(fields[0].Name))
 	}
@@ -11526,6 +11752,30 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNLogLevel2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐLogLevel(ctx context.Context, v any) (model.LogLevel, error) {
+	var res model.LogLevel
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNLogLevel2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐLogLevel(ctx context.Context, sel ast.SelectionSet, v model.LogLevel) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNLogLine2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐLogLine(ctx context.Context, sel ast.SelectionSet, v model.LogLine) graphql.Marshaler {
+	return ec._LogLine(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNLogLine2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐLogLine(ctx context.Context, sel ast.SelectionSet, v *model.LogLine) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._LogLine(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNOp2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐOp(ctx context.Context, v any) (model.Op, error) {

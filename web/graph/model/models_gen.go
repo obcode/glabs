@@ -207,6 +207,13 @@ type GroupInput struct {
 	Members []string `json:"members"`
 }
 
+// One line of a running operation's streamed output.
+type LogLine struct {
+	Level LogLevel `json:"level"`
+	// The line text (ANSI stripped).
+	Text string `json:"text"`
+}
+
 type Mutation struct {
 }
 
@@ -457,6 +464,70 @@ func (e *FindingSeverity) UnmarshalJSON(b []byte) error {
 }
 
 func (e FindingSeverity) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+// The severity/kind of one streamed output line.
+type LogLevel string
+
+const (
+	LogLevelInfo     LogLevel = "INFO"
+	LogLevelWarn     LogLevel = "WARN"
+	LogLevelError    LogLevel = "ERROR"
+	LogLevelProgress LogLevel = "PROGRESS"
+	LogLevelResult   LogLevel = "RESULT"
+	LogLevelDone     LogLevel = "DONE"
+)
+
+var AllLogLevel = []LogLevel{
+	LogLevelInfo,
+	LogLevelWarn,
+	LogLevelError,
+	LogLevelProgress,
+	LogLevelResult,
+	LogLevelDone,
+}
+
+func (e LogLevel) IsValid() bool {
+	switch e {
+	case LogLevelInfo, LogLevelWarn, LogLevelError, LogLevelProgress, LogLevelResult, LogLevelDone:
+		return true
+	}
+	return false
+}
+
+func (e LogLevel) String() string {
+	return string(e)
+}
+
+func (e *LogLevel) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = LogLevel(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid LogLevel", str)
+	}
+	return nil
+}
+
+func (e LogLevel) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *LogLevel) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e LogLevel) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

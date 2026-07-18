@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -71,13 +72,58 @@ func gitURLToHTTPSBase(raw string) (string, error) {
 func (cfg *AssignmentConfig) Urls(assignment bool) {
 	if assignment {
 		fmt.Println(cfg.URL)
-	} else if cfg.Per == PerStudent {
+		return
+	}
+	for _, r := range cfg.RepoURLs() {
+		fmt.Println(r.URL)
+	}
+}
+
+// RepoURL is one repository URL together with who it belongs to: a student's
+// email (or username/id fallback) for per-student assignments, or the group
+// name for per-group assignments.
+type RepoURL struct {
+	For string
+	URL string
+}
+
+// RepoURLs returns the per-student or per-group repository URLs for the
+// assignment (depending on Per). The assignment-level group URL is cfg.URL.
+// It is the data behind the printing Urls method, reusable by the web layer.
+func (cfg *AssignmentConfig) RepoURLs() []RepoURL {
+	var out []RepoURL
+	if cfg.Per == PerStudent {
 		for _, stud := range cfg.Students {
-			fmt.Printf("%s/%s\n", cfg.URL, cfg.RepoNameForStudent(stud))
+			out = append(out, RepoURL{
+				For: studentLabel(stud),
+				URL: cfg.URL + "/" + cfg.RepoNameForStudent(stud),
+			})
 		}
 	} else { // PerGroup
 		for _, group := range cfg.Groups {
-			fmt.Printf("%s/%s\n", cfg.URL, cfg.RepoNameForGroup(group))
+			out = append(out, RepoURL{
+				For: group.Name,
+				URL: cfg.URL + "/" + cfg.RepoNameForGroup(group),
+			})
 		}
 	}
+	return out
+}
+
+// studentLabel is a human-readable identifier for a student: the email, else the
+// username, else the raw roster entry, else the numeric id.
+func studentLabel(s *Student) string {
+	if s.Email != nil && *s.Email != "" {
+		return *s.Email
+	}
+	if s.Username != nil && *s.Username != "" {
+		return *s.Username
+	}
+	if s.Raw != "" {
+		return s.Raw
+	}
+	if s.Id != nil {
+		return strconv.Itoa(*s.Id)
+	}
+	return ""
 }

@@ -65,6 +65,16 @@ func toGraphValidationResult(vr *app.ValidationResult) *model.ValidationResult {
 	}
 }
 
+// toGraphAssignmentURLs projects the assignment repository URLs onto the GraphQL
+// model.
+func toGraphAssignmentURLs(u *app.AssignmentURLs) *model.AssignmentUrls {
+	repos := make([]*model.RepoURL, 0, len(u.Repos))
+	for _, r := range u.Repos {
+		repos = append(repos, &model.RepoURL{For: r.For, URL: r.URL})
+	}
+	return &model.AssignmentUrls{Per: u.Per, GroupURL: u.GroupURL, Repos: repos}
+}
+
 // toGraphAssignmentView projects an assignment view onto the GraphQL model.
 func toGraphAssignmentView(view *app.AssignmentView) *model.AssignmentView {
 	own := make([]*model.FieldValue, 0, len(view.Own))

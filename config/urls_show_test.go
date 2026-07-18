@@ -81,6 +81,55 @@ func TestUrls_PerGroup(t *testing.T) {
 	}
 }
 
+func TestRepoURLs_PerStudent_PrefersEmailLabel(t *testing.T) {
+	mail := "a@hm.edu"
+	user := "bob"
+	cfg := &AssignmentConfig{
+		URL:                   "https://gitlab.example.org/mpd/ss26/blatt-01",
+		Name:                  "blatt01",
+		Course:                "mpd",
+		UseCoursenameAsPrefix: true,
+		Per:                   PerStudent,
+		Students: []*Student{
+			{Email: &mail, Raw: "a@hm.edu"},
+			{Username: &user, Raw: "bob"},
+		},
+	}
+	got := cfg.RepoURLs()
+	if len(got) != 2 {
+		t.Fatalf("RepoURLs() len = %d, want 2", len(got))
+	}
+	if got[0].For != "a@hm.edu" {
+		t.Errorf("For[0] = %q, want the email", got[0].For)
+	}
+	if got[1].For != "bob" {
+		t.Errorf("For[1] = %q, want the username fallback", got[1].For)
+	}
+	want := cfg.URL + "/" + cfg.RepoNameForStudent(cfg.Students[0])
+	if got[0].URL != want {
+		t.Errorf("URL[0] = %q, want %q", got[0].URL, want)
+	}
+}
+
+func TestRepoURLs_PerGroup(t *testing.T) {
+	cfg := &AssignmentConfig{
+		URL:                   "https://gitlab.example.org/mpd/ss26/blatt-01",
+		Name:                  "blatt01",
+		Course:                "mpd",
+		UseCoursenameAsPrefix: true,
+		Per:                   PerGroup,
+		Groups:                []*Group{{Name: "team1"}, {Name: "team2"}},
+	}
+	got := cfg.RepoURLs()
+	if len(got) != 2 || got[0].For != "team1" || got[1].For != "team2" {
+		t.Fatalf("RepoURLs() = %+v, want two groups team1/team2", got)
+	}
+	want := cfg.URL + "/" + cfg.RepoNameForGroup(cfg.Groups[1])
+	if got[1].URL != want {
+		t.Errorf("URL[1] = %q, want %q", got[1].URL, want)
+	}
+}
+
 func TestShow_Minimal(t *testing.T) {
 	cfg := &AssignmentConfig{
 		Course: "mpd",

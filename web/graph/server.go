@@ -68,7 +68,13 @@ func StartServer(a *app.App, port string) {
 	// upgrade is not covered by CORS preflight, so origins are checked here via
 	// coder/websocket's OriginPatterns (host[:port], scheme stripped).
 	srv.AddTransport(transport.Websocket{
-		KeepAlivePingInterval: 10 * time.Second,
+		// graphql-ws (the browser client) speaks the modern graphql-transport-ws
+		// subprotocol, for which KeepAlivePingInterval does NOT apply — only the
+		// legacy apollo subprotocol uses it. Send an unsolicited pong every 10s
+		// (PongOnlyInterval, the correct field here) so a long report/check stream
+		// (minutes, with gaps between progress) is not dropped as idle and then
+		// re-subscribed from scratch by the client's retry.
+		PongOnlyInterval: 10 * time.Second,
 		Implementation: transport.CoderWebsocketImplementation{
 			AcceptOptions: coderws.AcceptOptions{
 				OriginPatterns: originHosts(origins),

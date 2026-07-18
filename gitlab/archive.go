@@ -41,7 +41,7 @@ func (c *Client) archivePerStudent(assignmentCfg *config.AssignmentConfig, unarc
 		)
 		if err != nil {
 			c.rep.Printf("cannot archive project %s failed with %s", projectname, err)
-			return
+			continue
 		}
 		if err := c.archive(assignmentCfg, project, true, unarchive); err != nil {
 			log.Error().Err(err).Str("group", assignmentCfg.Course).Msg("cannot archive project")
@@ -63,7 +63,7 @@ func (c *Client) archivePerGroup(assignmentCfg *config.AssignmentConfig, unarchi
 		)
 		if err != nil {
 			c.rep.Printf("cannot archive project %s failed with %s", projectname, err)
-			return
+			continue
 		}
 		if err := c.archive(assignmentCfg, project, true, unarchive); err != nil {
 			log.Error().Err(err).Str("group", assignmentCfg.Course).Msg("cannot archive project")

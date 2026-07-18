@@ -97,7 +97,7 @@ func (c *Client) setaccessPerStudent(assignmentCfg *config.AssignmentConfig) {
 		)
 		if err != nil {
 			c.rep.Printf("cannot set access for project %s failed with %s", projectname, err)
-			return
+			continue
 		}
 		c.setaccess(assignmentCfg, project, []*config.Student{student})
 	}
@@ -117,7 +117,7 @@ func (c *Client) setaccessPerGroup(assignmentCfg *config.AssignmentConfig) {
 		)
 		if err != nil {
 			c.rep.Printf("cannot set access for project %s failed with %s", projectname, err)
-			return
+			continue
 		}
 		c.setaccess(assignmentCfg, project, grp.Members)
 	}

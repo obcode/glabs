@@ -51,10 +51,12 @@ type ComplexityRoot struct {
 		AssignmentNames        func(childComplexity int) int
 		CoursePath             func(childComplexity int) int
 		GroupCount             func(childComplexity int) int
+		Groups                 func(childComplexity int) int
 		ImportedAt             func(childComplexity int) int
 		Name                   func(childComplexity int) int
 		SemesterPath           func(childComplexity int) int
 		StudentCount           func(childComplexity int) int
+		Students               func(childComplexity int) int
 		UpdatedAt              func(childComplexity int) int
 		UseCoursenameAsPrefix  func(childComplexity int) int
 		UseEmailDomainAsSuffix func(childComplexity int) int
@@ -94,6 +96,11 @@ type ComplexityRoot struct {
 		UpdatedAt func(childComplexity int) int
 	}
 
+	Group struct {
+		Members func(childComplexity int) int
+		Name    func(childComplexity int) int
+	}
+
 	Mutation struct {
 		CreateCourse      func(childComplexity int, name string, coursePath string, semesterPath string, useCoursenameAsPrefix bool, useEmailDomainAsSuffix bool) int
 		DeleteAssignment  func(childComplexity int, course string, name string) int
@@ -102,6 +109,8 @@ type ComplexityRoot struct {
 		RemoveGitlabToken func(childComplexity int) int
 		SetAssignment     func(childComplexity int, course string, name string, draft []*model.FieldValueInput) int
 		SetCourse         func(childComplexity int, name string, coursePath string, semesterPath string, useCoursenameAsPrefix bool, useEmailDomainAsSuffix bool) int
+		SetCourseGroups   func(childComplexity int, name string, groups []*model.GroupInput) int
+		SetCourseStudents func(childComplexity int, name string, students []string) int
 		SetGitlabToken    func(childComplexity int, token string) int
 	}
 
@@ -145,6 +154,8 @@ type MutationResolver interface {
 	ImportCourseYaml(ctx context.Context, yaml string) (*model.Course, error)
 	CreateCourse(ctx context.Context, name string, coursePath string, semesterPath string, useCoursenameAsPrefix bool, useEmailDomainAsSuffix bool) (*model.Course, error)
 	SetCourse(ctx context.Context, name string, coursePath string, semesterPath string, useCoursenameAsPrefix bool, useEmailDomainAsSuffix bool) (*model.Course, error)
+	SetCourseStudents(ctx context.Context, name string, students []string) (*model.Course, error)
+	SetCourseGroups(ctx context.Context, name string, groups []*model.GroupInput) (*model.Course, error)
 	DeleteCourse(ctx context.Context, name string) (bool, error)
 	SetAssignment(ctx context.Context, course string, name string, draft []*model.FieldValueInput) (*model.AssignmentView, error)
 	DeleteAssignment(ctx context.Context, course string, name string) (bool, error)
@@ -243,6 +254,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Course.GroupCount(childComplexity), true
+	case "Course.groups":
+		if e.ComplexityRoot.Course.Groups == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Course.Groups(childComplexity), true
 	case "Course.importedAt":
 		if e.ComplexityRoot.Course.ImportedAt == nil {
 			break
@@ -267,6 +284,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Course.StudentCount(childComplexity), true
+	case "Course.students":
+		if e.ComplexityRoot.Course.Students == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Course.Students(childComplexity), true
 	case "Course.updatedAt":
 		if e.ComplexityRoot.Course.UpdatedAt == nil {
 			break
@@ -405,6 +428,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.GitLabTokenStatus.UpdatedAt(childComplexity), true
 
+	case "Group.members":
+		if e.ComplexityRoot.Group.Members == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Group.Members(childComplexity), true
+	case "Group.name":
+		if e.ComplexityRoot.Group.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Group.Name(childComplexity), true
+
 	case "Mutation.createCourse":
 		if e.ComplexityRoot.Mutation.CreateCourse == nil {
 			break
@@ -477,6 +513,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.SetCourse(childComplexity, args["name"].(string), args["coursePath"].(string), args["semesterPath"].(string), args["useCoursenameAsPrefix"].(bool), args["useEmailDomainAsSuffix"].(bool)), true
+	case "Mutation.setCourseGroups":
+		if e.ComplexityRoot.Mutation.SetCourseGroups == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setCourseGroups_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.SetCourseGroups(childComplexity, args["name"].(string), args["groups"].([]*model.GroupInput)), true
+	case "Mutation.setCourseStudents":
+		if e.ComplexityRoot.Mutation.SetCourseStudents == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setCourseStudents_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.SetCourseStudents(childComplexity, args["name"].(string), args["students"].([]string)), true
 	case "Mutation.setGitlabToken":
 		if e.ComplexityRoot.Mutation.SetGitlabToken == nil {
 			break
@@ -642,6 +700,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := newExecutionContext(opCtx, e, make(chan graphql.DeferredResult))
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputFieldValueInput,
+		ec.unmarshalInputGroupInput,
 	)
 	first := true
 
@@ -839,10 +898,26 @@ type Course {
   useEmailDomainAsSuffix: Boolean!
   "The names of the assignments in this course, sorted."
   assignmentNames: [String!]!
+  "The course-level students (emails), as stored."
+  students: [String!]!
+  "The course-level groups, sorted by name."
+  groups: [Group!]!
   studentCount: Int!
   groupCount: Int!
   importedAt: Time!
   updatedAt: Time!
+}
+
+"A named group of members (emails)."
+type Group {
+  name: String!
+  members: [String!]!
+}
+
+"A named group of members (emails), for setCourseGroups."
+input GroupInput {
+  name: String!
+  members: [String!]!
 }
 
 """One lint finding: configuration that does not do what it looks like it does."""
@@ -894,6 +969,10 @@ type Mutation {
     useCoursenameAsPrefix: Boolean!
     useEmailDomainAsSuffix: Boolean!
   ): Course!
+  "Replace the course-level students (emails) of one of the caller's courses. The GUI merges additively before calling this."
+  setCourseStudents(name: String!, students: [String!]!): Course!
+  "Replace the course-level groups of one of the caller's courses. The GUI merges additively before calling this."
+  setCourseGroups(name: String!, groups: [GroupInput!]!): Course!
   "Delete one of the current user's courses."
   deleteCourse(name: String!): Boolean!
 }
@@ -987,6 +1066,10 @@ func (ec *executionContext) childFields_Course(ctx context.Context, field graphq
 		return ec.fieldContext_Course_useEmailDomainAsSuffix(ctx, field)
 	case "assignmentNames":
 		return ec.fieldContext_Course_assignmentNames(ctx, field)
+	case "students":
+		return ec.fieldContext_Course_students(ctx, field)
+	case "groups":
+		return ec.fieldContext_Course_groups(ctx, field)
 	case "studentCount":
 		return ec.fieldContext_Course_studentCount(ctx, field)
 	case "groupCount":
@@ -1065,6 +1148,16 @@ func (ec *executionContext) childFields_GitLabTokenStatus(ctx context.Context, f
 		return ec.fieldContext_GitLabTokenStatus_updatedAt(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type GitLabTokenStatus", field.Name)
+}
+
+func (ec *executionContext) childFields_Group(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "name":
+		return ec.fieldContext_Group_name(ctx, field)
+	case "members":
+		return ec.fieldContext_Group_members(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
 }
 
 func (ec *executionContext) childFields_ServerInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -1342,6 +1435,50 @@ func (ec *executionContext) field_Mutation_setAssignment_args(ctx context.Contex
 		return nil, err
 	}
 	args["draft"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_setCourseGroups_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "name",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["name"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "groups",
+		func(ctx context.Context, v any) ([]*model.GroupInput, error) {
+			return ec.unmarshalNGroupInput2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐGroupInputᚄ(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["groups"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_setCourseStudents_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "name",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["name"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "students",
+		func(ctx context.Context, v any) ([]string, error) {
+			return ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["students"] = arg1
 	return args, nil
 }
 
@@ -1879,6 +2016,61 @@ func (ec *executionContext) _Course_assignmentNames(ctx context.Context, field g
 }
 func (ec *executionContext) fieldContext_Course_assignmentNames(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("Course", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Course_students(ctx context.Context, field graphql.CollectedField, obj *model.Course) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Course_students(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Students, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Course_students(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Course", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Course_groups(ctx context.Context, field graphql.CollectedField, obj *model.Course) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Course_groups(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Groups, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.Group) graphql.Marshaler {
+			return ec.marshalNGroup2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐGroupᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Course_groups(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Course",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Group(ctx, field)
+		},
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _Course_studentCount(ctx context.Context, field graphql.CollectedField, obj *model.Course) (ret graphql.Marshaler) {
@@ -2419,6 +2611,52 @@ func (ec *executionContext) fieldContext_GitLabTokenStatus_updatedAt(_ context.C
 	return graphql.NewScalarFieldContext("GitLabTokenStatus", field, false, false, errors.New("field of type Time does not have child fields"))
 }
 
+func (ec *executionContext) _Group_name(ctx context.Context, field graphql.CollectedField, obj *model.Group) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Group_name(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Group_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Group", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Group_members(ctx context.Context, field graphql.CollectedField, obj *model.Group) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Group_members(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Members, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Group_members(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Group", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _Mutation_importCourseYAML(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2545,6 +2783,94 @@ func (ec *executionContext) fieldContext_Mutation_setCourse(ctx context.Context,
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_setCourse_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_setCourseStudents(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_setCourseStudents(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().SetCourseStudents(ctx, fc.Args["name"].(string), fc.Args["students"].([]string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.Course) graphql.Marshaler {
+			return ec.marshalNCourse2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCourse(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_setCourseStudents(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Course(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_setCourseStudents_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_setCourseGroups(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_setCourseGroups(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().SetCourseGroups(ctx, fc.Args["name"].(string), fc.Args["groups"].([]*model.GroupInput))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.Course) graphql.Marshaler {
+			return ec.marshalNCourse2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCourse(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_setCourseGroups(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Course(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_setCourseGroups_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -4518,6 +4844,43 @@ func (ec *executionContext) unmarshalInputFieldValueInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputGroupInput(ctx context.Context, obj any) (model.GroupInput, error) {
+	var it model.GroupInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "members"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "members":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("members"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Members = data
+		}
+	}
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -4633,6 +4996,16 @@ func (ec *executionContext) _Course(ctx context.Context, sel ast.SelectionSet, o
 			}
 		case "assignmentNames":
 			out.Values[i] = ec._Course_assignmentNames(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "students":
+			out.Values[i] = ec._Course_students(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "groups":
+			out.Values[i] = ec._Course_groups(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -4937,6 +5310,49 @@ func (ec *executionContext) _GitLabTokenStatus(ctx context.Context, sel ast.Sele
 	return out
 }
 
+var groupImplementors = []string{"Group"}
+
+func (ec *executionContext) _Group(ctx context.Context, sel ast.SelectionSet, obj *model.Group) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, groupImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Group")
+		case "name":
+			out.Values[i] = ec._Group_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "members":
+			out.Values[i] = ec._Group_members(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -4974,6 +5390,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "setCourse":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_setCourse(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "setCourseStudents":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setCourseStudents(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "setCourseGroups":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setCourseGroups(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -6060,6 +6490,51 @@ func (ec *executionContext) marshalNGitLabTokenStatus2ᚖgithubᚗcomᚋobcode�
 		return graphql.Null
 	}
 	return ec._GitLabTokenStatus(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNGroup2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐGroupᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Group) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNGroup2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐGroup(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNGroup2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐGroup(ctx context.Context, sel ast.SelectionSet, v *model.Group) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Group(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNGroupInput2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐGroupInputᚄ(ctx context.Context, v any) ([]*model.GroupInput, error) {
+	vSlice := graphql.CoerceList(v)
+	var err error
+	res := make([]*model.GroupInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNGroupInput2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐGroupInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNGroupInput2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐGroupInput(ctx context.Context, v any) (*model.GroupInput, error) {
+	res, err := ec.unmarshalInputGroupInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v any) (int, error) {

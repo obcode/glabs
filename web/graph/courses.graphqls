@@ -12,10 +12,26 @@ type Course {
   useEmailDomainAsSuffix: Boolean!
   "The names of the assignments in this course, sorted."
   assignmentNames: [String!]!
+  "The course-level students (emails), as stored."
+  students: [String!]!
+  "The course-level groups, sorted by name."
+  groups: [Group!]!
   studentCount: Int!
   groupCount: Int!
   importedAt: Time!
   updatedAt: Time!
+}
+
+"A named group of members (emails)."
+type Group {
+  name: String!
+  members: [String!]!
+}
+
+"A named group of members (emails), for setCourseGroups."
+input GroupInput {
+  name: String!
+  members: [String!]!
 }
 
 """One lint finding: configuration that does not do what it looks like it does."""
@@ -67,6 +83,10 @@ type Mutation {
     useCoursenameAsPrefix: Boolean!
     useEmailDomainAsSuffix: Boolean!
   ): Course!
+  "Replace the course-level students (emails) of one of the caller's courses. The GUI merges additively before calling this."
+  setCourseStudents(name: String!, students: [String!]!): Course!
+  "Replace the course-level groups of one of the caller's courses. The GUI merges additively before calling this."
+  setCourseGroups(name: String!, groups: [GroupInput!]!): Course!
   "Delete one of the current user's courses."
   deleteCourse(name: String!): Boolean!
 }

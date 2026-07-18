@@ -41,6 +41,30 @@ func (r *mutationResolver) SetCourse(ctx context.Context, name string, coursePat
 	return toGraphCourse(stored), nil
 }
 
+// SetCourseStudents is the resolver for the setCourseStudents field.
+func (r *mutationResolver) SetCourseStudents(ctx context.Context, name string, students []string) (*model.Course, error) {
+	stored, err := r.app.SetCourseStudents(ctx, name, students)
+	if err != nil {
+		return nil, err
+	}
+	return toGraphCourse(stored), nil
+}
+
+// SetCourseGroups is the resolver for the setCourseGroups field.
+func (r *mutationResolver) SetCourseGroups(ctx context.Context, name string, groups []*model.GroupInput) (*model.Course, error) {
+	m := make(map[string][]string, len(groups))
+	for _, g := range groups {
+		if g != nil {
+			m[g.Name] = g.Members
+		}
+	}
+	stored, err := r.app.SetCourseGroups(ctx, name, m)
+	if err != nil {
+		return nil, err
+	}
+	return toGraphCourse(stored), nil
+}
+
 // DeleteCourse is the resolver for the deleteCourse field.
 func (r *mutationResolver) DeleteCourse(ctx context.Context, name string) (bool, error) {
 	if err := r.app.DeleteCourse(ctx, name); err != nil {

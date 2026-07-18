@@ -347,6 +347,47 @@ func TestCreateCourse(t *testing.T) {
 	}
 }
 
+func TestSetCourseStudentsAndGroups(t *testing.T) {
+	const owner = "prof@hm.edu"
+	fs := newFakeStore()
+	fs.courses[owner+"/tc"] = storedCourse(t, owner, tcCourse)
+	a := &App{db: fs}
+	ctx := ctxAs(owner)
+
+	// Students: trimmed, blanks dropped, case-insensitively de-duplicated.
+	stored, err := a.SetCourseStudents(ctx, "tc", []string{" a@hm.edu ", "A@HM.EDU", "", "b@hm.edu"})
+	if err != nil {
+		t.Fatalf("students: %v", err)
+	}
+	if len(stored.Source.Students) != 2 ||
+		stored.Source.Students[0] != "a@hm.edu" || stored.Source.Students[1] != "b@hm.edu" {
+		t.Errorf("students = %v, want [a@hm.edu b@hm.edu]", stored.Source.Students)
+	}
+
+	// Groups: members de-duplicated; empty groups (no name or no members) dropped.
+	stored2, err := a.SetCourseGroups(ctx, "tc", map[string][]string{
+		"Gruppe 01": {"x@hm.edu", "X@hm.edu", "y@hm.edu"},
+		"Empty":     {},
+		"":          {"z@hm.edu"},
+	})
+	if err != nil {
+		t.Fatalf("groups: %v", err)
+	}
+	if len(stored2.Source.Groups) != 1 {
+		t.Errorf("groups = %v, want just 'Gruppe 01'", stored2.Source.Groups)
+	}
+	if len(stored2.Source.Groups["Gruppe 01"]) != 2 {
+		t.Errorf("Gruppe 01 members = %v, want 2 (deduped)", stored2.Source.Groups["Gruppe 01"])
+	}
+	// Students survive editing groups.
+	if len(stored2.Source.Students) != 2 {
+		t.Error("students should be untouched by setCourseGroups")
+	}
+	if !bytes.Contains(fs.saved.RawYAML, []byte("Gruppe 01")) {
+		t.Errorf("rawYAML not re-marshalled with the group:\n%s", fs.saved.RawYAML)
+	}
+}
+
 func TestSetCourse(t *testing.T) {
 	const owner = "prof@hm.edu"
 	fs := newFakeStore()

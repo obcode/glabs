@@ -37,6 +37,17 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	AssignmentReport struct {
+		Assignment             func(childComplexity int) int
+		Course                 func(childComplexity int) int
+		Description            func(childComplexity int) int
+		Generated              func(childComplexity int) int
+		HasReleaseDockerImages func(childComplexity int) int
+		HasReleaseMergeRequest func(childComplexity int) int
+		Projects               func(childComplexity int) int
+		URL                    func(childComplexity int) int
+	}
+
 	AssignmentUrls struct {
 		GroupURL func(childComplexity int) int
 		Per      func(childComplexity int) int
@@ -53,6 +64,13 @@ type ComplexityRoot struct {
 		Resolved     func(childComplexity int) int
 	}
 
+	CommitReport struct {
+		CommittedDate func(childComplexity int) int
+		CommitterName func(childComplexity int) int
+		Title         func(childComplexity int) int
+		WebURL        func(childComplexity int) int
+	}
+
 	Course struct {
 		AssignmentNames        func(childComplexity int) int
 		CoursePath             func(childComplexity int) int
@@ -66,6 +84,16 @@ type ComplexityRoot struct {
 		UpdatedAt              func(childComplexity int) int
 		UseCoursenameAsPrefix  func(childComplexity int) int
 		UseEmailDomainAsSuffix func(childComplexity int) int
+	}
+
+	DockerImageReport struct {
+		Image  func(childComplexity int) int
+		Wanted func(childComplexity int) int
+	}
+
+	DockerImagesReport struct {
+		Images func(childComplexity int) int
+		Status func(childComplexity int) int
 	}
 
 	FieldMeta struct {
@@ -120,10 +148,32 @@ type ComplexityRoot struct {
 		SetGitlabToken    func(childComplexity int, token string) int
 	}
 
+	ProjectMemberReport struct {
+		Name     func(childComplexity int) int
+		Username func(childComplexity int) int
+		WebURL   func(childComplexity int) int
+	}
+
+	ProjectReport struct {
+		Active                 func(childComplexity int) int
+		Commits                func(childComplexity int) int
+		CreatedAt              func(childComplexity int) int
+		EmptyRepo              func(childComplexity int) int
+		LastActivity           func(childComplexity int) int
+		LastCommit             func(childComplexity int) int
+		Members                func(childComplexity int) int
+		Name                   func(childComplexity int) int
+		OpenIssuesCount        func(childComplexity int) int
+		OpenMergeRequestsCount func(childComplexity int) int
+		Release                func(childComplexity int) int
+		WebURL                 func(childComplexity int) int
+	}
+
 	Query struct {
 		ApprovalRuleSchema      func(childComplexity int) int
 		ApprovalSettingsSchema  func(childComplexity int) int
 		Assignment              func(childComplexity int, course string, name string) int
+		AssignmentReport        func(childComplexity int, course string, name string) int
 		AssignmentSchema        func(childComplexity int) int
 		AssignmentUrls          func(childComplexity int, course string, name string) int
 		BranchRuleSchema        func(childComplexity int) int
@@ -135,6 +185,17 @@ type ComplexityRoot struct {
 		Me                      func(childComplexity int) int
 		ServerInfo              func(childComplexity int) int
 		ValidateAssignmentDraft func(childComplexity int, course string, name string, draft []*model.FieldValueInput) int
+	}
+
+	ReleaseMergeRequestReport struct {
+		Found          func(childComplexity int) int
+		PipelineStatus func(childComplexity int) int
+		WebURL         func(childComplexity int) int
+	}
+
+	ReleaseReport struct {
+		DockerImages func(childComplexity int) int
+		MergeRequest func(childComplexity int) int
 	}
 
 	RepoUrl struct {
@@ -192,6 +253,7 @@ type QueryResolver interface {
 	CourseYaml(ctx context.Context, name string) (string, error)
 	CourseLint(ctx context.Context, name string) ([]*model.Finding, error)
 	GitlabToken(ctx context.Context) (*model.GitLabTokenStatus, error)
+	AssignmentReport(ctx context.Context, course string, name string) (*model.AssignmentReport, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -211,6 +273,55 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := newExecutionContext(nil, e, nil)
 	_ = ec
 	switch typeName + "." + field {
+
+	case "AssignmentReport.assignment":
+		if e.ComplexityRoot.AssignmentReport.Assignment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AssignmentReport.Assignment(childComplexity), true
+	case "AssignmentReport.course":
+		if e.ComplexityRoot.AssignmentReport.Course == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AssignmentReport.Course(childComplexity), true
+	case "AssignmentReport.description":
+		if e.ComplexityRoot.AssignmentReport.Description == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AssignmentReport.Description(childComplexity), true
+	case "AssignmentReport.generated":
+		if e.ComplexityRoot.AssignmentReport.Generated == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AssignmentReport.Generated(childComplexity), true
+	case "AssignmentReport.hasReleaseDockerImages":
+		if e.ComplexityRoot.AssignmentReport.HasReleaseDockerImages == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AssignmentReport.HasReleaseDockerImages(childComplexity), true
+	case "AssignmentReport.hasReleaseMergeRequest":
+		if e.ComplexityRoot.AssignmentReport.HasReleaseMergeRequest == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AssignmentReport.HasReleaseMergeRequest(childComplexity), true
+	case "AssignmentReport.projects":
+		if e.ComplexityRoot.AssignmentReport.Projects == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AssignmentReport.Projects(childComplexity), true
+	case "AssignmentReport.url":
+		if e.ComplexityRoot.AssignmentReport.URL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AssignmentReport.URL(childComplexity), true
 
 	case "AssignmentUrls.groupUrl":
 		if e.ComplexityRoot.AssignmentUrls.GroupURL == nil {
@@ -273,6 +384,31 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AssignmentView.Resolved(childComplexity), true
+
+	case "CommitReport.committedDate":
+		if e.ComplexityRoot.CommitReport.CommittedDate == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CommitReport.CommittedDate(childComplexity), true
+	case "CommitReport.committerName":
+		if e.ComplexityRoot.CommitReport.CommitterName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CommitReport.CommitterName(childComplexity), true
+	case "CommitReport.title":
+		if e.ComplexityRoot.CommitReport.Title == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CommitReport.Title(childComplexity), true
+	case "CommitReport.webUrl":
+		if e.ComplexityRoot.CommitReport.WebURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CommitReport.WebURL(childComplexity), true
 
 	case "Course.assignmentNames":
 		if e.ComplexityRoot.Course.AssignmentNames == nil {
@@ -346,6 +482,32 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Course.UseEmailDomainAsSuffix(childComplexity), true
+
+	case "DockerImageReport.image":
+		if e.ComplexityRoot.DockerImageReport.Image == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DockerImageReport.Image(childComplexity), true
+	case "DockerImageReport.wanted":
+		if e.ComplexityRoot.DockerImageReport.Wanted == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DockerImageReport.Wanted(childComplexity), true
+
+	case "DockerImagesReport.images":
+		if e.ComplexityRoot.DockerImagesReport.Images == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DockerImagesReport.Images(childComplexity), true
+	case "DockerImagesReport.status":
+		if e.ComplexityRoot.DockerImagesReport.Status == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DockerImagesReport.Status(childComplexity), true
 
 	case "FieldMeta.deprecated":
 		if e.ComplexityRoot.FieldMeta.Deprecated == nil {
@@ -585,6 +747,98 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Mutation.SetGitlabToken(childComplexity, args["token"].(string)), true
 
+	case "ProjectMemberReport.name":
+		if e.ComplexityRoot.ProjectMemberReport.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ProjectMemberReport.Name(childComplexity), true
+	case "ProjectMemberReport.username":
+		if e.ComplexityRoot.ProjectMemberReport.Username == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ProjectMemberReport.Username(childComplexity), true
+	case "ProjectMemberReport.webUrl":
+		if e.ComplexityRoot.ProjectMemberReport.WebURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ProjectMemberReport.WebURL(childComplexity), true
+
+	case "ProjectReport.active":
+		if e.ComplexityRoot.ProjectReport.Active == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ProjectReport.Active(childComplexity), true
+	case "ProjectReport.commits":
+		if e.ComplexityRoot.ProjectReport.Commits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ProjectReport.Commits(childComplexity), true
+	case "ProjectReport.createdAt":
+		if e.ComplexityRoot.ProjectReport.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ProjectReport.CreatedAt(childComplexity), true
+	case "ProjectReport.emptyRepo":
+		if e.ComplexityRoot.ProjectReport.EmptyRepo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ProjectReport.EmptyRepo(childComplexity), true
+	case "ProjectReport.lastActivity":
+		if e.ComplexityRoot.ProjectReport.LastActivity == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ProjectReport.LastActivity(childComplexity), true
+	case "ProjectReport.lastCommit":
+		if e.ComplexityRoot.ProjectReport.LastCommit == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ProjectReport.LastCommit(childComplexity), true
+	case "ProjectReport.members":
+		if e.ComplexityRoot.ProjectReport.Members == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ProjectReport.Members(childComplexity), true
+	case "ProjectReport.name":
+		if e.ComplexityRoot.ProjectReport.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ProjectReport.Name(childComplexity), true
+	case "ProjectReport.openIssuesCount":
+		if e.ComplexityRoot.ProjectReport.OpenIssuesCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ProjectReport.OpenIssuesCount(childComplexity), true
+	case "ProjectReport.openMergeRequestsCount":
+		if e.ComplexityRoot.ProjectReport.OpenMergeRequestsCount == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ProjectReport.OpenMergeRequestsCount(childComplexity), true
+	case "ProjectReport.release":
+		if e.ComplexityRoot.ProjectReport.Release == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ProjectReport.Release(childComplexity), true
+	case "ProjectReport.webUrl":
+		if e.ComplexityRoot.ProjectReport.WebURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ProjectReport.WebURL(childComplexity), true
+
 	case "Query.approvalRuleSchema":
 		if e.ComplexityRoot.Query.ApprovalRuleSchema == nil {
 			break
@@ -608,6 +862,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Assignment(childComplexity, args["course"].(string), args["name"].(string)), true
+	case "Query.assignmentReport":
+		if e.ComplexityRoot.Query.AssignmentReport == nil {
+			break
+		}
+
+		args, err := ec.field_Query_assignmentReport_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.AssignmentReport(childComplexity, args["course"].(string), args["name"].(string)), true
 	case "Query.assignmentSchema":
 		if e.ComplexityRoot.Query.AssignmentSchema == nil {
 			break
@@ -700,6 +965,38 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.ValidateAssignmentDraft(childComplexity, args["course"].(string), args["name"].(string), args["draft"].([]*model.FieldValueInput)), true
+
+	case "ReleaseMergeRequestReport.found":
+		if e.ComplexityRoot.ReleaseMergeRequestReport.Found == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ReleaseMergeRequestReport.Found(childComplexity), true
+	case "ReleaseMergeRequestReport.pipelineStatus":
+		if e.ComplexityRoot.ReleaseMergeRequestReport.PipelineStatus == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ReleaseMergeRequestReport.PipelineStatus(childComplexity), true
+	case "ReleaseMergeRequestReport.webUrl":
+		if e.ComplexityRoot.ReleaseMergeRequestReport.WebURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ReleaseMergeRequestReport.WebURL(childComplexity), true
+
+	case "ReleaseReport.dockerImages":
+		if e.ComplexityRoot.ReleaseReport.DockerImages == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ReleaseReport.DockerImages(childComplexity), true
+	case "ReleaseReport.mergeRequest":
+		if e.ComplexityRoot.ReleaseReport.MergeRequest == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ReleaseReport.MergeRequest(childComplexity), true
 
 	case "RepoUrl.for":
 		if e.ComplexityRoot.RepoUrl.For == nil {
@@ -1112,6 +1409,91 @@ extend type Mutation {
   removeGitlabToken: GitLabTokenStatus!
 }
 `, BuiltIn: false},
+	{Name: "../report.graphqls", Input: `"""
+A live report over the repositories of one assignment — one row per project
+(repo) with activity, last commit, open issues/merge requests, members and an
+optional release status. Fetched from GitLab using the caller's stored token.
+"""
+type AssignmentReport {
+  course: String!
+  assignment: String!
+  "The assignment-level group URL."
+  url: String!
+  description: String!
+  "When the report was generated."
+  generated: Time
+  "Whether the assignment configures a release merge request (adds that column)."
+  hasReleaseMergeRequest: Boolean!
+  "Whether the assignment configures release docker images (adds that column)."
+  hasReleaseDockerImages: Boolean!
+  "One entry per repository in the assignment's group, sorted by name."
+  projects: [ProjectReport!]!
+}
+
+"The report for one repository."
+type ProjectReport {
+  name: String!
+  "Whether there was any activity beyond creation (or any commits)."
+  active: Boolean!
+  emptyRepo: Boolean!
+  commits: Int!
+  createdAt: Time
+  lastActivity: Time
+  lastCommit: CommitReport
+  openIssuesCount: Int!
+  openMergeRequestsCount: Int!
+  webUrl: String!
+  members: [ProjectMemberReport!]!
+  release: ReleaseReport
+}
+
+"The most recent commit across a repository's branches."
+type CommitReport {
+  title: String!
+  committerName: String!
+  committedDate: Time
+  webUrl: String!
+}
+
+"A member of a repository (only the display fields, never GitLab-internal ids)."
+type ProjectMemberReport {
+  name: String!
+  username: String!
+  webUrl: String!
+}
+
+"The release status of a repository, when the assignment configures a release."
+type ReleaseReport {
+  mergeRequest: ReleaseMergeRequestReport
+  dockerImages: DockerImagesReport
+}
+
+type ReleaseMergeRequestReport {
+  found: Boolean!
+  webUrl: String!
+  pipelineStatus: String!
+}
+
+type DockerImagesReport {
+  status: String!
+  images: [DockerImageReport!]!
+}
+
+type DockerImageReport {
+  wanted: String!
+  image: String
+}
+
+extend type Query {
+  """
+  A live report over the repositories of one assignment, fetched from GitLab with
+  the caller's stored token. Null when there is no such assignment or it cannot be
+  resolved (e.g. an abstract base). Errors when no token is stored or GitLab is
+  unreachable.
+  """
+  assignmentReport(course: String!, name: String!): AssignmentReport
+}
+`, BuiltIn: false},
 	{Name: "../schema.graphqls", Input: `"""
 An authenticated user of glabs-web. Identity comes from the auth proxy; there
 are no roles — each user manages only their own courses.
@@ -1141,6 +1523,28 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // childFields_* functions provide shared child field context lookups.
 // Each function is generated once per unique object type, deduplicating the
 // switch statements that were previously inlined in every fieldContext_* function.
+
+func (ec *executionContext) childFields_AssignmentReport(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "course":
+		return ec.fieldContext_AssignmentReport_course(ctx, field)
+	case "assignment":
+		return ec.fieldContext_AssignmentReport_assignment(ctx, field)
+	case "url":
+		return ec.fieldContext_AssignmentReport_url(ctx, field)
+	case "description":
+		return ec.fieldContext_AssignmentReport_description(ctx, field)
+	case "generated":
+		return ec.fieldContext_AssignmentReport_generated(ctx, field)
+	case "hasReleaseMergeRequest":
+		return ec.fieldContext_AssignmentReport_hasReleaseMergeRequest(ctx, field)
+	case "hasReleaseDockerImages":
+		return ec.fieldContext_AssignmentReport_hasReleaseDockerImages(ctx, field)
+	case "projects":
+		return ec.fieldContext_AssignmentReport_projects(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AssignmentReport", field.Name)
+}
 
 func (ec *executionContext) childFields_AssignmentUrls(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
@@ -1174,6 +1578,20 @@ func (ec *executionContext) childFields_AssignmentView(ctx context.Context, fiel
 	return nil, fmt.Errorf("no field named %q was found under type AssignmentView", field.Name)
 }
 
+func (ec *executionContext) childFields_CommitReport(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "title":
+		return ec.fieldContext_CommitReport_title(ctx, field)
+	case "committerName":
+		return ec.fieldContext_CommitReport_committerName(ctx, field)
+	case "committedDate":
+		return ec.fieldContext_CommitReport_committedDate(ctx, field)
+	case "webUrl":
+		return ec.fieldContext_CommitReport_webUrl(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type CommitReport", field.Name)
+}
+
 func (ec *executionContext) childFields_Course(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "name":
@@ -1202,6 +1620,26 @@ func (ec *executionContext) childFields_Course(ctx context.Context, field graphq
 		return ec.fieldContext_Course_updatedAt(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Course", field.Name)
+}
+
+func (ec *executionContext) childFields_DockerImageReport(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "wanted":
+		return ec.fieldContext_DockerImageReport_wanted(ctx, field)
+	case "image":
+		return ec.fieldContext_DockerImageReport_image(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type DockerImageReport", field.Name)
+}
+
+func (ec *executionContext) childFields_DockerImagesReport(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "status":
+		return ec.fieldContext_DockerImagesReport_status(ctx, field)
+	case "images":
+		return ec.fieldContext_DockerImagesReport_images(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type DockerImagesReport", field.Name)
 }
 
 func (ec *executionContext) childFields_FieldMeta(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -1280,6 +1718,70 @@ func (ec *executionContext) childFields_Group(ctx context.Context, field graphql
 		return ec.fieldContext_Group_members(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
+}
+
+func (ec *executionContext) childFields_ProjectMemberReport(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "name":
+		return ec.fieldContext_ProjectMemberReport_name(ctx, field)
+	case "username":
+		return ec.fieldContext_ProjectMemberReport_username(ctx, field)
+	case "webUrl":
+		return ec.fieldContext_ProjectMemberReport_webUrl(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ProjectMemberReport", field.Name)
+}
+
+func (ec *executionContext) childFields_ProjectReport(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "name":
+		return ec.fieldContext_ProjectReport_name(ctx, field)
+	case "active":
+		return ec.fieldContext_ProjectReport_active(ctx, field)
+	case "emptyRepo":
+		return ec.fieldContext_ProjectReport_emptyRepo(ctx, field)
+	case "commits":
+		return ec.fieldContext_ProjectReport_commits(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_ProjectReport_createdAt(ctx, field)
+	case "lastActivity":
+		return ec.fieldContext_ProjectReport_lastActivity(ctx, field)
+	case "lastCommit":
+		return ec.fieldContext_ProjectReport_lastCommit(ctx, field)
+	case "openIssuesCount":
+		return ec.fieldContext_ProjectReport_openIssuesCount(ctx, field)
+	case "openMergeRequestsCount":
+		return ec.fieldContext_ProjectReport_openMergeRequestsCount(ctx, field)
+	case "webUrl":
+		return ec.fieldContext_ProjectReport_webUrl(ctx, field)
+	case "members":
+		return ec.fieldContext_ProjectReport_members(ctx, field)
+	case "release":
+		return ec.fieldContext_ProjectReport_release(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ProjectReport", field.Name)
+}
+
+func (ec *executionContext) childFields_ReleaseMergeRequestReport(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "found":
+		return ec.fieldContext_ReleaseMergeRequestReport_found(ctx, field)
+	case "webUrl":
+		return ec.fieldContext_ReleaseMergeRequestReport_webUrl(ctx, field)
+	case "pipelineStatus":
+		return ec.fieldContext_ReleaseMergeRequestReport_pipelineStatus(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ReleaseMergeRequestReport", field.Name)
+}
+
+func (ec *executionContext) childFields_ReleaseReport(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "mergeRequest":
+		return ec.fieldContext_ReleaseReport_mergeRequest(ctx, field)
+	case "dockerImages":
+		return ec.fieldContext_ReleaseReport_dockerImages(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ReleaseReport", field.Name)
 }
 
 func (ec *executionContext) childFields_RepoUrl(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -1688,6 +2190,28 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_assignmentReport_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "course",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["course"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "name",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["name"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_assignmentUrls_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1863,6 +2387,199 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ***************************** args.gotpl *****************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _AssignmentReport_course(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AssignmentReport_course(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Course, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AssignmentReport_course(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AssignmentReport", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AssignmentReport_assignment(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AssignmentReport_assignment(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Assignment, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AssignmentReport_assignment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AssignmentReport", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AssignmentReport_url(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AssignmentReport_url(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.URL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AssignmentReport_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AssignmentReport", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AssignmentReport_description(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AssignmentReport_description(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AssignmentReport_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AssignmentReport", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AssignmentReport_generated(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AssignmentReport_generated(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Generated, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_AssignmentReport_generated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AssignmentReport", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _AssignmentReport_hasReleaseMergeRequest(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AssignmentReport_hasReleaseMergeRequest(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.HasReleaseMergeRequest, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AssignmentReport_hasReleaseMergeRequest(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AssignmentReport", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _AssignmentReport_hasReleaseDockerImages(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AssignmentReport_hasReleaseDockerImages(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.HasReleaseDockerImages, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AssignmentReport_hasReleaseDockerImages(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AssignmentReport", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _AssignmentReport_projects(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AssignmentReport_projects(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Projects, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.ProjectReport) graphql.Marshaler {
+			return ec.marshalNProjectReport2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐProjectReportᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AssignmentReport_projects(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AssignmentReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ProjectReport(ctx, field)
+		},
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _AssignmentUrls_per(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentUrls) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
@@ -2110,6 +2827,98 @@ func (ec *executionContext) _AssignmentView_resolveError(ctx context.Context, fi
 }
 func (ec *executionContext) fieldContext_AssignmentView_resolveError(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("AssignmentView", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _CommitReport_title(ctx context.Context, field graphql.CollectedField, obj *model.CommitReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CommitReport_title(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Title, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CommitReport_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("CommitReport", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _CommitReport_committerName(ctx context.Context, field graphql.CollectedField, obj *model.CommitReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CommitReport_committerName(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CommitterName, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CommitReport_committerName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("CommitReport", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _CommitReport_committedDate(ctx context.Context, field graphql.CollectedField, obj *model.CommitReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CommitReport_committedDate(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CommittedDate, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_CommitReport_committedDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("CommitReport", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _CommitReport_webUrl(ctx context.Context, field graphql.CollectedField, obj *model.CommitReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_CommitReport_webUrl(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.WebURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_CommitReport_webUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("CommitReport", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _Course_name(ctx context.Context, field graphql.CollectedField, obj *model.Course) (ret graphql.Marshaler) {
@@ -2395,6 +3204,107 @@ func (ec *executionContext) _Course_updatedAt(ctx context.Context, field graphql
 }
 func (ec *executionContext) fieldContext_Course_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("Course", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _DockerImageReport_wanted(ctx context.Context, field graphql.CollectedField, obj *model.DockerImageReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DockerImageReport_wanted(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Wanted, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DockerImageReport_wanted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DockerImageReport", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _DockerImageReport_image(ctx context.Context, field graphql.CollectedField, obj *model.DockerImageReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DockerImageReport_image(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Image, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_DockerImageReport_image(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DockerImageReport", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _DockerImagesReport_status(ctx context.Context, field graphql.CollectedField, obj *model.DockerImagesReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DockerImagesReport_status(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Status, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DockerImagesReport_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("DockerImagesReport", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _DockerImagesReport_images(ctx context.Context, field graphql.CollectedField, obj *model.DockerImagesReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_DockerImagesReport_images(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Images, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.DockerImageReport) graphql.Marshaler {
+			return ec.marshalNDockerImageReport2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐDockerImageReportᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_DockerImagesReport_images(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DockerImagesReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_DockerImageReport(ctx, field)
+		},
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _FieldMeta_key(ctx context.Context, field graphql.CollectedField, obj *model.FieldMeta) (ret graphql.Marshaler) {
@@ -3317,6 +4227,378 @@ func (ec *executionContext) fieldContext_Mutation_removeGitlabToken(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _ProjectMemberReport_name(ctx context.Context, field graphql.CollectedField, obj *model.ProjectMemberReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ProjectMemberReport_name(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ProjectMemberReport_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ProjectMemberReport", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ProjectMemberReport_username(ctx context.Context, field graphql.CollectedField, obj *model.ProjectMemberReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ProjectMemberReport_username(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Username, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ProjectMemberReport_username(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ProjectMemberReport", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ProjectMemberReport_webUrl(ctx context.Context, field graphql.CollectedField, obj *model.ProjectMemberReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ProjectMemberReport_webUrl(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.WebURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ProjectMemberReport_webUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ProjectMemberReport", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ProjectReport_name(ctx context.Context, field graphql.CollectedField, obj *model.ProjectReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ProjectReport_name(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ProjectReport_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ProjectReport", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ProjectReport_active(ctx context.Context, field graphql.CollectedField, obj *model.ProjectReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ProjectReport_active(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Active, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ProjectReport_active(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ProjectReport", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _ProjectReport_emptyRepo(ctx context.Context, field graphql.CollectedField, obj *model.ProjectReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ProjectReport_emptyRepo(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.EmptyRepo, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ProjectReport_emptyRepo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ProjectReport", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _ProjectReport_commits(ctx context.Context, field graphql.CollectedField, obj *model.ProjectReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ProjectReport_commits(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Commits, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ProjectReport_commits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ProjectReport", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _ProjectReport_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.ProjectReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ProjectReport_createdAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ProjectReport_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ProjectReport", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _ProjectReport_lastActivity(ctx context.Context, field graphql.CollectedField, obj *model.ProjectReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ProjectReport_lastActivity(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LastActivity, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ProjectReport_lastActivity(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ProjectReport", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _ProjectReport_lastCommit(ctx context.Context, field graphql.CollectedField, obj *model.ProjectReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ProjectReport_lastCommit(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LastCommit, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.CommitReport) graphql.Marshaler {
+			return ec.marshalOCommitReport2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCommitReport(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ProjectReport_lastCommit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProjectReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_CommitReport(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProjectReport_openIssuesCount(ctx context.Context, field graphql.CollectedField, obj *model.ProjectReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ProjectReport_openIssuesCount(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OpenIssuesCount, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ProjectReport_openIssuesCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ProjectReport", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _ProjectReport_openMergeRequestsCount(ctx context.Context, field graphql.CollectedField, obj *model.ProjectReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ProjectReport_openMergeRequestsCount(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OpenMergeRequestsCount, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ProjectReport_openMergeRequestsCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ProjectReport", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _ProjectReport_webUrl(ctx context.Context, field graphql.CollectedField, obj *model.ProjectReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ProjectReport_webUrl(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.WebURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ProjectReport_webUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ProjectReport", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ProjectReport_members(ctx context.Context, field graphql.CollectedField, obj *model.ProjectReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ProjectReport_members(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Members, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.ProjectMemberReport) graphql.Marshaler {
+			return ec.marshalNProjectMemberReport2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐProjectMemberReportᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ProjectReport_members(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProjectReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ProjectMemberReport(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ProjectReport_release(ctx context.Context, field graphql.CollectedField, obj *model.ProjectReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ProjectReport_release(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Release, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ReleaseReport) graphql.Marshaler {
+			return ec.marshalOReleaseReport2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐReleaseReport(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ProjectReport_release(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProjectReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ReleaseReport(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_me(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3837,6 +5119,50 @@ func (ec *executionContext) fieldContext_Query_gitlabToken(_ context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_assignmentReport(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_assignmentReport(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().AssignmentReport(ctx, fc.Args["course"].(string), fc.Args["name"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.AssignmentReport) graphql.Marshaler {
+			return ec.marshalOAssignmentReport2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAssignmentReport(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Query_assignmentReport(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_AssignmentReport(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_assignmentReport_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3908,6 +5234,139 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields___Schema(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReleaseMergeRequestReport_found(ctx context.Context, field graphql.CollectedField, obj *model.ReleaseMergeRequestReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ReleaseMergeRequestReport_found(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Found, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ReleaseMergeRequestReport_found(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ReleaseMergeRequestReport", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _ReleaseMergeRequestReport_webUrl(ctx context.Context, field graphql.CollectedField, obj *model.ReleaseMergeRequestReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ReleaseMergeRequestReport_webUrl(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.WebURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ReleaseMergeRequestReport_webUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ReleaseMergeRequestReport", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ReleaseMergeRequestReport_pipelineStatus(ctx context.Context, field graphql.CollectedField, obj *model.ReleaseMergeRequestReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ReleaseMergeRequestReport_pipelineStatus(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.PipelineStatus, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ReleaseMergeRequestReport_pipelineStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ReleaseMergeRequestReport", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ReleaseReport_mergeRequest(ctx context.Context, field graphql.CollectedField, obj *model.ReleaseReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ReleaseReport_mergeRequest(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.MergeRequest, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ReleaseMergeRequestReport) graphql.Marshaler {
+			return ec.marshalOReleaseMergeRequestReport2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐReleaseMergeRequestReport(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ReleaseReport_mergeRequest(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReleaseReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ReleaseMergeRequestReport(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReleaseReport_dockerImages(ctx context.Context, field graphql.CollectedField, obj *model.ReleaseReport) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ReleaseReport_dockerImages(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.DockerImages, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.DockerImagesReport) graphql.Marshaler {
+			return ec.marshalODockerImagesReport2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐDockerImagesReport(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ReleaseReport_dockerImages(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReleaseReport",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_DockerImagesReport(ctx, field)
 		},
 	}
 	return fc, nil
@@ -5307,6 +6766,79 @@ func (ec *executionContext) unmarshalInputGroupInput(ctx context.Context, obj an
 
 // region    **************************** object.gotpl ****************************
 
+var assignmentReportImplementors = []string{"AssignmentReport"}
+
+func (ec *executionContext) _AssignmentReport(ctx context.Context, sel ast.SelectionSet, obj *model.AssignmentReport) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, assignmentReportImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AssignmentReport")
+		case "course":
+			out.Values[i] = ec._AssignmentReport_course(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "assignment":
+			out.Values[i] = ec._AssignmentReport_assignment(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "url":
+			out.Values[i] = ec._AssignmentReport_url(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "description":
+			out.Values[i] = ec._AssignmentReport_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "generated":
+			out.Values[i] = ec._AssignmentReport_generated(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "hasReleaseMergeRequest":
+			out.Values[i] = ec._AssignmentReport_hasReleaseMergeRequest(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "hasReleaseDockerImages":
+			out.Values[i] = ec._AssignmentReport_hasReleaseDockerImages(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "projects":
+			out.Values[i] = ec._AssignmentReport_projects(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var assignmentUrlsImplementors = []string{"AssignmentUrls"}
 
 func (ec *executionContext) _AssignmentUrls(ctx context.Context, sel ast.SelectionSet, obj *model.AssignmentUrls) graphql.Marshaler {
@@ -5423,6 +6955,59 @@ func (ec *executionContext) _AssignmentView(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var commitReportImplementors = []string{"CommitReport"}
+
+func (ec *executionContext) _CommitReport(ctx context.Context, sel ast.SelectionSet, obj *model.CommitReport) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, commitReportImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CommitReport")
+		case "title":
+			out.Values[i] = ec._CommitReport_title(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "committerName":
+			out.Values[i] = ec._CommitReport_committerName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "committedDate":
+			out.Values[i] = ec._CommitReport_committedDate(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "webUrl":
+			out.Values[i] = ec._CommitReport_webUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var courseImplementors = []string{"Course"}
 
 func (ec *executionContext) _Course(ctx context.Context, sel ast.SelectionSet, obj *model.Course) graphql.Marshaler {
@@ -5492,6 +7077,92 @@ func (ec *executionContext) _Course(ctx context.Context, sel ast.SelectionSet, o
 			}
 		case "updatedAt":
 			out.Values[i] = ec._Course_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var dockerImageReportImplementors = []string{"DockerImageReport"}
+
+func (ec *executionContext) _DockerImageReport(ctx context.Context, sel ast.SelectionSet, obj *model.DockerImageReport) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, dockerImageReportImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DockerImageReport")
+		case "wanted":
+			out.Values[i] = ec._DockerImageReport_wanted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "image":
+			out.Values[i] = ec._DockerImageReport_image(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var dockerImagesReportImplementors = []string{"DockerImagesReport"}
+
+func (ec *executionContext) _DockerImagesReport(ctx context.Context, sel ast.SelectionSet, obj *model.DockerImagesReport) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, dockerImagesReportImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DockerImagesReport")
+		case "status":
+			out.Values[i] = ec._DockerImagesReport_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "images":
+			out.Values[i] = ec._DockerImagesReport_images(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -5930,6 +7601,147 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 	return out
 }
 
+var projectMemberReportImplementors = []string{"ProjectMemberReport"}
+
+func (ec *executionContext) _ProjectMemberReport(ctx context.Context, sel ast.SelectionSet, obj *model.ProjectMemberReport) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, projectMemberReportImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ProjectMemberReport")
+		case "name":
+			out.Values[i] = ec._ProjectMemberReport_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "username":
+			out.Values[i] = ec._ProjectMemberReport_username(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "webUrl":
+			out.Values[i] = ec._ProjectMemberReport_webUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var projectReportImplementors = []string{"ProjectReport"}
+
+func (ec *executionContext) _ProjectReport(ctx context.Context, sel ast.SelectionSet, obj *model.ProjectReport) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, projectReportImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ProjectReport")
+		case "name":
+			out.Values[i] = ec._ProjectReport_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "active":
+			out.Values[i] = ec._ProjectReport_active(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "emptyRepo":
+			out.Values[i] = ec._ProjectReport_emptyRepo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "commits":
+			out.Values[i] = ec._ProjectReport_commits(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._ProjectReport_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "lastActivity":
+			out.Values[i] = ec._ProjectReport_lastActivity(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "lastCommit":
+			out.Values[i] = ec._ProjectReport_lastCommit(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "openIssuesCount":
+			out.Values[i] = ec._ProjectReport_openIssuesCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "openMergeRequestsCount":
+			out.Values[i] = ec._ProjectReport_openMergeRequestsCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "webUrl":
+			out.Values[i] = ec._ProjectReport_webUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "members":
+			out.Values[i] = ec._ProjectReport_members(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "release":
+			out.Values[i] = ec._ProjectReport_release(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -6258,6 +8070,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "assignmentReport":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_assignmentReport(ctx, field)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -6271,6 +8105,97 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			})
 			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var releaseMergeRequestReportImplementors = []string{"ReleaseMergeRequestReport"}
+
+func (ec *executionContext) _ReleaseMergeRequestReport(ctx context.Context, sel ast.SelectionSet, obj *model.ReleaseMergeRequestReport) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, releaseMergeRequestReportImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ReleaseMergeRequestReport")
+		case "found":
+			out.Values[i] = ec._ReleaseMergeRequestReport_found(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "webUrl":
+			out.Values[i] = ec._ReleaseMergeRequestReport_webUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "pipelineStatus":
+			out.Values[i] = ec._ReleaseMergeRequestReport_pipelineStatus(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var releaseReportImplementors = []string{"ReleaseReport"}
+
+func (ec *executionContext) _ReleaseReport(ctx context.Context, sel ast.SelectionSet, obj *model.ReleaseReport) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, releaseReportImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ReleaseReport")
+		case "mergeRequest":
+			out.Values[i] = ec._ReleaseReport_mergeRequest(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "dockerImages":
+			out.Values[i] = ec._ReleaseReport_dockerImages(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -6932,6 +8857,32 @@ func (ec *executionContext) marshalNCourse2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3
 	return ec._Course(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNDockerImageReport2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐDockerImageReportᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.DockerImageReport) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNDockerImageReport2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐDockerImageReport(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNDockerImageReport2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐDockerImageReport(ctx context.Context, sel ast.SelectionSet, v *model.DockerImageReport) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DockerImageReport(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNFieldKind2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldKind(ctx context.Context, v any) (model.FieldKind, error) {
 	var res model.FieldKind
 	err := res.UnmarshalGQL(v)
@@ -7148,6 +9099,58 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNProjectMemberReport2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐProjectMemberReportᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ProjectMemberReport) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNProjectMemberReport2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐProjectMemberReport(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNProjectMemberReport2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐProjectMemberReport(ctx context.Context, sel ast.SelectionSet, v *model.ProjectMemberReport) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ProjectMemberReport(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNProjectReport2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐProjectReportᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ProjectReport) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNProjectReport2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐProjectReport(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNProjectReport2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐProjectReport(ctx context.Context, sel ast.SelectionSet, v *model.ProjectReport) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ProjectReport(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNRepoUrl2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐRepoURLᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.RepoURL) graphql.Marshaler {
@@ -7419,6 +9422,13 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
+func (ec *executionContext) marshalOAssignmentReport2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAssignmentReport(ctx context.Context, sel ast.SelectionSet, v *model.AssignmentReport) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AssignmentReport(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOAssignmentUrls2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAssignmentUrls(ctx context.Context, sel ast.SelectionSet, v *model.AssignmentUrls) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -7463,11 +9473,39 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
+func (ec *executionContext) marshalOCommitReport2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCommitReport(ctx context.Context, sel ast.SelectionSet, v *model.CommitReport) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._CommitReport(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOCourse2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCourse(ctx context.Context, sel ast.SelectionSet, v *model.Course) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Course(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalODockerImagesReport2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐDockerImagesReport(ctx context.Context, sel ast.SelectionSet, v *model.DockerImagesReport) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._DockerImagesReport(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOReleaseMergeRequestReport2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐReleaseMergeRequestReport(ctx context.Context, sel ast.SelectionSet, v *model.ReleaseMergeRequestReport) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ReleaseMergeRequestReport(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOReleaseReport2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐReleaseReport(ctx context.Context, sel ast.SelectionSet, v *model.ReleaseReport) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ReleaseReport(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {

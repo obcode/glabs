@@ -11,6 +11,13 @@ import (
 	r "github.com/obcode/glabs/v3/gitlab/report"
 )
 
+// ReportData returns the structured report for an assignment without rendering it
+// to text/HTML. It is the data-returning entry point the web server uses; the
+// CLI's Report/ReportHTML render this same data.
+func (c *Client) ReportData(assignmentCfg *config.AssignmentConfig) (*r.Reports, error) {
+	return c.report(assignmentCfg)
+}
+
 func (c *Client) Report(assignmentCfg *config.AssignmentConfig, templateFile *string, output *string) error {
 	report, err := c.report(assignmentCfg)
 	if err != nil {

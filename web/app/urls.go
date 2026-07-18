@@ -24,6 +24,26 @@ type AssignmentURLs struct {
 // in both cases there simply are no URLs. ErrCourseNotFound propagates when the
 // course itself is not the caller's.
 func (a *App) AssignmentURLs(ctx context.Context, course, name string) (*AssignmentURLs, error) {
+	cfg, err := a.resolveAssignmentConfig(ctx, course, name)
+	if err != nil {
+		return nil, err
+	}
+	if cfg == nil {
+		return nil, nil
+	}
+	return &AssignmentURLs{
+		Per:      string(cfg.Per),
+		GroupURL: cfg.URL,
+		Repos:    cfg.RepoURLs(),
+	}, nil
+}
+
+// resolveAssignmentConfig resolves one assignment of one of the caller's courses
+// to a full AssignmentConfig (URL, roster, everything), from the stored bytes so
+// the result matches the CLI exactly. It returns nil (no error) when the course
+// has no such assignment or the assignment cannot be resolved (e.g. an abstract
+// base). ErrCourseNotFound propagates when the course is not the caller's.
+func (a *App) resolveAssignmentConfig(ctx context.Context, course, name string) (*config.AssignmentConfig, error) {
 	stored, err := a.Course(ctx, course)
 	if err != nil {
 		return nil, err
@@ -34,9 +54,6 @@ func (a *App) AssignmentURLs(ctx context.Context, course, name string) (*Assignm
 		return nil, nil
 	}
 
-	// Resolve from the stored bytes so the URLs match the CLI exactly (the same
-	// inheritance, roster resolution and path normalization). Fall back to
-	// re-encoding the source if the raw bytes are absent.
 	bytes := stored.RawYAML
 	if len(bytes) == 0 {
 		if encoded, err := config.EncodeCourse(stored.Source); err == nil {
@@ -45,13 +62,8 @@ func (a *App) AssignmentURLs(ctx context.Context, course, name string) (*Assignm
 	}
 	cfg, err := config.ResolveAssignmentFromBytes(bytes, course, name, config.Globals{GitlabHost: a.gitlabHost})
 	if err != nil {
-		// Not resolvable (abstract base, missing parent, cycle) → no URLs.
+		// Not resolvable (abstract base, missing parent, cycle).
 		return nil, nil
 	}
-
-	return &AssignmentURLs{
-		Per:      string(cfg.Per),
-		GroupURL: cfg.URL,
-		Repos:    cfg.RepoURLs(),
-	}, nil
+	return cfg, nil
 }

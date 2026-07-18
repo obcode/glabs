@@ -33,11 +33,15 @@ type FieldMeta struct {
 	Key         string
 	Label       string
 	Description string
-	Kind        FieldKind
-	Required    bool
-	Deprecated  bool
-	Example     string
-	Options     []FieldOption
+	// Group is the section the field belongs to ("" for the top-level group,
+	// e.g. "Startercode" for the startercode block), so the GUI can render
+	// grouped sections. Nested keys are dotted, e.g. "startercode.url".
+	Group      string
+	Kind       FieldKind
+	Required   bool
+	Deprecated bool
+	Example    string
+	Options    []FieldOption
 }
 
 // AssignmentSchema returns the metadata for the assignment editor's fields.
@@ -100,5 +104,60 @@ var assignmentFields = []FieldMeta{
 		Label:       "Container-Registry",
 		Description: "Container-Registry für die erzeugten Projekte aktivieren.",
 		Kind:        KindBool,
+	},
+
+	// --- Startercode: aus welchem Repo/Branch die Studi-Repos befüllt werden ---
+	{
+		Key:         "startercode.url",
+		Label:       "Startercode-URL",
+		Description: "Git-URL des Startercode-Repos. SSH-Notation (git@host:pfad.git) ist erlaubt und wird zu HTTPS aufgelöst.",
+		Group:       "Startercode",
+		Kind:        KindString,
+		Example:     "git@gitlab.lrz.de:kurs/startercode/blatt-01.git",
+	},
+	{
+		Key:         "startercode.fromBranch",
+		Label:       "Von Branch",
+		Description: "Branch im Startercode, aus dem befüllt wird (Standard: der Default-Branch).",
+		Group:       "Startercode",
+		Kind:        KindString,
+		Example:     "main",
+	},
+	{
+		Key:         "startercode.tag",
+		Label:       "Tag",
+		Description: "Statt eines Branches einen bestimmten Tag verwenden.",
+		Group:       "Startercode",
+		Kind:        KindString,
+	},
+	{
+		Key:         "startercode.toBranch",
+		Label:       "Nach Branch",
+		Description: "Zielbranch im Studi-Repo, in den der Startercode gelegt wird (Standard: main).",
+		Group:       "Startercode",
+		Kind:        KindString,
+		Example:     "main",
+	},
+	{
+		Key:         "startercode.template",
+		Label:       "Als Template",
+		Description: "Den ersten Commit als Vorlage-Commit markieren.",
+		Group:       "Startercode",
+		Kind:        KindBool,
+	},
+	{
+		Key:         "startercode.templateMessage",
+		Label:       "Template-Commit-Nachricht",
+		Description: "Commit-Nachricht für den Vorlage-Commit.",
+		Group:       "Startercode",
+		Kind:        KindString,
+	},
+	{
+		Key:         "startercode.additionalBranches",
+		Label:       "Zusätzliche Branches",
+		Description: "Weitere Branches, die zusätzlich angelegt werden. Kommagetrennt.",
+		Group:       "Startercode",
+		Kind:        KindStringList,
+		Example:     "dev, test",
 	},
 }

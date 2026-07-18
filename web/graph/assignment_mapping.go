@@ -29,6 +29,7 @@ func toGraphAssignmentSchema(fields []app.FieldMeta) []*model.FieldMeta {
 			Key:         f.Key,
 			Label:       f.Label,
 			Description: f.Description,
+			Group:       f.Group,
 			Kind:        model.FieldKind(f.Kind),
 			Required:    f.Required,
 			Deprecated:  f.Deprecated,

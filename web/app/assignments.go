@@ -17,9 +17,28 @@ type FieldValue struct {
 	Value string
 }
 
-// assignmentOwn extracts the source values of the schema's core fields from an
-// AssignmentSource, keyed by FieldMeta.key. Booleans become "true"/"false".
+// assignmentOwn extracts the source values of the schema's fields from an
+// AssignmentSource, keyed by FieldMeta.key. Booleans become "true"/"false",
+// string lists become comma-separated, and nested blocks use dotted keys.
 func assignmentOwn(src *config.AssignmentSource) []FieldValue {
+	sc := src.Startercode
+	scStr := func(f func(*config.StartercodeSource) string) string {
+		if sc == nil {
+			return ""
+		}
+		return f(sc)
+	}
+	scBool := func(f func(*config.StartercodeSource) bool) string {
+		if sc == nil {
+			return "false"
+		}
+		return strconv.FormatBool(f(sc))
+	}
+	var addBranches string
+	if sc != nil {
+		addBranches = strings.Join(sc.AdditionalBranches, ", ")
+	}
+
 	return []FieldValue{
 		{Key: "extends", Value: src.Extends},
 		{Key: "abstract", Value: strconv.FormatBool(src.Abstract)},
@@ -28,6 +47,13 @@ func assignmentOwn(src *config.AssignmentSource) []FieldValue {
 		{Key: "description", Value: src.Description},
 		{Key: "assignmentpath", Value: src.AssignmentPath},
 		{Key: "containerRegistry", Value: strconv.FormatBool(src.ContainerRegistry)},
+		{Key: "startercode.url", Value: scStr(func(s *config.StartercodeSource) string { return s.URL })},
+		{Key: "startercode.fromBranch", Value: scStr(func(s *config.StartercodeSource) string { return s.FromBranch })},
+		{Key: "startercode.tag", Value: scStr(func(s *config.StartercodeSource) string { return s.Tag })},
+		{Key: "startercode.toBranch", Value: scStr(func(s *config.StartercodeSource) string { return s.ToBranch })},
+		{Key: "startercode.template", Value: scBool(func(s *config.StartercodeSource) bool { return s.Template })},
+		{Key: "startercode.templateMessage", Value: scStr(func(s *config.StartercodeSource) string { return s.TemplateMessage })},
+		{Key: "startercode.additionalBranches", Value: addBranches},
 	}
 }
 
@@ -125,7 +151,80 @@ func applyDraft(src *config.AssignmentSource, draft map[string]string) *config.A
 			c.ContainerRegistry = val == "true"
 		}
 	}
+	c.Startercode = applyStartercodeDraft(src.Startercode, draft)
 	return &c
+}
+
+// applyStartercodeDraft rebuilds the startercode block from the draft's
+// startercode.* keys. It always returns a NEW struct (never mutates the shared
+// original) when the draft touches startercode, and nil when every startercode
+// field ends up empty (so the block is unset and inherits). When the draft does
+// not touch startercode at all, the original is returned unchanged.
+func applyStartercodeDraft(orig *config.StartercodeSource, draft map[string]string) *config.StartercodeSource {
+	touched := false
+	for k := range draft {
+		if strings.HasPrefix(k, "startercode.") {
+			touched = true
+			break
+		}
+	}
+	if !touched {
+		return orig
+	}
+
+	var sc config.StartercodeSource
+	if orig != nil {
+		sc = *orig
+	}
+	for k, v := range draft {
+		switch k {
+		case "startercode.url":
+			sc.URL = v
+		case "startercode.fromBranch":
+			sc.FromBranch = v
+		case "startercode.tag":
+			sc.Tag = v
+		case "startercode.toBranch":
+			sc.ToBranch = v
+		case "startercode.template":
+			sc.Template = v == "true"
+		case "startercode.templateMessage":
+			sc.TemplateMessage = v
+		case "startercode.additionalBranches":
+			sc.AdditionalBranches = splitList(v)
+		}
+	}
+	if startercodeEmpty(&sc) {
+		return nil
+	}
+	return &sc
+}
+
+// splitList parses a comma- or newline-separated list into trimmed, non-empty
+// entries.
+func splitList(s string) []string {
+	fields := strings.FieldsFunc(s, func(r rune) bool { return r == ',' || r == '\n' })
+	out := make([]string, 0, len(fields))
+	for _, f := range fields {
+		if t := strings.TrimSpace(f); t != "" {
+			out = append(out, t)
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func startercodeEmpty(s *config.StartercodeSource) bool {
+	// Legacy fields are not editable here, but they must still keep a block
+	// alive so saving never silently drops them (glabs config migrate is what
+	// removes them). staticcheck flags the deprecated reads; that is intentional.
+	//nolint:staticcheck // deprecated legacy fields are read only to preserve them
+	legacy := s.DevBranch != "" || s.ProtectToBranch || s.ProtectDevBranchMergeOnly ||
+		s.ReplicateIssue || len(s.IssueNumbers) > 0
+	return s.URL == "" && s.FromBranch == "" && s.Tag == "" && s.ToBranch == "" &&
+		!s.Template && s.TemplateMessage == "" && len(s.AdditionalBranches) == 0 && !legacy
 }
 
 // courseWithDraft returns a shallow copy of the stored course source with the

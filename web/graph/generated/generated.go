@@ -62,6 +62,7 @@ type ComplexityRoot struct {
 		Deprecated  func(childComplexity int) int
 		Description func(childComplexity int) int
 		Example     func(childComplexity int) int
+		Group       func(childComplexity int) int
 		Key         func(childComplexity int) int
 		Kind        func(childComplexity int) int
 		Label       func(childComplexity int) int
@@ -283,6 +284,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FieldMeta.Example(childComplexity), true
+	case "FieldMeta.group":
+		if e.ComplexityRoot.FieldMeta.Group == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FieldMeta.Group(childComplexity), true
 	case "FieldMeta.key":
 		if e.ComplexityRoot.FieldMeta.Key == nil {
 			break
@@ -669,6 +676,8 @@ type FieldMeta {
   label: String!
   "Short help text describing what the field does."
   description: String!
+  "Section this field belongs to (empty for the top-level group), e.g. ` + "`" + `startercode` + "`" + `. Lets the GUI render grouped sections."
+  group: String!
   "The input shape the GUI should render."
   kind: FieldKind!
   "Whether the field must be set for a concrete (non-abstract) assignment."
@@ -916,6 +925,8 @@ func (ec *executionContext) childFields_FieldMeta(ctx context.Context, field gra
 		return ec.fieldContext_FieldMeta_label(ctx, field)
 	case "description":
 		return ec.fieldContext_FieldMeta_description(ctx, field)
+	case "group":
+		return ec.fieldContext_FieldMeta_group(ctx, field)
 	case "kind":
 		return ec.fieldContext_FieldMeta_kind(ctx, field)
 	case "required":
@@ -1786,6 +1797,29 @@ func (ec *executionContext) _FieldMeta_description(ctx context.Context, field gr
 	)
 }
 func (ec *executionContext) fieldContext_FieldMeta_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FieldMeta", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FieldMeta_group(ctx context.Context, field graphql.CollectedField, obj *model.FieldMeta) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FieldMeta_group(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Group, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FieldMeta_group(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("FieldMeta", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
@@ -4283,6 +4317,11 @@ func (ec *executionContext) _FieldMeta(ctx context.Context, sel ast.SelectionSet
 			}
 		case "description":
 			out.Values[i] = ec._FieldMeta_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "group":
+			out.Values[i] = ec._FieldMeta_group(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

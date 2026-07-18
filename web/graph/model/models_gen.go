@@ -51,6 +51,8 @@ type FieldMeta struct {
 	Label string `json:"label"`
 	// Short help text describing what the field does.
 	Description string `json:"description"`
+	// Section this field belongs to (empty for the top-level group), e.g. `startercode`. Lets the GUI render grouped sections.
+	Group string `json:"group"`
 	// The input shape the GUI should render.
 	Kind FieldKind `json:"kind"`
 	// Whether the field must be set for a concrete (non-abstract) assignment.

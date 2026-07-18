@@ -50,7 +50,8 @@ func (a *App) StreamAssignmentReport(ctx context.Context, course, name string) (
 		return events, nil
 	}
 
-	client, err := a.gitlabClientFor(ctx, o, &streamReporter{ctx: ctx, events: events})
+	rep := &streamReporter{emit: func(msg string) { sendEvent(ctx, events, ReportEvent{Message: msg}) }}
+	client, err := a.gitlabClientFor(ctx, o, rep)
 	if err != nil {
 		go func() {
 			defer close(events)
@@ -86,30 +87,30 @@ func sendEvent(ctx context.Context, ch chan<- ReportEvent, ev ReportEvent) {
 var ansiRE = regexp.MustCompile("\x1b\\[[0-9;]*m")
 
 // streamReporter is a reporter.Reporter that forwards the GitLab client's progress
-// into the report stream, stripping ANSI color codes so the browser gets clean
-// lines. Every send is ctx-aware so a disconnected client never blocks the fetch.
+// to an emit callback, stripping ANSI color codes so the browser gets clean lines.
+// The callback owns delivery (a ctx-aware channel send), so a disconnected client
+// never blocks the fetch. It is shared by the report and check streams.
 type streamReporter struct {
-	ctx    context.Context
-	events chan<- ReportEvent
+	emit func(msg string)
 }
 
-func (s *streamReporter) emit(msg string) {
+func (s *streamReporter) send(msg string) {
 	msg = strings.TrimSpace(ansiRE.ReplaceAllString(msg, ""))
 	if msg == "" {
 		return
 	}
-	sendEvent(s.ctx, s.events, ReportEvent{Message: msg})
+	s.emit(msg)
 }
 
-func (s *streamReporter) Printf(format string, a ...any) { s.emit(fmt.Sprintf(format, a...)) }
-func (s *streamReporter) Println(a ...any)               { s.emit(fmt.Sprintln(a...)) }
+func (s *streamReporter) Printf(format string, a ...any) { s.send(fmt.Sprintf(format, a...)) }
+func (s *streamReporter) Println(a ...any)               { s.send(fmt.Sprintln(a...)) }
 func (s *streamReporter) Task(description string) reporter.Task {
-	s.emit(description)
+	s.send(description)
 	return &streamTask{s}
 }
 
 type streamTask struct{ s *streamReporter }
 
-func (t *streamTask) Update(message string) { t.s.emit(message) }
-func (t *streamTask) Done(message string)   { t.s.emit(message) }
-func (t *streamTask) Fail(message string)   { t.s.emit(message) }
+func (t *streamTask) Update(message string) { t.s.send(message) }
+func (t *streamTask) Done(message string)   { t.s.send(message) }
+func (t *streamTask) Fail(message string)   { t.s.send(message) }

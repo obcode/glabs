@@ -58,6 +58,32 @@ type AssignmentView struct {
 	ResolveError *string `json:"resolveError,omitempty"`
 }
 
+// One event while a course check runs: a progress line as each entry is checked, or
+// the single final event (done = true) carrying the result or an error.
+type CheckProgress struct {
+	Message string       `json:"message"`
+	Done    bool         `json:"done"`
+	Result  *CheckResult `json:"result,omitempty"`
+	Error   *string      `json:"error,omitempty"`
+}
+
+// The result of checking a course's roster against GitLab: each roster entry
+// classified, plus the students that appear in more than one group. Fetched with the
+// caller's stored token.
+type CheckResult struct {
+	Course string `json:"course"`
+	// The course-level students, classified in configured order.
+	Students []*StudentCheck `json:"students"`
+	// The course's groups, each with its members classified.
+	Groups []*GroupCheck `json:"groups"`
+	// Students that appear in more than one group.
+	Duplicates []*DuplicateCheck `json:"duplicates"`
+	// Number of hard problems (unresolvable entries + duplicates).
+	Errors int `json:"errors"`
+	// Whether the whole course checks out (errors = 0).
+	Ok bool `json:"ok"`
+}
+
 // The most recent commit across a repository's branches.
 type CommitReport struct {
 	Title         string     `json:"title"`
@@ -96,6 +122,12 @@ type DockerImageReport struct {
 type DockerImagesReport struct {
 	Status string               `json:"status"`
 	Images []*DockerImageReport `json:"images"`
+}
+
+// One student that appears in more than one group.
+type DuplicateCheck struct {
+	Student string   `json:"student"`
+	Groups  []string `json:"groups"`
 }
 
 // The assignment editor is schema-driven: the GUI renders a guided, validated form
@@ -161,6 +193,12 @@ type GitLabTokenStatus struct {
 type Group struct {
 	Name    string   `json:"name"`
 	Members []string `json:"members"`
+}
+
+// One group's members, classified.
+type GroupCheck struct {
+	Name    string          `json:"name"`
+	Members []*StudentCheck `json:"members"`
 }
 
 // A named group of members (emails), for setCourseGroups.
@@ -237,6 +275,15 @@ type ServerInfo struct {
 	Version string `json:"version"`
 	Commit  string `json:"commit"`
 	Date    string `json:"date"`
+}
+
+// One roster entry classified against GitLab.
+type StudentCheck struct {
+	// The raw roster entry, as written.
+	Input  string             `json:"input"`
+	Status StudentCheckStatus `json:"status"`
+	// Human-readable detail (the resolved user, or why it failed).
+	Message string `json:"message"`
 }
 
 type Subscription struct {
@@ -369,6 +416,70 @@ func (e *FindingSeverity) UnmarshalJSON(b []byte) error {
 }
 
 func (e FindingSeverity) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+// How a roster entry resolved against GitLab.
+type StudentCheckStatus string
+
+const (
+	// Resolved (pinned by ID, or matched uniquely by email).
+	StudentCheckStatusOk StudentCheckStatus = "OK"
+	// No GitLab user yet, but there is an email → will be invited.
+	StudentCheckStatusInvite StudentCheckStatus = "INVITE"
+	// Resolved by username — works, but pinning by ID is safer.
+	StudentCheckStatusDeprecated StudentCheckStatus = "DEPRECATED"
+	// Cannot resolve and there is no email to fall back to.
+	StudentCheckStatusError StudentCheckStatus = "ERROR"
+)
+
+var AllStudentCheckStatus = []StudentCheckStatus{
+	StudentCheckStatusOk,
+	StudentCheckStatusInvite,
+	StudentCheckStatusDeprecated,
+	StudentCheckStatusError,
+}
+
+func (e StudentCheckStatus) IsValid() bool {
+	switch e {
+	case StudentCheckStatusOk, StudentCheckStatusInvite, StudentCheckStatusDeprecated, StudentCheckStatusError:
+		return true
+	}
+	return false
+}
+
+func (e StudentCheckStatus) String() string {
+	return string(e)
+}
+
+func (e *StudentCheckStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = StudentCheckStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid StudentCheckStatus", str)
+	}
+	return nil
+}
+
+func (e StudentCheckStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *StudentCheckStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e StudentCheckStatus) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

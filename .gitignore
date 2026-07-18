@@ -18,3 +18,7 @@ dist/
 
 **/.idea
 glabs
+.glabs-web.yaml
+*.xlsx
+*.txt
+*.csv

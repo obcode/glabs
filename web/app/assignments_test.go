@@ -233,6 +233,50 @@ func TestSetAssignment_persists(t *testing.T) {
 	}
 }
 
+func TestSetAssignment_startercodeBlock(t *testing.T) {
+	const owner = "prof@hm.edu"
+	fs := newFakeStore()
+	fs.courses[owner+"/tc"] = storedCourse(t, owner, tcCourse)
+	a := &App{db: fs, gitlabHost: "https://gl"}
+	ctx := ctxAs(owner)
+
+	// Set a startercode block on blatt1.
+	view, err := a.SetAssignment(ctx, "tc", "blatt1", map[string]string{
+		"startercode.url":                "git@gl:tc/sc.git",
+		"startercode.fromBranch":         "main",
+		"startercode.additionalBranches": "dev, test",
+	})
+	if err != nil {
+		t.Fatalf("set: %v", err)
+	}
+	own := ownMap(view.Own)
+	if own["startercode.url"] != "git@gl:tc/sc.git" {
+		t.Errorf("own[startercode.url] = %q", own["startercode.url"])
+	}
+	if own["startercode.additionalBranches"] != "dev, test" {
+		t.Errorf("own[startercode.additionalBranches] = %q", own["startercode.additionalBranches"])
+	}
+	if !bytes.Contains(fs.saved.RawYAML, []byte("tc/sc.git")) {
+		t.Errorf("rawYAML missing the startercode url:\n%s", fs.saved.RawYAML)
+	}
+
+	// Unsetting every startercode field removes the block entirely.
+	view2, err := a.SetAssignment(ctx, "tc", "blatt1", map[string]string{
+		"startercode.url":                "",
+		"startercode.fromBranch":         "",
+		"startercode.additionalBranches": "",
+	})
+	if err != nil {
+		t.Fatalf("set (unset): %v", err)
+	}
+	if got := ownMap(view2.Own)["startercode.url"]; got != "" {
+		t.Errorf("startercode should be unset, own[startercode.url] = %q", got)
+	}
+	if fs.saved.Source.Assignments["blatt1"].Startercode != nil {
+		t.Error("an all-empty startercode block should be removed (nil), not persisted empty")
+	}
+}
+
 func TestSetAssignment_rejectsUnresolvable(t *testing.T) {
 	const owner = "prof@hm.edu"
 	fs := newFakeStore()

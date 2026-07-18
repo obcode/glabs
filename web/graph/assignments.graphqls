@@ -10,6 +10,8 @@ type FieldMeta {
   label: String!
   "Short help text describing what the field does."
   description: String!
+  "Section this field belongs to (empty for the top-level group), e.g. `startercode`. Lets the GUI render grouped sections."
+  group: String!
   "The input shape the GUI should render."
   kind: FieldKind!
   "Whether the field must be set for a concrete (non-abstract) assignment."

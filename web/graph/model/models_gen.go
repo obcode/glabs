@@ -33,6 +33,10 @@ type Course struct {
 	Name         string `json:"name"`
 	CoursePath   string `json:"coursePath"`
 	SemesterPath string `json:"semesterPath"`
+	// Whether the course name is prepended to each project path.
+	UseCoursenameAsPrefix bool `json:"useCoursenameAsPrefix"`
+	// Whether the student's email domain is appended as a suffix (default true).
+	UseEmailDomainAsSuffix bool `json:"useEmailDomainAsSuffix"`
 	// The names of the assignments in this course, sorted.
 	AssignmentNames []string  `json:"assignmentNames"`
 	StudentCount    int       `json:"studentCount"`

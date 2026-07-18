@@ -136,6 +136,37 @@ func (a *App) CreateCourse(ctx context.Context, name, coursePath, semesterPath s
 	return stored, nil
 }
 
+// SetCourse updates the course-level settings of one of the caller's courses,
+// leaving assignments, students and groups untouched, and re-marshals the course
+// YAML.
+func (a *App) SetCourse(ctx context.Context, name, coursePath, semesterPath string, useCoursenameAsPrefix, useEmailDomainAsSuffix bool) (*db.StoredCourse, error) {
+	stored, err := a.Course(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
+	// Shallow copy: only the course-level scalars change; the Assignments map,
+	// Students slice and Groups map are shared and never mutated here.
+	newSource := *stored.Source
+	newSource.CoursePath = strings.TrimSpace(coursePath)
+	newSource.SemesterPath = strings.TrimSpace(semesterPath)
+	newSource.UseCoursenameAsPrefix = useCoursenameAsPrefix
+	ueds := useEmailDomainAsSuffix
+	newSource.UseEmailDomainAsSuffix = &ueds
+
+	raw, err := config.EncodeCourse(&newSource)
+	if err != nil {
+		return nil, err
+	}
+	stored.Source = &newSource
+	stored.RawYAML = raw
+	stored.UpdatedAt = time.Now()
+	if err := a.db.SaveCourse(ctx, stored); err != nil {
+		return nil, err
+	}
+	return stored, nil
+}
+
 // DeleteCourse removes one of the caller's own courses.
 func (a *App) DeleteCourse(ctx context.Context, name string) error {
 	o, err := owner(ctx)

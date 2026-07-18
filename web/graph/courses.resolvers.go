@@ -32,6 +32,15 @@ func (r *mutationResolver) CreateCourse(ctx context.Context, name string, course
 	return toGraphCourse(stored), nil
 }
 
+// SetCourse is the resolver for the setCourse field.
+func (r *mutationResolver) SetCourse(ctx context.Context, name string, coursePath string, semesterPath string, useCoursenameAsPrefix bool, useEmailDomainAsSuffix bool) (*model.Course, error) {
+	stored, err := r.app.SetCourse(ctx, name, coursePath, semesterPath, useCoursenameAsPrefix, useEmailDomainAsSuffix)
+	if err != nil {
+		return nil, err
+	}
+	return toGraphCourse(stored), nil
+}
+
 // DeleteCourse is the resolver for the deleteCourse field.
 func (r *mutationResolver) DeleteCourse(ctx context.Context, name string) (bool, error) {
 	if err := r.app.DeleteCourse(ctx, name); err != nil {

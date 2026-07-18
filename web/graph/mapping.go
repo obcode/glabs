@@ -25,6 +25,9 @@ func toGraphCourse(s *db.StoredCourse) *model.Course {
 	if s.Source != nil {
 		c.CoursePath = s.Source.CoursePath
 		c.SemesterPath = s.Source.SemesterPath
+		c.UseCoursenameAsPrefix = s.Source.UseCoursenameAsPrefix
+		// Absent means true (see config.CourseSource.UseEmailDomainAsSuffix).
+		c.UseEmailDomainAsSuffix = s.Source.UseEmailDomainAsSuffix == nil || *s.Source.UseEmailDomainAsSuffix
 		c.StudentCount = len(s.Source.Students)
 		c.GroupCount = len(s.Source.Groups)
 		names := make([]string, 0, len(s.Source.Assignments))

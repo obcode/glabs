@@ -71,3 +71,18 @@ func (r *queryResolver) ValidateAssignmentDraft(ctx context.Context, course stri
 	}
 	return toGraphValidationResult(vr), nil
 }
+
+// AssignmentUrls is the resolver for the assignmentUrls field.
+func (r *queryResolver) AssignmentUrls(ctx context.Context, course string, name string) (*model.AssignmentUrls, error) {
+	u, err := r.app.AssignmentURLs(ctx, course, name)
+	if err != nil {
+		if errors.Is(err, db.ErrCourseNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	if u == nil {
+		return nil, nil
+	}
+	return toGraphAssignmentURLs(u), nil
+}

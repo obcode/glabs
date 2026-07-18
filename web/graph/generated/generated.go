@@ -37,6 +37,12 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	AssignmentUrls struct {
+		GroupURL func(childComplexity int) int
+		Per      func(childComplexity int) int
+		Repos    func(childComplexity int) int
+	}
+
 	AssignmentView struct {
 		Abstract     func(childComplexity int) int
 		Course       func(childComplexity int) int
@@ -119,6 +125,7 @@ type ComplexityRoot struct {
 		ApprovalSettingsSchema  func(childComplexity int) int
 		Assignment              func(childComplexity int, course string, name string) int
 		AssignmentSchema        func(childComplexity int) int
+		AssignmentUrls          func(childComplexity int, course string, name string) int
 		BranchRuleSchema        func(childComplexity int) int
 		Course                  func(childComplexity int, name string) int
 		CourseLint              func(childComplexity int, name string) int
@@ -128,6 +135,11 @@ type ComplexityRoot struct {
 		Me                      func(childComplexity int) int
 		ServerInfo              func(childComplexity int) int
 		ValidateAssignmentDraft func(childComplexity int, course string, name string, draft []*model.FieldValueInput) int
+	}
+
+	RepoUrl struct {
+		For func(childComplexity int) int
+		URL func(childComplexity int) int
 	}
 
 	ServerInfo struct {
@@ -174,6 +186,7 @@ type QueryResolver interface {
 	ApprovalRuleSchema(ctx context.Context) ([]*model.FieldMeta, error)
 	Assignment(ctx context.Context, course string, name string) (*model.AssignmentView, error)
 	ValidateAssignmentDraft(ctx context.Context, course string, name string, draft []*model.FieldValueInput) (*model.ValidationResult, error)
+	AssignmentUrls(ctx context.Context, course string, name string) (*model.AssignmentUrls, error)
 	Courses(ctx context.Context) ([]*model.Course, error)
 	Course(ctx context.Context, name string) (*model.Course, error)
 	CourseYaml(ctx context.Context, name string) (string, error)
@@ -198,6 +211,25 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := newExecutionContext(nil, e, nil)
 	_ = ec
 	switch typeName + "." + field {
+
+	case "AssignmentUrls.groupUrl":
+		if e.ComplexityRoot.AssignmentUrls.GroupURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AssignmentUrls.GroupURL(childComplexity), true
+	case "AssignmentUrls.per":
+		if e.ComplexityRoot.AssignmentUrls.Per == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AssignmentUrls.Per(childComplexity), true
+	case "AssignmentUrls.repos":
+		if e.ComplexityRoot.AssignmentUrls.Repos == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AssignmentUrls.Repos(childComplexity), true
 
 	case "AssignmentView.abstract":
 		if e.ComplexityRoot.AssignmentView.Abstract == nil {
@@ -582,6 +614,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.AssignmentSchema(childComplexity), true
+	case "Query.assignmentUrls":
+		if e.ComplexityRoot.Query.AssignmentUrls == nil {
+			break
+		}
+
+		args, err := ec.field_Query_assignmentUrls_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.AssignmentUrls(childComplexity, args["course"].(string), args["name"].(string)), true
 	case "Query.branchRuleSchema":
 		if e.ComplexityRoot.Query.BranchRuleSchema == nil {
 			break
@@ -657,6 +700,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.ValidateAssignmentDraft(childComplexity, args["course"].(string), args["name"].(string), args["draft"].([]*model.FieldValueInput)), true
+
+	case "RepoUrl.for":
+		if e.ComplexityRoot.RepoUrl.For == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RepoUrl.For(childComplexity), true
+	case "RepoUrl.url":
+		if e.ComplexityRoot.RepoUrl.URL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RepoUrl.URL(childComplexity), true
 
 	case "ServerInfo.commit":
 		if e.ComplexityRoot.ServerInfo.Commit == nil {
@@ -905,6 +961,30 @@ extend type Query {
   assignment(course: String!, name: String!): AssignmentView
   "Validate a draft assignment against the real resolver without saving."
   validateAssignmentDraft(course: String!, name: String!, draft: [FieldValueInput!]!): ValidationResult!
+  "The repository URLs for one assignment, derived from the resolved config (no GitLab token needed). Null when there is no such assignment or it cannot be resolved (e.g. an abstract base)."
+  assignmentUrls(course: String!, name: String!): AssignmentUrls
+}
+
+"""
+The repository URLs for one assignment: the assignment-level group URL plus one
+URL per student or per group. Read-only and derived purely from the resolved
+configuration — no GitLab token or API call is involved.
+"""
+type AssignmentUrls {
+  "Whether repos are per student or per group (` + "`" + `student` + "`" + ` or ` + "`" + `group` + "`" + `)."
+  per: String!
+  "The assignment-level group URL, where all the repos live."
+  groupUrl: String!
+  "One entry per student/group repository."
+  repos: [RepoUrl!]!
+}
+
+"One repository URL together with who it belongs to."
+type RepoUrl {
+  "The student's email (or username/id fallback) or the group's name."
+  for: String!
+  "The full web URL of the repository."
+  url: String!
 }
 
 extend type Mutation {
@@ -1062,6 +1142,18 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // Each function is generated once per unique object type, deduplicating the
 // switch statements that were previously inlined in every fieldContext_* function.
 
+func (ec *executionContext) childFields_AssignmentUrls(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "per":
+		return ec.fieldContext_AssignmentUrls_per(ctx, field)
+	case "groupUrl":
+		return ec.fieldContext_AssignmentUrls_groupUrl(ctx, field)
+	case "repos":
+		return ec.fieldContext_AssignmentUrls_repos(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AssignmentUrls", field.Name)
+}
+
 func (ec *executionContext) childFields_AssignmentView(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "course":
@@ -1188,6 +1280,16 @@ func (ec *executionContext) childFields_Group(ctx context.Context, field graphql
 		return ec.fieldContext_Group_members(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Group", field.Name)
+}
+
+func (ec *executionContext) childFields_RepoUrl(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "for":
+		return ec.fieldContext_RepoUrl_for(ctx, field)
+	case "url":
+		return ec.fieldContext_RepoUrl_url(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type RepoUrl", field.Name)
 }
 
 func (ec *executionContext) childFields_ServerInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -1586,6 +1688,28 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_assignmentUrls_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "course",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["course"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "name",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["name"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_assignment_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1739,6 +1863,84 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ***************************** args.gotpl *****************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _AssignmentUrls_per(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentUrls) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AssignmentUrls_per(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Per, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AssignmentUrls_per(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AssignmentUrls", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AssignmentUrls_groupUrl(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentUrls) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AssignmentUrls_groupUrl(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.GroupURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AssignmentUrls_groupUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AssignmentUrls", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AssignmentUrls_repos(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentUrls) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AssignmentUrls_repos(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Repos, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.RepoURL) graphql.Marshaler {
+			return ec.marshalNRepoUrl2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐRepoURLᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AssignmentUrls_repos(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AssignmentUrls",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_RepoUrl(ctx, field)
+		},
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _AssignmentView_course(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentView) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
@@ -3395,6 +3597,50 @@ func (ec *executionContext) fieldContext_Query_validateAssignmentDraft(ctx conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_assignmentUrls(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_assignmentUrls(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().AssignmentUrls(ctx, fc.Args["course"].(string), fc.Args["name"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.AssignmentUrls) graphql.Marshaler {
+			return ec.marshalOAssignmentUrls2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAssignmentUrls(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Query_assignmentUrls(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_AssignmentUrls(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_assignmentUrls_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_courses(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3665,6 +3911,52 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 		},
 	}
 	return fc, nil
+}
+
+func (ec *executionContext) _RepoUrl_for(ctx context.Context, field graphql.CollectedField, obj *model.RepoURL) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RepoUrl_for(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.For, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_RepoUrl_for(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RepoUrl", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _RepoUrl_url(ctx context.Context, field graphql.CollectedField, obj *model.RepoURL) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RepoUrl_url(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.URL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_RepoUrl_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RepoUrl", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _ServerInfo_version(ctx context.Context, field graphql.CollectedField, obj *model.ServerInfo) (ret graphql.Marshaler) {
@@ -5015,6 +5307,54 @@ func (ec *executionContext) unmarshalInputGroupInput(ctx context.Context, obj an
 
 // region    **************************** object.gotpl ****************************
 
+var assignmentUrlsImplementors = []string{"AssignmentUrls"}
+
+func (ec *executionContext) _AssignmentUrls(ctx context.Context, sel ast.SelectionSet, obj *model.AssignmentUrls) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, assignmentUrlsImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AssignmentUrls")
+		case "per":
+			out.Values[i] = ec._AssignmentUrls_per(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "groupUrl":
+			out.Values[i] = ec._AssignmentUrls_groupUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "repos":
+			out.Values[i] = ec._AssignmentUrls_repos(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var assignmentViewImplementors = []string{"AssignmentView"}
 
 func (ec *executionContext) _AssignmentView(ctx context.Context, sel ast.SelectionSet, obj *model.AssignmentView) graphql.Marshaler {
@@ -5786,6 +6126,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "assignmentUrls":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_assignmentUrls(ctx, field)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "courses":
 			field := field
 
@@ -5909,6 +6271,49 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			})
 			if out.Values[i] == graphql.RequiredNull {
 				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var repoUrlImplementors = []string{"RepoUrl"}
+
+func (ec *executionContext) _RepoUrl(ctx context.Context, sel ast.SelectionSet, obj *model.RepoURL) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, repoUrlImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RepoUrl")
+		case "for":
+			out.Values[i] = ec._RepoUrl_for(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "url":
+			out.Values[i] = ec._RepoUrl_url(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -6745,6 +7150,32 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
+func (ec *executionContext) marshalNRepoUrl2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐRepoURLᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.RepoURL) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNRepoUrl2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐRepoURL(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNRepoUrl2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐRepoURL(ctx context.Context, sel ast.SelectionSet, v *model.RepoURL) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RepoUrl(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNServerInfo2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐServerInfo(ctx context.Context, sel ast.SelectionSet, v model.ServerInfo) graphql.Marshaler {
 	return ec._ServerInfo(ctx, sel, &v)
 }
@@ -6986,6 +7417,13 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalOAssignmentUrls2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAssignmentUrls(ctx context.Context, sel ast.SelectionSet, v *model.AssignmentUrls) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AssignmentUrls(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAssignmentView2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAssignmentView(ctx context.Context, sel ast.SelectionSet, v *model.AssignmentView) graphql.Marshaler {

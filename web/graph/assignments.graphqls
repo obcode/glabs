@@ -103,6 +103,30 @@ extend type Query {
   assignment(course: String!, name: String!): AssignmentView
   "Validate a draft assignment against the real resolver without saving."
   validateAssignmentDraft(course: String!, name: String!, draft: [FieldValueInput!]!): ValidationResult!
+  "The repository URLs for one assignment, derived from the resolved config (no GitLab token needed). Null when there is no such assignment or it cannot be resolved (e.g. an abstract base)."
+  assignmentUrls(course: String!, name: String!): AssignmentUrls
+}
+
+"""
+The repository URLs for one assignment: the assignment-level group URL plus one
+URL per student or per group. Read-only and derived purely from the resolved
+configuration — no GitLab token or API call is involved.
+"""
+type AssignmentUrls {
+  "Whether repos are per student or per group (`student` or `group`)."
+  per: String!
+  "The assignment-level group URL, where all the repos live."
+  groupUrl: String!
+  "One entry per student/group repository."
+  repos: [RepoUrl!]!
+}
+
+"One repository URL together with who it belongs to."
+type RepoUrl {
+  "The student's email (or username/id fallback) or the group's name."
+  for: String!
+  "The full web URL of the repository."
+  url: String!
 }
 
 extend type Mutation {

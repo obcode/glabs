@@ -10,6 +10,18 @@ import (
 	"time"
 )
 
+// The repository URLs for one assignment: the assignment-level group URL plus one
+// URL per student or per group. Read-only and derived purely from the resolved
+// configuration — no GitLab token or API call is involved.
+type AssignmentUrls struct {
+	// Whether repos are per student or per group (`student` or `group`).
+	Per string `json:"per"`
+	// The assignment-level group URL, where all the repos live.
+	GroupURL string `json:"groupUrl"`
+	// One entry per student/group repository.
+	Repos []*RepoURL `json:"repos"`
+}
+
 // One assignment in source (own) form plus its resolved preview — the same
 // rendering `glabs show` produces, so inheritance is visible.
 type AssignmentView struct {
@@ -124,6 +136,14 @@ type Mutation struct {
 }
 
 type Query struct {
+}
+
+// One repository URL together with who it belongs to.
+type RepoURL struct {
+	// The student's email (or username/id fallback) or the group's name.
+	For string `json:"for"`
+	// The full web URL of the repository.
+	URL string `json:"url"`
 }
 
 // Version and build metadata for the running server.

@@ -88,6 +88,25 @@ func TestAssignment_resolvesWithInheritance(t *testing.T) {
 	if !strings.Contains(v.Resolved, "student") {
 		t.Errorf("resolved preview should reflect inherited per=student:\n%s", v.Resolved)
 	}
+
+	// Own holds the source values (what the user wrote), not the inherited ones:
+	// blatt1 sets description and extends but NOT per (that comes from base).
+	own := map[string]string{}
+	for _, fv := range v.Own {
+		own[fv.Key] = fv.Value
+	}
+	if own["extends"] != "base" {
+		t.Errorf("own[extends] = %q, want base", own["extends"])
+	}
+	if own["description"] != "First sheet" {
+		t.Errorf("own[description] = %q, want 'First sheet'", own["description"])
+	}
+	if own["per"] != "" {
+		t.Errorf("own[per] = %q, want empty (per is inherited, not set on blatt1)", own["per"])
+	}
+	if own["abstract"] != "false" {
+		t.Errorf("own[abstract] = %q, want false", own["abstract"])
+	}
 }
 
 func TestAssignment_abstractBaseReportsResolveError(t *testing.T) {

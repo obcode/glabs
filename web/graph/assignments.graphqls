@@ -29,6 +29,16 @@ type FieldOption {
   description: String!
 }
 
+"""
+One field's own (source) value for an assignment — what the user wrote, before
+inheritance. Values are stringified (booleans as `true`/`false`) and keyed by the
+same `key` as FieldMeta, so the GUI can pre-fill each schema field generically.
+"""
+type FieldValue {
+  key: String!
+  value: String!
+}
+
 "The input shape the GUI should render for a field."
 enum FieldKind {
   STRING
@@ -49,6 +59,8 @@ type AssignmentView {
   extends: String
   "Whether this is an abstract base (a template for `extends`)."
   abstract: Boolean!
+  "The assignment's own (source) field values, keyed by FieldMeta.key, for pre-filling the editor form."
+  own: [FieldValue!]!
   "The resolved config rendered as text (may contain ANSI); empty when resolveError is set."
   resolved: String!
   "Why the assignment could not be resolved (e.g. abstract base, missing parent) — not an error."

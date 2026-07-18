@@ -19,6 +19,8 @@ type AssignmentView struct {
 	Extends *string `json:"extends,omitempty"`
 	// Whether this is an abstract base (a template for `extends`).
 	Abstract bool `json:"abstract"`
+	// The assignment's own (source) field values, keyed by FieldMeta.key, for pre-filling the editor form.
+	Own []*FieldValue `json:"own"`
 	// The resolved config rendered as text (may contain ANSI); empty when resolveError is set.
 	Resolved string `json:"resolved"`
 	// Why the assignment could not be resolved (e.g. abstract base, missing parent) — not an error.
@@ -66,6 +68,14 @@ type FieldOption struct {
 	Value       string `json:"value"`
 	Label       string `json:"label"`
 	Description string `json:"description"`
+}
+
+// One field's own (source) value for an assignment — what the user wrote, before
+// inheritance. Values are stringified (booleans as `true`/`false`) and keyed by the
+// same `key` as FieldMeta, so the GUI can pre-fill each schema field generically.
+type FieldValue struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 // One lint finding: configuration that does not do what it looks like it does.

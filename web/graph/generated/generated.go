@@ -42,6 +42,7 @@ type ComplexityRoot struct {
 		Course       func(childComplexity int) int
 		Extends      func(childComplexity int) int
 		Name         func(childComplexity int) int
+		Own          func(childComplexity int) int
 		ResolveError func(childComplexity int) int
 		Resolved     func(childComplexity int) int
 	}
@@ -72,6 +73,11 @@ type ComplexityRoot struct {
 		Description func(childComplexity int) int
 		Label       func(childComplexity int) int
 		Value       func(childComplexity int) int
+	}
+
+	FieldValue struct {
+		Key   func(childComplexity int) int
+		Value func(childComplexity int) int
 	}
 
 	Finding struct {
@@ -180,6 +186,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AssignmentView.Name(childComplexity), true
+	case "AssignmentView.own":
+		if e.ComplexityRoot.AssignmentView.Own == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AssignmentView.Own(childComplexity), true
 	case "AssignmentView.resolveError":
 		if e.ComplexityRoot.AssignmentView.ResolveError == nil {
 			break
@@ -309,6 +321,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.FieldOption.Value(childComplexity), true
+
+	case "FieldValue.key":
+		if e.ComplexityRoot.FieldValue.Key == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FieldValue.Key(childComplexity), true
+	case "FieldValue.value":
+		if e.ComplexityRoot.FieldValue.Value == nil {
+			break
+		}
+
+		return e.ComplexityRoot.FieldValue.Value(childComplexity), true
 
 	case "Finding.message":
 		if e.ComplexityRoot.Finding.Message == nil {
@@ -603,6 +628,16 @@ type FieldOption {
   description: String!
 }
 
+"""
+One field's own (source) value for an assignment — what the user wrote, before
+inheritance. Values are stringified (booleans as ` + "`" + `true` + "`" + `/` + "`" + `false` + "`" + `) and keyed by the
+same ` + "`" + `key` + "`" + ` as FieldMeta, so the GUI can pre-fill each schema field generically.
+"""
+type FieldValue {
+  key: String!
+  value: String!
+}
+
 "The input shape the GUI should render for a field."
 enum FieldKind {
   STRING
@@ -623,6 +658,8 @@ type AssignmentView {
   extends: String
   "Whether this is an abstract base (a template for ` + "`" + `extends` + "`" + `)."
   abstract: Boolean!
+  "The assignment's own (source) field values, keyed by FieldMeta.key, for pre-filling the editor form."
+  own: [FieldValue!]!
   "The resolved config rendered as text (may contain ANSI); empty when resolveError is set."
   resolved: String!
   "Why the assignment could not be resolved (e.g. abstract base, missing parent) — not an error."
@@ -751,6 +788,8 @@ func (ec *executionContext) childFields_AssignmentView(ctx context.Context, fiel
 		return ec.fieldContext_AssignmentView_extends(ctx, field)
 	case "abstract":
 		return ec.fieldContext_AssignmentView_abstract(ctx, field)
+	case "own":
+		return ec.fieldContext_AssignmentView_own(ctx, field)
 	case "resolved":
 		return ec.fieldContext_AssignmentView_resolved(ctx, field)
 	case "resolveError":
@@ -813,6 +852,16 @@ func (ec *executionContext) childFields_FieldOption(ctx context.Context, field g
 		return ec.fieldContext_FieldOption_description(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type FieldOption", field.Name)
+}
+
+func (ec *executionContext) childFields_FieldValue(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "key":
+		return ec.fieldContext_FieldValue_key(ctx, field)
+	case "value":
+		return ec.fieldContext_FieldValue_value(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type FieldValue", field.Name)
 }
 
 func (ec *executionContext) childFields_Finding(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -1245,6 +1294,38 @@ func (ec *executionContext) _AssignmentView_abstract(ctx context.Context, field 
 }
 func (ec *executionContext) fieldContext_AssignmentView_abstract(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("AssignmentView", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _AssignmentView_own(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AssignmentView_own(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Own, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.FieldValue) graphql.Marshaler {
+			return ec.marshalNFieldValue2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldValueᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AssignmentView_own(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AssignmentView",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_FieldValue(ctx, field)
+		},
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _AssignmentView_resolved(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentView) (ret graphql.Marshaler) {
@@ -1737,6 +1818,52 @@ func (ec *executionContext) _FieldOption_description(ctx context.Context, field 
 }
 func (ec *executionContext) fieldContext_FieldOption_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("FieldOption", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FieldValue_key(ctx context.Context, field graphql.CollectedField, obj *model.FieldValue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FieldValue_key(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FieldValue_key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FieldValue", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _FieldValue_value(ctx context.Context, field graphql.CollectedField, obj *model.FieldValue) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_FieldValue_value(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Value, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_FieldValue_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("FieldValue", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _Finding_path(ctx context.Context, field graphql.CollectedField, obj *model.Finding) (ret graphql.Marshaler) {
@@ -3644,6 +3771,11 @@ func (ec *executionContext) _AssignmentView(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "own":
+			out.Values[i] = ec._AssignmentView_own(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "resolved":
 			out.Values[i] = ec._AssignmentView_resolved(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -3845,6 +3977,49 @@ func (ec *executionContext) _FieldOption(ctx context.Context, sel ast.SelectionS
 			}
 		case "description":
 			out.Values[i] = ec._FieldOption_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var fieldValueImplementors = []string{"FieldValue"}
+
+func (ec *executionContext) _FieldValue(ctx context.Context, sel ast.SelectionSet, obj *model.FieldValue) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, fieldValueImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FieldValue")
+		case "key":
+			out.Values[i] = ec._FieldValue_key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "value":
+			out.Values[i] = ec._FieldValue_value(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -4871,6 +5046,32 @@ func (ec *executionContext) marshalNFieldOption2ᚖgithubᚗcomᚋobcodeᚋglabs
 		return graphql.Null
 	}
 	return ec._FieldOption(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNFieldValue2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldValueᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.FieldValue) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNFieldValue2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldValue(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNFieldValue2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldValue(ctx context.Context, sel ast.SelectionSet, v *model.FieldValue) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._FieldValue(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNFinding2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFindingᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Finding) graphql.Marshaler {

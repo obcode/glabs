@@ -23,6 +23,15 @@ func (r *mutationResolver) SetAssignment(ctx context.Context, course string, nam
 	return toGraphAssignmentView(view), nil
 }
 
+// ImportAssignmentYaml is the resolver for the importAssignmentYAML field.
+func (r *mutationResolver) ImportAssignmentYaml(ctx context.Context, course string, yaml string) (*model.AssignmentView, error) {
+	view, err := r.app.ImportAssignmentYAML(ctx, course, yaml)
+	if err != nil {
+		return nil, err
+	}
+	return toGraphAssignmentView(view), nil
+}
+
 // DeleteAssignment is the resolver for the deleteAssignment field.
 func (r *mutationResolver) DeleteAssignment(ctx context.Context, course string, name string) (bool, error) {
 	return r.app.DeleteAssignment(ctx, course, name)

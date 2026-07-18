@@ -160,4 +160,59 @@ var assignmentFields = []FieldMeta{
 		Kind:        KindStringList,
 		Example:     "dev, test",
 	},
+
+	// --- Merge-Request: Merge-Strategie und -Bedingungen der Studi-Repos ---
+	{
+		Key:         "mergeRequest.mergeMethod",
+		Label:       "Merge-Methode",
+		Description: "Wie Merge-Requests zusammengeführt werden.",
+		Group:       "Merge-Request",
+		Kind:        KindEnum,
+		Options: []FieldOption{
+			{Value: "merge", Label: "Merge-Commit", Description: "Klassischer Merge-Commit — erhält die Historie."},
+			{Value: "semi_linear", Label: "Semi-linear", Description: "Merge-Commit, aber nur bei aktuellem Zielbranch (Rebase nötig)."},
+			{Value: "ff", Label: "Fast-Forward", Description: "Keine Merge-Commits, streng lineare Historie."},
+		},
+	},
+	{
+		Key:         "mergeRequest.squashOption",
+		Label:       "Squash-Option",
+		Description: "Ob Commits beim Merge zu einem zusammengefasst werden.",
+		Group:       "Merge-Request",
+		Kind:        KindEnum,
+		Options: []FieldOption{
+			{Value: "never", Label: "Nie", Description: "Nie squashen."},
+			{Value: "always", Label: "Immer", Description: "Immer squashen."},
+			{Value: "default_off", Label: "Standard aus", Description: "Pro MR wählbar, vorausgewählt: aus."},
+			{Value: "default_on", Label: "Standard an", Description: "Pro MR wählbar, vorausgewählt: an."},
+		},
+	},
+	{
+		Key:         "mergeRequest.pipeline",
+		Label:       "Pipeline muss erfolgreich sein",
+		Description: "Merge nur erlauben, wenn die Pipeline durchläuft.",
+		Group:       "Merge-Request",
+		Kind:        KindBool,
+	},
+	{
+		Key:         "mergeRequest.skippedPipelinesAreSuccessful",
+		Label:       "Übersprungene Pipelines gelten als erfolgreich",
+		Description: "Eine übersprungene Pipeline blockiert den Merge nicht.",
+		Group:       "Merge-Request",
+		Kind:        KindBool,
+	},
+	{
+		Key:         "mergeRequest.allThreadsMustBeResolved",
+		Label:       "Alle Threads müssen aufgelöst sein",
+		Description: "Merge nur erlauben, wenn alle Diskussionen aufgelöst sind.",
+		Group:       "Merge-Request",
+		Kind:        KindBool,
+	},
+	{
+		Key:         "mergeRequest.statusChecksMustSucceed",
+		Label:       "Status-Checks müssen erfolgreich sein",
+		Description: "Merge nur erlauben, wenn alle externen Status-Checks grün sind.",
+		Group:       "Merge-Request",
+		Kind:        KindBool,
+	},
 }

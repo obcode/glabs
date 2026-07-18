@@ -277,6 +277,49 @@ func TestSetAssignment_startercodeBlock(t *testing.T) {
 	}
 }
 
+func TestSetAssignment_mergeRequestBlock(t *testing.T) {
+	const owner = "prof@hm.edu"
+	fs := newFakeStore()
+	fs.courses[owner+"/tc"] = storedCourse(t, owner, tcCourse)
+	a := &App{db: fs, gitlabHost: "https://gl"}
+	ctx := ctxAs(owner)
+
+	view, err := a.SetAssignment(ctx, "tc", "blatt1", map[string]string{
+		"mergeRequest.mergeMethod":  "ff",
+		"mergeRequest.squashOption": "always",
+		"mergeRequest.pipeline":     "true",
+	})
+	if err != nil {
+		t.Fatalf("set: %v", err)
+	}
+	own := ownMap(view.Own)
+	if own["mergeRequest.mergeMethod"] != "ff" || own["mergeRequest.squashOption"] != "always" {
+		t.Errorf("own merge fields = %q / %q", own["mergeRequest.mergeMethod"], own["mergeRequest.squashOption"])
+	}
+	if own["mergeRequest.pipeline"] != "true" {
+		t.Errorf("own[mergeRequest.pipeline] = %q", own["mergeRequest.pipeline"])
+	}
+	if !bytes.Contains(fs.saved.RawYAML, []byte("mergeMethod: ff")) {
+		t.Errorf("rawYAML missing the merge method:\n%s", fs.saved.RawYAML)
+	}
+
+	// Unsetting everything removes the block.
+	view2, err := a.SetAssignment(ctx, "tc", "blatt1", map[string]string{
+		"mergeRequest.mergeMethod":  "",
+		"mergeRequest.squashOption": "",
+		"mergeRequest.pipeline":     "false",
+	})
+	if err != nil {
+		t.Fatalf("set (unset): %v", err)
+	}
+	if got := ownMap(view2.Own)["mergeRequest.mergeMethod"]; got != "" {
+		t.Errorf("mergeRequest should be unset, got %q", got)
+	}
+	if fs.saved.Source.Assignments["blatt1"].MergeRequest != nil {
+		t.Error("an all-empty mergeRequest block should be removed (nil)")
+	}
+}
+
 func TestSetAssignment_rejectsUnresolvable(t *testing.T) {
 	const owner = "prof@hm.edu"
 	fs := newFakeStore()

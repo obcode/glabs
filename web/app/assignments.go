@@ -54,7 +54,27 @@ func assignmentOwn(src *config.AssignmentSource) []FieldValue {
 		{Key: "startercode.template", Value: scBool(func(s *config.StartercodeSource) bool { return s.Template })},
 		{Key: "startercode.templateMessage", Value: scStr(func(s *config.StartercodeSource) string { return s.TemplateMessage })},
 		{Key: "startercode.additionalBranches", Value: addBranches},
+		{Key: "mergeRequest.mergeMethod", Value: mrStr(src.MergeRequest, func(m *config.MergeRequestSource) string { return m.MergeMethod })},
+		{Key: "mergeRequest.squashOption", Value: mrStr(src.MergeRequest, func(m *config.MergeRequestSource) string { return m.SquashOption })},
+		{Key: "mergeRequest.pipeline", Value: mrBool(src.MergeRequest, func(m *config.MergeRequestSource) bool { return m.Pipeline })},
+		{Key: "mergeRequest.skippedPipelinesAreSuccessful", Value: mrBool(src.MergeRequest, func(m *config.MergeRequestSource) bool { return m.SkippedPipelinesAreSuccessful })},
+		{Key: "mergeRequest.allThreadsMustBeResolved", Value: mrBool(src.MergeRequest, func(m *config.MergeRequestSource) bool { return m.AllThreadsMustBeResolved })},
+		{Key: "mergeRequest.statusChecksMustSucceed", Value: mrBool(src.MergeRequest, func(m *config.MergeRequestSource) bool { return m.StatusChecksMustSucceed })},
 	}
+}
+
+func mrStr(m *config.MergeRequestSource, f func(*config.MergeRequestSource) string) string {
+	if m == nil {
+		return ""
+	}
+	return f(m)
+}
+
+func mrBool(m *config.MergeRequestSource, f func(*config.MergeRequestSource) bool) string {
+	if m == nil {
+		return "false"
+	}
+	return strconv.FormatBool(f(m))
 }
 
 // AssignmentView is one assignment in source (own) form plus its resolved
@@ -152,7 +172,52 @@ func applyDraft(src *config.AssignmentSource, draft map[string]string) *config.A
 		}
 	}
 	c.Startercode = applyStartercodeDraft(src.Startercode, draft)
+	c.MergeRequest = applyMergeRequestDraft(src.MergeRequest, draft)
 	return &c
+}
+
+// applyMergeRequestDraft rebuilds the mergeRequest block from the draft's
+// mergeRequest.* keys into a NEW struct (never mutating the shared original) and
+// nils it when every editable field is empty AND there is no approvals block.
+// The (not-yet-editable) approvals block is carried over untouched.
+func applyMergeRequestDraft(orig *config.MergeRequestSource, draft map[string]string) *config.MergeRequestSource {
+	touched := false
+	for k := range draft {
+		if strings.HasPrefix(k, "mergeRequest.") {
+			touched = true
+			break
+		}
+	}
+	if !touched {
+		return orig
+	}
+
+	var mr config.MergeRequestSource
+	if orig != nil {
+		mr = *orig
+	}
+	for k, v := range draft {
+		switch k {
+		case "mergeRequest.mergeMethod":
+			mr.MergeMethod = v
+		case "mergeRequest.squashOption":
+			mr.SquashOption = v
+		case "mergeRequest.pipeline":
+			mr.Pipeline = v == "true"
+		case "mergeRequest.skippedPipelinesAreSuccessful":
+			mr.SkippedPipelinesAreSuccessful = v == "true"
+		case "mergeRequest.allThreadsMustBeResolved":
+			mr.AllThreadsMustBeResolved = v == "true"
+		case "mergeRequest.statusChecksMustSucceed":
+			mr.StatusChecksMustSucceed = v == "true"
+		}
+	}
+	if mr.MergeMethod == "" && mr.SquashOption == "" && !mr.Pipeline &&
+		!mr.SkippedPipelinesAreSuccessful && !mr.AllThreadsMustBeResolved &&
+		!mr.StatusChecksMustSucceed && mr.Approvals == nil {
+		return nil
+	}
+	return &mr
 }
 
 // applyStartercodeDraft rebuilds the startercode block from the draft's

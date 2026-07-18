@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,6 +14,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
+	coderws "github.com/coder/websocket"
 	"github.com/go-chi/chi/v5"
 	"github.com/obcode/glabs/v3/web/app"
 	"github.com/obcode/glabs/v3/web/graph/generated"
@@ -34,6 +36,20 @@ func allowedOrigins() []string {
 	return defaultAllowedOrigins
 }
 
+// originHosts turns the allowed origins (full URLs) into host[:port] patterns for
+// coder/websocket's OriginPatterns, which matches against the Origin header's host.
+func originHosts(origins []string) []string {
+	hosts := make([]string, 0, len(origins))
+	for _, o := range origins {
+		if u, err := url.Parse(o); err == nil && u.Host != "" {
+			hosts = append(hosts, u.Host)
+		} else {
+			hosts = append(hosts, o)
+		}
+	}
+	return hosts
+}
+
 // StartServer wires the GraphQL handler behind CORS and the auth middleware, and
 // blocks until SIGTERM/Interrupt.
 //
@@ -44,9 +60,21 @@ func StartServer(a *app.App, port string) {
 
 	origins := allowedOrigins()
 
-	// POST only for now. The websocket transport (for streaming subscriptions)
-	// arrives with the mutating operations that need it.
 	srv.AddTransport(transport.POST{})
+
+	// WebSocket transport for subscriptions (the report progress stream). The auth
+	// middleware runs on the HTTP upgrade request, so the identity it injects is
+	// already in the connection context — no separate WS auth is needed. The WS
+	// upgrade is not covered by CORS preflight, so origins are checked here via
+	// coder/websocket's OriginPatterns (host[:port], scheme stripped).
+	srv.AddTransport(transport.Websocket{
+		KeepAlivePingInterval: 10 * time.Second,
+		Implementation: transport.CoderWebsocketImplementation{
+			AcceptOptions: coderws.AcceptOptions{
+				OriginPatterns: originHosts(origins),
+			},
+		},
+	})
 
 	production := viper.GetBool("server.production")
 	if !production {

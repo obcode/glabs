@@ -5,6 +5,7 @@ go 1.26
 require (
 	github.com/99designs/gqlgen v0.17.94
 	github.com/ProtonMail/go-crypto v1.4.1
+	github.com/coder/websocket v1.8.15
 	github.com/go-chi/chi/v5 v5.3.1
 	github.com/go-git/go-billy/v5 v5.8.0
 	github.com/go-git/go-git/v5 v5.18.0
@@ -36,7 +37,6 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudflare/circl v1.6.3 // indirect
-	github.com/coder/websocket v1.8.15 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
 	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect

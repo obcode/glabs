@@ -210,6 +210,47 @@ type GroupInput struct {
 type Mutation struct {
 }
 
+// Optional parameters for an operation (op-specific; unset fields fall back to the assignment config).
+type OpParams struct {
+	// setaccess: the access level to grant (guest|reporter|developer|maintainer).
+	AccessLevel *string `json:"accessLevel,omitempty"`
+	// protect: the branch to protect.
+	Branch *string `json:"branch,omitempty"`
+	// archive: unarchive instead of archive.
+	Unarchive *bool `json:"unarchive,omitempty"`
+}
+
+// The preview of a mutating operation before it runs: the resolved config, the
+// repositories it would touch, warnings, and an opaque confirm token (5 min TTL) that
+// carries a hash of the resolved config — so runOp can reject a plan whose config
+// changed underneath it.
+type OpPlan struct {
+	Op         Op     `json:"op"`
+	Course     string `json:"course"`
+	Assignment string `json:"assignment"`
+	// The resolved config, exactly as `glabs show` renders it (may contain ANSI).
+	Resolved string           `json:"resolved"`
+	Targets  []*PlannedTarget `json:"targets"`
+	Warnings []string         `json:"warnings"`
+	// Whether the operation is destructive (archive/delete) and needs the confirm phrase.
+	Destructive bool `json:"destructive"`
+	// For destructive ops: the phrase the user must type to confirm (the assignment path).
+	ConfirmPhrase *string `json:"confirmPhrase,omitempty"`
+	// Opaque, single-use confirm token to pass to runOp/scheduleOp.
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expiresAt"`
+}
+
+// One repository an operation would touch.
+type PlannedTarget struct {
+	// The student's email (or username/id) or the group's name.
+	For string `json:"for"`
+	// The repository's project name.
+	Repo string `json:"repo"`
+	// The full web URL of the repository.
+	URL string `json:"url"`
+}
+
 // A member of a repository (only the display fields, never GitLab-internal ids).
 type ProjectMemberReport struct {
 	Name     string `json:"name"`
@@ -416,6 +457,66 @@ func (e *FindingSeverity) UnmarshalJSON(b []byte) error {
 }
 
 func (e FindingSeverity) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+// A mutating GitLab operation. None of them touch git — pure GitLab API calls.
+type Op string
+
+const (
+	OpSetaccess Op = "SETACCESS"
+	OpProtect   Op = "PROTECT"
+	OpArchive   Op = "ARCHIVE"
+	OpDelete    Op = "DELETE"
+)
+
+var AllOp = []Op{
+	OpSetaccess,
+	OpProtect,
+	OpArchive,
+	OpDelete,
+}
+
+func (e Op) IsValid() bool {
+	switch e {
+	case OpSetaccess, OpProtect, OpArchive, OpDelete:
+		return true
+	}
+	return false
+}
+
+func (e Op) String() string {
+	return string(e)
+}
+
+func (e *Op) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = Op(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid Op", str)
+	}
+	return nil
+}
+
+func (e Op) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *Op) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e Op) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

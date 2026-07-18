@@ -79,33 +79,48 @@ func (cfg *AssignmentConfig) Urls(assignment bool) {
 	}
 }
 
-// RepoURL is one repository URL together with who it belongs to: a student's
-// email (or username/id fallback) for per-student assignments, or the group
-// name for per-group assignments.
+// RepoTarget is one repository the assignment resolves to: who it belongs to
+// (For — a student's email/username/id, or the group name), the repository's
+// project name (Repo), and the full web URL.
+type RepoTarget struct {
+	For  string
+	Repo string
+	URL  string
+}
+
+// RepoTargets returns the per-student or per-group repositories for the assignment
+// (depending on Per). It is the data behind both the printing Urls method and the
+// web layer's URL list and operation targets.
+func (cfg *AssignmentConfig) RepoTargets() []RepoTarget {
+	var out []RepoTarget
+	if cfg.Per == PerStudent {
+		for _, stud := range cfg.Students {
+			repo := cfg.RepoNameForStudent(stud)
+			out = append(out, RepoTarget{For: studentLabel(stud), Repo: repo, URL: cfg.URL + "/" + repo})
+		}
+	} else { // PerGroup
+		for _, group := range cfg.Groups {
+			repo := cfg.RepoNameForGroup(group)
+			out = append(out, RepoTarget{For: group.Name, Repo: repo, URL: cfg.URL + "/" + repo})
+		}
+	}
+	return out
+}
+
+// RepoURL is one repository URL together with who it belongs to.
 type RepoURL struct {
 	For string
 	URL string
 }
 
 // RepoURLs returns the per-student or per-group repository URLs for the
-// assignment (depending on Per). The assignment-level group URL is cfg.URL.
-// It is the data behind the printing Urls method, reusable by the web layer.
+// assignment (a projection of RepoTargets). The assignment-level group URL is
+// cfg.URL.
 func (cfg *AssignmentConfig) RepoURLs() []RepoURL {
-	var out []RepoURL
-	if cfg.Per == PerStudent {
-		for _, stud := range cfg.Students {
-			out = append(out, RepoURL{
-				For: studentLabel(stud),
-				URL: cfg.URL + "/" + cfg.RepoNameForStudent(stud),
-			})
-		}
-	} else { // PerGroup
-		for _, group := range cfg.Groups {
-			out = append(out, RepoURL{
-				For: group.Name,
-				URL: cfg.URL + "/" + cfg.RepoNameForGroup(group),
-			})
-		}
+	targets := cfg.RepoTargets()
+	out := make([]RepoURL, 0, len(targets))
+	for _, t := range targets {
+		out = append(out, RepoURL{For: t.For, URL: t.URL})
 	}
 	return out
 }

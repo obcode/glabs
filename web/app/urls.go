@@ -43,7 +43,7 @@ func (a *App) AssignmentURLs(ctx context.Context, course, name string) (*Assignm
 // the result matches the CLI exactly. It returns nil (no error) when the course
 // has no such assignment or the assignment cannot be resolved (e.g. an abstract
 // base). ErrCourseNotFound propagates when the course is not the caller's.
-func (a *App) resolveAssignmentConfig(ctx context.Context, course, name string) (*config.AssignmentConfig, error) {
+func (a *App) resolveAssignmentConfig(ctx context.Context, course, name string, onlyFor ...string) (*config.AssignmentConfig, error) {
 	stored, err := a.Course(ctx, course)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func (a *App) resolveAssignmentConfig(ctx context.Context, course, name string) 
 			bytes = encoded
 		}
 	}
-	cfg, err := config.ResolveAssignmentFromBytes(bytes, course, name, config.Globals{GitlabHost: a.gitlabHost})
+	cfg, err := config.ResolveAssignmentFromBytes(bytes, course, name, config.Globals{GitlabHost: a.gitlabHost}, onlyFor...)
 	if err != nil {
 		// Not resolvable (abstract base, missing parent, cycle).
 		return nil, nil

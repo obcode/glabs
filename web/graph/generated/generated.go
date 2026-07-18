@@ -168,12 +168,32 @@ type ComplexityRoot struct {
 		DeleteCourse         func(childComplexity int, name string) int
 		ImportAssignmentYaml func(childComplexity int, course string, yaml string) int
 		ImportCourseYaml     func(childComplexity int, yaml string) int
+		PlanOp               func(childComplexity int, op model.Op, course string, assignment string, params *model.OpParams, onlyFor []string) int
 		RemoveGitlabToken    func(childComplexity int) int
 		SetAssignment        func(childComplexity int, course string, name string, draft []*model.FieldValueInput) int
 		SetCourse            func(childComplexity int, name string, coursePath string, semesterPath string, useCoursenameAsPrefix bool, useEmailDomainAsSuffix bool) int
 		SetCourseGroups      func(childComplexity int, name string, groups []*model.GroupInput) int
 		SetCourseStudents    func(childComplexity int, name string, students []string) int
 		SetGitlabToken       func(childComplexity int, token string) int
+	}
+
+	OpPlan struct {
+		Assignment    func(childComplexity int) int
+		ConfirmPhrase func(childComplexity int) int
+		Course        func(childComplexity int) int
+		Destructive   func(childComplexity int) int
+		ExpiresAt     func(childComplexity int) int
+		Op            func(childComplexity int) int
+		Resolved      func(childComplexity int) int
+		Targets       func(childComplexity int) int
+		Token         func(childComplexity int) int
+		Warnings      func(childComplexity int) int
+	}
+
+	PlannedTarget struct {
+		For  func(childComplexity int) int
+		Repo func(childComplexity int) int
+		URL  func(childComplexity int) int
 	}
 
 	ProjectMemberReport struct {
@@ -285,6 +305,7 @@ type MutationResolver interface {
 	DeleteAssignment(ctx context.Context, course string, name string) (bool, error)
 	SetGitlabToken(ctx context.Context, token string) (*model.GitLabTokenStatus, error)
 	RemoveGitlabToken(ctx context.Context) (*model.GitLabTokenStatus, error)
+	PlanOp(ctx context.Context, op model.Op, course string, assignment string, params *model.OpParams, onlyFor []string) (*model.OpPlan, error)
 }
 type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
@@ -837,6 +858,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ImportCourseYaml(childComplexity, args["yaml"].(string)), true
+	case "Mutation.planOp":
+		if e.ComplexityRoot.Mutation.PlanOp == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_planOp_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.PlanOp(childComplexity, args["op"].(model.Op), args["course"].(string), args["assignment"].(string), args["params"].(*model.OpParams), args["onlyFor"].([]string)), true
 	case "Mutation.removeGitlabToken":
 		if e.ComplexityRoot.Mutation.RemoveGitlabToken == nil {
 			break
@@ -898,6 +930,86 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.SetGitlabToken(childComplexity, args["token"].(string)), true
+
+	case "OpPlan.assignment":
+		if e.ComplexityRoot.OpPlan.Assignment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OpPlan.Assignment(childComplexity), true
+	case "OpPlan.confirmPhrase":
+		if e.ComplexityRoot.OpPlan.ConfirmPhrase == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OpPlan.ConfirmPhrase(childComplexity), true
+	case "OpPlan.course":
+		if e.ComplexityRoot.OpPlan.Course == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OpPlan.Course(childComplexity), true
+	case "OpPlan.destructive":
+		if e.ComplexityRoot.OpPlan.Destructive == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OpPlan.Destructive(childComplexity), true
+	case "OpPlan.expiresAt":
+		if e.ComplexityRoot.OpPlan.ExpiresAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OpPlan.ExpiresAt(childComplexity), true
+	case "OpPlan.op":
+		if e.ComplexityRoot.OpPlan.Op == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OpPlan.Op(childComplexity), true
+	case "OpPlan.resolved":
+		if e.ComplexityRoot.OpPlan.Resolved == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OpPlan.Resolved(childComplexity), true
+	case "OpPlan.targets":
+		if e.ComplexityRoot.OpPlan.Targets == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OpPlan.Targets(childComplexity), true
+	case "OpPlan.token":
+		if e.ComplexityRoot.OpPlan.Token == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OpPlan.Token(childComplexity), true
+	case "OpPlan.warnings":
+		if e.ComplexityRoot.OpPlan.Warnings == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OpPlan.Warnings(childComplexity), true
+
+	case "PlannedTarget.for":
+		if e.ComplexityRoot.PlannedTarget.For == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlannedTarget.For(childComplexity), true
+	case "PlannedTarget.repo":
+		if e.ComplexityRoot.PlannedTarget.Repo == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlannedTarget.Repo(childComplexity), true
+	case "PlannedTarget.url":
+		if e.ComplexityRoot.PlannedTarget.URL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlannedTarget.URL(childComplexity), true
 
 	case "ProjectMemberReport.name":
 		if e.ComplexityRoot.ProjectMemberReport.Name == nil {
@@ -1308,6 +1420,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputFieldValueInput,
 		ec.unmarshalInputGroupInput,
+		ec.unmarshalInputOpParams,
 	)
 	first := true
 
@@ -1738,6 +1851,66 @@ extend type Mutation {
   removeGitlabToken: GitLabTokenStatus!
 }
 `, BuiltIn: false},
+	{Name: "../op.graphqls", Input: `"A mutating GitLab operation. None of them touch git — pure GitLab API calls."
+enum Op {
+  SETACCESS
+  PROTECT
+  ARCHIVE
+  DELETE
+}
+
+"Optional parameters for an operation (op-specific; unset fields fall back to the assignment config)."
+input OpParams {
+  "setaccess: the access level to grant (guest|reporter|developer|maintainer)."
+  accessLevel: String
+  "protect: the branch to protect."
+  branch: String
+  "archive: unarchive instead of archive."
+  unarchive: Boolean
+}
+
+"One repository an operation would touch."
+type PlannedTarget {
+  "The student's email (or username/id) or the group's name."
+  for: String!
+  "The repository's project name."
+  repo: String!
+  "The full web URL of the repository."
+  url: String!
+}
+
+"""
+The preview of a mutating operation before it runs: the resolved config, the
+repositories it would touch, warnings, and an opaque confirm token (5 min TTL) that
+carries a hash of the resolved config — so runOp can reject a plan whose config
+changed underneath it.
+"""
+type OpPlan {
+  op: Op!
+  course: String!
+  assignment: String!
+  "The resolved config, exactly as ` + "`" + `glabs show` + "`" + ` renders it (may contain ANSI)."
+  resolved: String!
+  targets: [PlannedTarget!]!
+  warnings: [String!]!
+  "Whether the operation is destructive (archive/delete) and needs the confirm phrase."
+  destructive: Boolean!
+  "For destructive ops: the phrase the user must type to confirm (the assignment path)."
+  confirmPhrase: String
+  "Opaque, single-use confirm token to pass to runOp/scheduleOp."
+  token: String!
+  expiresAt: Time!
+}
+
+extend type Mutation {
+  """
+  Plan a mutating GitLab operation: resolve the assignment, list the repositories it
+  would touch and any warnings, and return a confirm token (5 min TTL) carrying a
+  hash of the resolved config. No GitLab call is made — this is a token-free preview.
+  """
+  planOp(op: Op!, course: String!, assignment: String!, params: OpParams, onlyFor: [String!]): OpPlan!
+}
+`, BuiltIn: false},
 	{Name: "../report.graphqls", Input: `"""
 A live report over the repositories of one assignment — one row per project
 (repo) with activity, last commit, open issues/merge requests, members and an
@@ -2125,6 +2298,44 @@ func (ec *executionContext) childFields_GroupCheck(ctx context.Context, field gr
 	return nil, fmt.Errorf("no field named %q was found under type GroupCheck", field.Name)
 }
 
+func (ec *executionContext) childFields_OpPlan(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "op":
+		return ec.fieldContext_OpPlan_op(ctx, field)
+	case "course":
+		return ec.fieldContext_OpPlan_course(ctx, field)
+	case "assignment":
+		return ec.fieldContext_OpPlan_assignment(ctx, field)
+	case "resolved":
+		return ec.fieldContext_OpPlan_resolved(ctx, field)
+	case "targets":
+		return ec.fieldContext_OpPlan_targets(ctx, field)
+	case "warnings":
+		return ec.fieldContext_OpPlan_warnings(ctx, field)
+	case "destructive":
+		return ec.fieldContext_OpPlan_destructive(ctx, field)
+	case "confirmPhrase":
+		return ec.fieldContext_OpPlan_confirmPhrase(ctx, field)
+	case "token":
+		return ec.fieldContext_OpPlan_token(ctx, field)
+	case "expiresAt":
+		return ec.fieldContext_OpPlan_expiresAt(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type OpPlan", field.Name)
+}
+
+func (ec *executionContext) childFields_PlannedTarget(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "for":
+		return ec.fieldContext_PlannedTarget_for(ctx, field)
+	case "repo":
+		return ec.fieldContext_PlannedTarget_repo(ctx, field)
+	case "url":
+		return ec.fieldContext_PlannedTarget_url(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type PlannedTarget", field.Name)
+}
+
 func (ec *executionContext) childFields_ProjectMemberReport(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "name":
@@ -2492,6 +2703,52 @@ func (ec *executionContext) field_Mutation_importCourseYAML_args(ctx context.Con
 		return nil, err
 	}
 	args["yaml"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_planOp_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "op",
+		func(ctx context.Context, v any) (model.Op, error) {
+			return ec.unmarshalNOp2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐOp(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["op"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "course",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["course"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "assignment",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["assignment"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "params",
+		func(ctx context.Context, v any) (*model.OpParams, error) {
+			return ec.unmarshalOOpParams2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐOpParams(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["params"] = arg3
+	arg4, err := graphql.ProcessArgField(ctx, rawArgs, "onlyFor",
+		func(ctx context.Context, v any) ([]string, error) {
+			return ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["onlyFor"] = arg4
 	return args, nil
 }
 
@@ -5139,6 +5396,358 @@ func (ec *executionContext) fieldContext_Mutation_removeGitlabToken(_ context.Co
 		},
 	}
 	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_planOp(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_planOp(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().PlanOp(ctx, fc.Args["op"].(model.Op), fc.Args["course"].(string), fc.Args["assignment"].(string), fc.Args["params"].(*model.OpParams), fc.Args["onlyFor"].([]string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.OpPlan) graphql.Marshaler {
+			return ec.marshalNOpPlan2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐOpPlan(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_planOp(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_OpPlan(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_planOp_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OpPlan_op(ctx context.Context, field graphql.CollectedField, obj *model.OpPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OpPlan_op(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Op, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v model.Op) graphql.Marshaler {
+			return ec.marshalNOp2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐOp(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_OpPlan_op(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OpPlan", field, false, false, errors.New("field of type Op does not have child fields"))
+}
+
+func (ec *executionContext) _OpPlan_course(ctx context.Context, field graphql.CollectedField, obj *model.OpPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OpPlan_course(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Course, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_OpPlan_course(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OpPlan", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _OpPlan_assignment(ctx context.Context, field graphql.CollectedField, obj *model.OpPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OpPlan_assignment(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Assignment, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_OpPlan_assignment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OpPlan", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _OpPlan_resolved(ctx context.Context, field graphql.CollectedField, obj *model.OpPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OpPlan_resolved(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Resolved, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_OpPlan_resolved(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OpPlan", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _OpPlan_targets(ctx context.Context, field graphql.CollectedField, obj *model.OpPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OpPlan_targets(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Targets, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.PlannedTarget) graphql.Marshaler {
+			return ec.marshalNPlannedTarget2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐPlannedTargetᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_OpPlan_targets(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "OpPlan",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_PlannedTarget(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _OpPlan_warnings(ctx context.Context, field graphql.CollectedField, obj *model.OpPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OpPlan_warnings(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Warnings, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_OpPlan_warnings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OpPlan", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _OpPlan_destructive(ctx context.Context, field graphql.CollectedField, obj *model.OpPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OpPlan_destructive(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Destructive, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_OpPlan_destructive(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OpPlan", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _OpPlan_confirmPhrase(ctx context.Context, field graphql.CollectedField, obj *model.OpPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OpPlan_confirmPhrase(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ConfirmPhrase, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_OpPlan_confirmPhrase(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OpPlan", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _OpPlan_token(ctx context.Context, field graphql.CollectedField, obj *model.OpPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OpPlan_token(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Token, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_OpPlan_token(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OpPlan", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _OpPlan_expiresAt(ctx context.Context, field graphql.CollectedField, obj *model.OpPlan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OpPlan_expiresAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ExpiresAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_OpPlan_expiresAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OpPlan", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _PlannedTarget_for(ctx context.Context, field graphql.CollectedField, obj *model.PlannedTarget) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlannedTarget_for(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.For, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlannedTarget_for(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PlannedTarget", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _PlannedTarget_repo(ctx context.Context, field graphql.CollectedField, obj *model.PlannedTarget) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlannedTarget_repo(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Repo, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlannedTarget_repo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PlannedTarget", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _PlannedTarget_url(ctx context.Context, field graphql.CollectedField, obj *model.PlannedTarget) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlannedTarget_url(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.URL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlannedTarget_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PlannedTarget", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _ProjectMemberReport_name(ctx context.Context, field graphql.CollectedField, obj *model.ProjectMemberReport) (ret graphql.Marshaler) {
@@ -7974,6 +8583,50 @@ func (ec *executionContext) unmarshalInputGroupInput(ctx context.Context, obj an
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputOpParams(ctx context.Context, obj any) (model.OpParams, error) {
+	var it model.OpParams
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"accessLevel", "branch", "unarchive"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "accessLevel":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accessLevel"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AccessLevel = data
+		case "branch":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("branch"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Branch = data
+		case "unarchive":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("unarchive"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Unarchive = data
+		}
+	}
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -9002,6 +9655,144 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_removeGitlabToken(ctx, field)
 			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "planOp":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_planOp(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var opPlanImplementors = []string{"OpPlan"}
+
+func (ec *executionContext) _OpPlan(ctx context.Context, sel ast.SelectionSet, obj *model.OpPlan) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, opPlanImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("OpPlan")
+		case "op":
+			out.Values[i] = ec._OpPlan_op(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "course":
+			out.Values[i] = ec._OpPlan_course(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "assignment":
+			out.Values[i] = ec._OpPlan_assignment(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "resolved":
+			out.Values[i] = ec._OpPlan_resolved(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "targets":
+			out.Values[i] = ec._OpPlan_targets(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "warnings":
+			out.Values[i] = ec._OpPlan_warnings(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "destructive":
+			out.Values[i] = ec._OpPlan_destructive(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "confirmPhrase":
+			out.Values[i] = ec._OpPlan_confirmPhrase(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "token":
+			out.Values[i] = ec._OpPlan_token(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "expiresAt":
+			out.Values[i] = ec._OpPlan_expiresAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var plannedTargetImplementors = []string{"PlannedTarget"}
+
+func (ec *executionContext) _PlannedTarget(ctx context.Context, sel ast.SelectionSet, obj *model.PlannedTarget) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, plannedTargetImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PlannedTarget")
+		case "for":
+			out.Values[i] = ec._PlannedTarget_for(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "repo":
+			out.Values[i] = ec._PlannedTarget_repo(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "url":
+			out.Values[i] = ec._PlannedTarget_url(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -10737,6 +11528,56 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
+func (ec *executionContext) unmarshalNOp2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐOp(ctx context.Context, v any) (model.Op, error) {
+	var res model.Op
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNOp2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐOp(ctx context.Context, sel ast.SelectionSet, v model.Op) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNOpPlan2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐOpPlan(ctx context.Context, sel ast.SelectionSet, v model.OpPlan) graphql.Marshaler {
+	return ec._OpPlan(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNOpPlan2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐOpPlan(ctx context.Context, sel ast.SelectionSet, v *model.OpPlan) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._OpPlan(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNPlannedTarget2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐPlannedTargetᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.PlannedTarget) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNPlannedTarget2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐPlannedTarget(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNPlannedTarget2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐPlannedTarget(ctx context.Context, sel ast.SelectionSet, v *model.PlannedTarget) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PlannedTarget(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNProjectMemberReport2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐProjectMemberReportᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ProjectMemberReport) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
@@ -11187,6 +12028,14 @@ func (ec *executionContext) marshalODockerImagesReport2ᚖgithubᚗcomᚋobcode�
 	return ec._DockerImagesReport(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalOOpParams2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐOpParams(ctx context.Context, v any) (*model.OpParams, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputOpParams(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalOReleaseMergeRequestReport2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐReleaseMergeRequestReport(ctx context.Context, sel ast.SelectionSet, v *model.ReleaseMergeRequestReport) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -11199,6 +12048,41 @@ func (ec *executionContext) marshalOReleaseReport2ᚖgithubᚗcomᚋobcodeᚋgla
 		return graphql.Null
 	}
 	return ec._ReleaseReport(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	vSlice := graphql.CoerceList(v)
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v any) (*string, error) {

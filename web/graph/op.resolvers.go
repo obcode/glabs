@@ -19,3 +19,27 @@ func (r *mutationResolver) PlanOp(ctx context.Context, op model.Op, course strin
 	}
 	return toGraphOpPlan(plan), nil
 }
+
+// RunOp is the resolver for the runOp field.
+func (r *subscriptionResolver) RunOp(ctx context.Context, token string, confirmPhrase *string) (<-chan *model.LogLine, error) {
+	phrase := ""
+	if confirmPhrase != nil {
+		phrase = *confirmPhrase
+	}
+	events, err := r.app.RunOp(ctx, token, phrase)
+	if err != nil {
+		return nil, err
+	}
+	out := make(chan *model.LogLine)
+	go func() {
+		defer close(out)
+		for ev := range events {
+			select {
+			case out <- &model.LogLine{Level: model.LogLevel(ev.Level), Text: ev.Text}:
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return out, nil
+}

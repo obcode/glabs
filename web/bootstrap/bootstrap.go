@@ -64,6 +64,9 @@ func Serve() error {
 	if err := database_.EnsureUserSecretIndexes(ctx); err != nil {
 		return err
 	}
+	if err := database_.EnsureActivityIndexes(ctx); err != nil {
+		return err
+	}
 
 	// The KEK for per-user secrets (GitLab PATs). It lives only in the config, never
 	// in the database. A malformed key disables token storage (fail-closed); an

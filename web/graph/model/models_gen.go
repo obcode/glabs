@@ -10,6 +10,23 @@ import (
 	"time"
 )
 
+// One recorded operation performed through the web against an assignment — the
+// web's stand-in for the shell history the CLI leaves behind. The course page reads
+// it to show, per assignment, what has already happened (setaccess, protect,
+// archive, delete; later generate).
+type ActivityEntry struct {
+	// The assignment this entry is about (its name within the course).
+	Assignment string `json:"assignment"`
+	// The operation that ran (setaccess, protect, archive, delete, …).
+	Op string `json:"op"`
+	// The terminal outcome: `done` or `failed`.
+	Status string `json:"status"`
+	// A short human summary — the repository count on success, the error on failure.
+	Detail string `json:"detail"`
+	// When the operation finished.
+	At time.Time `json:"at"`
+}
+
 // A live report over the repositories of one assignment — one row per project
 // (repo) with activity, last commit, open issues/merge requests, members and an
 // optional release status. Fetched from GitLab using the caller's stored token.

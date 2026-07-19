@@ -70,3 +70,18 @@ func toGraphSeverity(s config.Severity) model.FindingSeverity {
 func toGraphTokenStatus(s *app.GitLabTokenStatus) *model.GitLabTokenStatus {
 	return &model.GitLabTokenStatus{Set: s.Set, UpdatedAt: s.UpdatedAt}
 }
+
+// toGraphActivity projects the activity log onto the GraphQL type.
+func toGraphActivity(entries []*db.ActivityEntry) []*model.ActivityEntry {
+	out := make([]*model.ActivityEntry, 0, len(entries))
+	for _, e := range entries {
+		out = append(out, &model.ActivityEntry{
+			Assignment: e.Assignment,
+			Op:         e.Op,
+			Status:     e.Status,
+			Detail:     e.Detail,
+			At:         e.At,
+		})
+	}
+	return out
+}

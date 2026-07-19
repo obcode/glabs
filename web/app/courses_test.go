@@ -20,6 +20,7 @@ type fakeStore struct {
 	courses    map[string]*db.StoredCourse // keyed by owner+"/"+name
 	saved      *db.StoredCourse
 	userSecret map[string]*db.UserSecret // keyed by owner
+	activity   []*db.ActivityEntry
 }
 
 func newFakeStore() *fakeStore {
@@ -62,6 +63,34 @@ func (f *fakeStore) DeleteCourse(_ context.Context, owner, name string) error {
 	}
 	delete(f.courses, key)
 	return nil
+}
+
+func (f *fakeStore) RecordActivity(_ context.Context, e *db.ActivityEntry) error {
+	f.seenOwners = append(f.seenOwners, e.Owner)
+	f.activity = append(f.activity, e)
+	return nil
+}
+
+func (f *fakeStore) ActivityFor(_ context.Context, owner, course, assignment string) ([]*db.ActivityEntry, error) {
+	f.seenOwners = append(f.seenOwners, owner)
+	var out []*db.ActivityEntry
+	for _, e := range f.activity {
+		if e.Owner == owner && e.Course == course && e.Assignment == assignment {
+			out = append(out, e)
+		}
+	}
+	return out, nil
+}
+
+func (f *fakeStore) CourseActivityFor(_ context.Context, owner, course string) ([]*db.ActivityEntry, error) {
+	f.seenOwners = append(f.seenOwners, owner)
+	var out []*db.ActivityEntry
+	for _, e := range f.activity {
+		if e.Owner == owner && e.Course == course {
+			out = append(out, e)
+		}
+	}
+	return out, nil
 }
 
 func (f *fakeStore) GetUserSecret(_ context.Context, owner string) (*db.UserSecret, error) {

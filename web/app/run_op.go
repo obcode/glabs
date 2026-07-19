@@ -88,10 +88,17 @@ func (a *App) RunOp(ctx context.Context, token, confirmPhrase string) (<-chan Ru
 		defer close(events)
 		defer release()
 		rep.emit("INFO", fmt.Sprintf("running %s on %s/%s (%d repositories)", tok.Op, tok.Course, tok.Assignment, len(cfg.RepoTargets())))
+		status, detail := "done", fmt.Sprintf("%d repositories", len(cfg.RepoTargets()))
 		if err := executeOp(client, tok, cfg); err != nil {
 			rep.emit("ERROR", err.Error())
+			status, detail = "failed", err.Error()
 		} else {
 			rep.emit("RESULT", fmt.Sprintf("%s completed", tok.Op))
+		}
+		// Record the outcome in the activity log (best-effort — a logging failure
+		// must not fail the op, so it is surfaced as a WARN and swallowed).
+		if recErr := a.recordOp(opCtx, o, tok, status, detail); recErr != nil {
+			rep.emit("WARN", "could not record activity: "+recErr.Error())
 		}
 		rep.emit("DONE", "done")
 	}()

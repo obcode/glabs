@@ -1,0 +1,25 @@
+"""
+One recorded operation performed through the web against an assignment — the
+web's stand-in for the shell history the CLI leaves behind. The course page reads
+it to show, per assignment, what has already happened (setaccess, protect,
+archive, delete; later generate).
+"""
+type ActivityEntry {
+  "The assignment this entry is about (its name within the course)."
+  assignment: String!
+  "The operation that ran (setaccess, protect, archive, delete, …)."
+  op: String!
+  "The terminal outcome: `done` or `failed`."
+  status: String!
+  "A short human summary — the repository count on success, the error on failure."
+  detail: String!
+  "When the operation finished."
+  at: Time!
+}
+
+extend type Query {
+  "The activity log of one of the caller's assignments, newest first."
+  assignmentActivity(course: String!, name: String!): [ActivityEntry!]!
+  "The activity log across a whole course of the caller's, newest first (the GUI groups it by assignment for a per-assignment status)."
+  courseActivity(course: String!): [ActivityEntry!]!
+}

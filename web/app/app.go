@@ -28,6 +28,9 @@ type store interface {
 	GetUserSecret(ctx context.Context, owner string) (*db.UserSecret, error)
 	SaveUserGitLabToken(ctx context.Context, owner string, sealed secrets.SealedValue, updatedAt time.Time) error
 	DeleteUserGitLabToken(ctx context.Context, owner string) error
+	RecordActivity(ctx context.Context, e *db.ActivityEntry) error
+	ActivityFor(ctx context.Context, owner, course, assignment string) ([]*db.ActivityEntry, error)
+	CourseActivityFor(ctx context.Context, owner, course string) ([]*db.ActivityEntry, error)
 }
 
 type App struct {

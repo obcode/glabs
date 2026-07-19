@@ -171,6 +171,27 @@ func (db *DB) JobsOf(ctx context.Context, owner string, statuses []string) ([]*S
 	return out, nil
 }
 
+// UnnotifiedTerminalJobs returns finished jobs (done/failed/expired) whose
+// notification email has not been sent yet, across all owners — the runner's
+// notify sweep. Cancelled jobs are excluded (there is no cancellation mail). This
+// is what makes "email on every terminal state" survive a crash between finishing
+// a job and mailing it: on restart the job is terminal and still unnotified, so
+// the mail is sent (once — MarkNotified then guards against a resend).
+func (db *DB) UnnotifiedTerminalJobs(ctx context.Context) ([]*ScheduledJob, error) {
+	cur, err := db.collection(collectionJobs).Find(ctx, bson.M{
+		"notified": false,
+		"status":   bson.M{"$in": []string{JobDone, JobFailed, JobExpired}},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("cannot read unnotified jobs: %w", err)
+	}
+	var out []*ScheduledJob
+	if err := cur.All(ctx, &out); err != nil {
+		return nil, fmt.Errorf("cannot decode unnotified jobs: %w", err)
+	}
+	return out, nil
+}
+
 // JobOf returns one of the owner's jobs, or ErrJobNotFound.
 func (db *DB) JobOf(ctx context.Context, owner, id string) (*ScheduledJob, error) {
 	var job ScheduledJob

@@ -74,6 +74,7 @@ func (a *App) ScheduleOp(ctx context.Context, token string, runAt time.Time, gra
 	if err := a.db.SaveJob(ctx, job); err != nil {
 		return nil, err
 	}
+	a.sendScheduledConfirmation(job)
 	return job, nil
 }
 

@@ -32,6 +32,7 @@ func (a *App) StartJobRunner(ctx context.Context) {
 	log.Info().Str("worker", worker).Dur("interval", jobPollInterval).Msg("scheduled-job runner started")
 	for {
 		a.runDueJobs(ctx, worker)
+		a.notifyFinishedJobs(ctx)
 		select {
 		case <-ctx.Done():
 			log.Info().Msg("scheduled-job runner stopped")

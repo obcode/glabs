@@ -15,6 +15,7 @@ import (
 	"github.com/obcode/glabs/v3/web/app"
 	"github.com/obcode/glabs/v3/web/db"
 	"github.com/obcode/glabs/v3/web/graph"
+	"github.com/obcode/glabs/v3/web/mail"
 	"github.com/obcode/glabs/v3/web/secrets"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -80,7 +81,26 @@ func Serve() error {
 		log.Error().Err(err).Msg("invalid secrets.key — storing GitLab tokens is disabled until it is fixed")
 	}
 
-	a := app.New(database_, sealer, viper.GetString("gitlab.host"))
+	// SMTP for job notifications is optional: without smtp.host, scheduling and
+	// running still work — only the emails are skipped.
+	var mailer app.Mailer
+	if smtpHost := viper.GetString("smtp.host"); smtpHost != "" {
+		mailer = mail.NewSender(mail.Config{
+			Host:                  smtpHost,
+			Port:                  viper.GetInt("smtp.port"),
+			Username:              viper.GetString("smtp.username"),
+			Password:              viper.GetString("smtp.password"),
+			From:                  viper.GetString("smtp.from"),
+			Hostname:              viper.GetString("smtp.hostname"),
+			TLSInsecureSkipVerify: viper.GetBool("smtp.tlsInsecureSkipVerify"),
+			TestRecipient:         viper.GetString("smtp.testRecipient"),
+		})
+		log.Info().Str("host", smtpHost).Bool("dryRun", viper.GetBool("smtp.dryRun")).Msg("SMTP configured; job notifications enabled")
+	} else {
+		log.Warn().Msg("no smtp.host configured; scheduled-job notifications are disabled")
+	}
+
+	a := app.New(database_, sealer, viper.GetString("gitlab.host"), mailer, viper.GetBool("smtp.dryRun"))
 	if err := seedUsers(ctx, database_); err != nil {
 		return err
 	}

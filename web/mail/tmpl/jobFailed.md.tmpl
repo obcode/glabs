@@ -1,0 +1,16 @@
+## Operation fehlgeschlagen
+
+Die geplante Operation **{{ .Op }}** für **{{ .Course }}/{{ .Assignment }}** ist
+**fehlgeschlagen**.
+
+- **Geplant für:** {{ datetime .RunAt }}
+- **Fehler:** {{ .Err }}
+{{ if .Log }}
+Ausgabe bis zum Fehler:
+
+```
+{{ .Log }}
+```
+{{ end }}
+Prüfe die Konfiguration und deinen GitLab-Token in glabs und plane die Operation
+bei Bedarf neu.

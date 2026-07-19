@@ -37,6 +37,14 @@ type store interface {
 	JobOf(ctx context.Context, owner, id string) (*db.ScheduledJob, error)
 	ClaimDueJob(ctx context.Context, workerID string, now time.Time) (*db.ScheduledJob, error)
 	FinishJob(ctx context.Context, id, status, logText, errText string) error
+	UnnotifiedTerminalJobs(ctx context.Context) ([]*db.ScheduledJob, error)
+	MarkNotified(ctx context.Context, id string) error
+}
+
+// Mailer sends a rendered notification. *mail.Sender implements it; the App holds
+// one only when SMTP is configured (nil otherwise, so notifications are skipped).
+type Mailer interface {
+	Send(dryRun bool, to, subject string, text, html []byte) error
 }
 
 type App struct {
@@ -50,10 +58,22 @@ type App struct {
 	gitlabHost string
 	// ops serializes mutating operations per (owner, course, assignment).
 	ops *opGuard
+	// mailer sends job notifications; nil when no SMTP is configured (then
+	// notifications are silently skipped). mailDryRun redirects every send to the
+	// configured test recipient.
+	mailer     Mailer
+	mailDryRun bool
 }
 
-func New(database *db.DB, sealer *secrets.Sealer, gitlabHost string) *App {
-	return &App{db: database, sealer: sealer, gitlabHost: gitlabHost, ops: newOpGuard()}
+func New(database *db.DB, sealer *secrets.Sealer, gitlabHost string, mailer Mailer, mailDryRun bool) *App {
+	return &App{
+		db:         database,
+		sealer:     sealer,
+		gitlabHost: gitlabHost,
+		ops:        newOpGuard(),
+		mailer:     mailer,
+		mailDryRun: mailDryRun,
+	}
 }
 
 // GetUserByEmail looks up a user for the auth middleware's allowlist check.

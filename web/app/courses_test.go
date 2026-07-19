@@ -111,6 +111,24 @@ func (f *fakeStore) FinishJob(_ context.Context, id, status, logText, errText st
 	return nil
 }
 
+func (f *fakeStore) UnnotifiedTerminalJobs(_ context.Context) ([]*db.ScheduledJob, error) {
+	terminal := map[string]bool{db.JobDone: true, db.JobFailed: true, db.JobExpired: true}
+	var out []*db.ScheduledJob
+	for _, j := range f.jobs {
+		if !j.Notified && terminal[j.Status] {
+			out = append(out, j)
+		}
+	}
+	return out, nil
+}
+
+func (f *fakeStore) MarkNotified(_ context.Context, id string) error {
+	if j, ok := f.jobs[id]; ok {
+		j.Notified = true
+	}
+	return nil
+}
+
 func (f *fakeStore) GetUserByEmail(context.Context, string) (*model.User, error) { return nil, nil }
 
 func (f *fakeStore) CoursesOf(_ context.Context, owner string) ([]*db.StoredCourse, error) {

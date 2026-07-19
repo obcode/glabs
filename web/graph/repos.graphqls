@@ -1,0 +1,33 @@
+"One target repository of an assignment and whether it actually exists in GitLab."
+type RepoStatus {
+  "The student's email (or username/id) or the group's name."
+  for: String!
+  "The repository's project name."
+  repo: String!
+  "The full web URL of the repository."
+  url: String!
+  "Whether the repository has been generated (exists in GitLab)."
+  exists: Boolean!
+}
+
+"""
+How many of an assignment's target repositories have been generated. `note` is set
+when the assignment could not be checked (abstract/unresolvable, or its GitLab group
+does not exist yet — i.e. nothing generated).
+"""
+type AssignmentRepos {
+  name: String!
+  "Whether repos are per student or per group."
+  per: String!
+  "How many repositories the assignment targets."
+  targets: Int!
+  "How many of them actually exist in GitLab."
+  existing: Int!
+  repos: [RepoStatus!]!
+  note: String
+}
+
+extend type Query {
+  "Per assignment of one of the caller's courses, which target repositories actually exist in GitLab. Needs a stored GitLab token."
+  courseRepoOverview(course: String!): [AssignmentRepos!]!
+}

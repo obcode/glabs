@@ -46,6 +46,21 @@ type AssignmentReport struct {
 	Projects []*ProjectReport `json:"projects"`
 }
 
+// How many of an assignment's target repositories have been generated. `note` is set
+// when the assignment could not be checked (abstract/unresolvable, or its GitLab group
+// does not exist yet — i.e. nothing generated).
+type AssignmentRepos struct {
+	Name string `json:"name"`
+	// Whether repos are per student or per group.
+	Per string `json:"per"`
+	// How many repositories the assignment targets.
+	Targets int `json:"targets"`
+	// How many of them actually exist in GitLab.
+	Existing int           `json:"existing"`
+	Repos    []*RepoStatus `json:"repos"`
+	Note     *string       `json:"note,omitempty"`
+}
+
 // The repository URLs for one assignment: the assignment-level group URL plus one
 // URL per student or per group. Read-only and derived purely from the resolved
 // configuration — no GitLab token or API call is involved.
@@ -340,6 +355,18 @@ type ReleaseMergeRequestReport struct {
 type ReleaseReport struct {
 	MergeRequest *ReleaseMergeRequestReport `json:"mergeRequest,omitempty"`
 	DockerImages *DockerImagesReport        `json:"dockerImages,omitempty"`
+}
+
+// One target repository of an assignment and whether it actually exists in GitLab.
+type RepoStatus struct {
+	// The student's email (or username/id) or the group's name.
+	For string `json:"for"`
+	// The repository's project name.
+	Repo string `json:"repo"`
+	// The full web URL of the repository.
+	URL string `json:"url"`
+	// Whether the repository has been generated (exists in GitLab).
+	Exists bool `json:"exists"`
 }
 
 // One repository URL together with who it belongs to.

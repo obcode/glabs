@@ -17,6 +17,7 @@ import (
 	"github.com/obcode/glabs/v3/web/graph"
 	"github.com/obcode/glabs/v3/web/mail"
 	"github.com/obcode/glabs/v3/web/secrets"
+	"github.com/obcode/glabs/v3/web/zpa"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -100,7 +101,17 @@ func Serve() error {
 		log.Warn().Msg("no smtp.host configured; scheduled-job notifications are disabled")
 	}
 
-	a := app.New(database_, sealer, viper.GetString("gitlab.host"), mailer, viper.GetBool("smtp.dryRun"))
+	// ZPA (student directory) is optional: without zpa.baseurl + zpa.token, the
+	// students page just shows the roster emails.
+	var zpaClient *zpa.Client
+	if base, tok := viper.GetString("zpa.baseurl"), viper.GetString("zpa.token"); base != "" && tok != "" {
+		zpaClient = zpa.New(zpa.Config{BaseURL: base, Token: tok})
+		log.Info().Str("baseurl", base).Msg("ZPA configured; the students page is enriched")
+	} else {
+		log.Warn().Msg("no zpa.baseurl/zpa.token configured; the students page shows only emails")
+	}
+
+	a := app.New(database_, sealer, viper.GetString("gitlab.host"), mailer, viper.GetBool("smtp.dryRun"), zpaClient)
 	if err := seedUsers(ctx, database_); err != nil {
 		return err
 	}

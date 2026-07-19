@@ -48,6 +48,8 @@ type AssignmentView struct {
 	Name   string `json:"name"`
 	// The assignment this one inherits from, if any (`extends`).
 	Extends *string `json:"extends,omitempty"`
+	// The names of the sibling assignments this one may inherit from — all assignments in the same course except this one (`extends` is course-internal). The valid choices for the editor's inheritance dropdown.
+	ExtendsOptions []string `json:"extendsOptions"`
 	// Whether this is an abstract base (a template for `extends`).
 	Abstract bool `json:"abstract"`
 	// The assignment's own (source) field values, keyed by FieldMeta.key, for pre-filling the editor form.

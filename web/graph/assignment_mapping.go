@@ -81,13 +81,18 @@ func toGraphAssignmentView(view *app.AssignmentView) *model.AssignmentView {
 	for _, v := range view.Own {
 		own = append(own, &model.FieldValue{Key: v.Key, Value: v.Value})
 	}
+	options := view.ExtendsOptions
+	if options == nil {
+		options = []string{}
+	}
 	return &model.AssignmentView{
-		Course:       view.Course,
-		Name:         view.Name,
-		Extends:      emptyToNil(view.Extends),
-		Abstract:     view.Abstract,
-		Own:          own,
-		Resolved:     view.Resolved,
-		ResolveError: emptyToNil(view.ResolveError),
+		Course:         view.Course,
+		Name:           view.Name,
+		Extends:        emptyToNil(view.Extends),
+		ExtendsOptions: options,
+		Abstract:       view.Abstract,
+		Own:            own,
+		Resolved:       view.Resolved,
+		ResolveError:   emptyToNil(view.ResolveError),
 	}
 }

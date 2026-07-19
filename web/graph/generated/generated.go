@@ -56,13 +56,14 @@ type ComplexityRoot struct {
 	}
 
 	AssignmentView struct {
-		Abstract     func(childComplexity int) int
-		Course       func(childComplexity int) int
-		Extends      func(childComplexity int) int
-		Name         func(childComplexity int) int
-		Own          func(childComplexity int) int
-		ResolveError func(childComplexity int) int
-		Resolved     func(childComplexity int) int
+		Abstract       func(childComplexity int) int
+		Course         func(childComplexity int) int
+		Extends        func(childComplexity int) int
+		ExtendsOptions func(childComplexity int) int
+		Name           func(childComplexity int) int
+		Own            func(childComplexity int) int
+		ResolveError   func(childComplexity int) int
+		Resolved       func(childComplexity int) int
 	}
 
 	CheckProgress struct {
@@ -441,6 +442,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.AssignmentView.Extends(childComplexity), true
+	case "AssignmentView.extendsOptions":
+		if e.ComplexityRoot.AssignmentView.ExtendsOptions == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AssignmentView.ExtendsOptions(childComplexity), true
 	case "AssignmentView.name":
 		if e.ComplexityRoot.AssignmentView.Name == nil {
 			break
@@ -1605,6 +1612,8 @@ type AssignmentView {
   name: String!
   "The assignment this one inherits from, if any (` + "`" + `extends` + "`" + `)."
   extends: String
+  "The names of the sibling assignments this one may inherit from — all assignments in the same course except this one (` + "`" + `extends` + "`" + ` is course-internal). The valid choices for the editor's inheritance dropdown."
+  extendsOptions: [String!]!
   "Whether this is an abstract base (a template for ` + "`" + `extends` + "`" + `)."
   abstract: Boolean!
   "The assignment's own (source) field values, keyed by FieldMeta.key, for pre-filling the editor form."
@@ -2151,6 +2160,8 @@ func (ec *executionContext) childFields_AssignmentView(ctx context.Context, fiel
 		return ec.fieldContext_AssignmentView_name(ctx, field)
 	case "extends":
 		return ec.fieldContext_AssignmentView_extends(ctx, field)
+	case "extendsOptions":
+		return ec.fieldContext_AssignmentView_extendsOptions(ctx, field)
 	case "abstract":
 		return ec.fieldContext_AssignmentView_abstract(ctx, field)
 	case "own":
@@ -3576,6 +3587,29 @@ func (ec *executionContext) _AssignmentView_extends(ctx context.Context, field g
 	)
 }
 func (ec *executionContext) fieldContext_AssignmentView_extends(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AssignmentView", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AssignmentView_extendsOptions(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentView) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AssignmentView_extendsOptions(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ExtendsOptions, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AssignmentView_extendsOptions(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("AssignmentView", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
@@ -8962,6 +8996,11 @@ func (ec *executionContext) _AssignmentView(ctx context.Context, sel ast.Selecti
 		case "extends":
 			out.Values[i] = ec._AssignmentView_extends(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "extendsOptions":
+			out.Values[i] = ec._AssignmentView_extendsOptions(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
 		case "abstract":

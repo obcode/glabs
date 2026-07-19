@@ -31,3 +31,22 @@ extend type Query {
   "Per assignment of one of the caller's courses, which target repositories actually exist in GitLab. Needs a stored GitLab token."
   courseRepoOverview(course: String!): [AssignmentRepos!]!
 }
+
+"""
+One streamed item of a course repo overview: a completed assignment as it is
+checked, then a final event with `done: true`. `error` is set (with done) when the
+overview cannot start — e.g. no stored GitLab token.
+"""
+type RepoOverviewEvent {
+  "The assignment just checked (null on the final done event)."
+  assignment: AssignmentRepos
+  "Total number of assignments to check (for a progress count)."
+  total: Int!
+  done: Boolean!
+  error: String
+}
+
+extend type Subscription {
+  "Stream the repo overview of one of the caller's courses assignment by assignment, so the GUI shows progress. Needs a stored GitLab token."
+  courseRepoOverviewProgress(course: String!): RepoOverviewEvent!
+}

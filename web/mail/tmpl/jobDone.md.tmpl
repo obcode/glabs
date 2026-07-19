@@ -1,0 +1,13 @@
+## Operation erfolgreich
+
+Die geplante Operation **{{ .Op }}** für **{{ .Course }}/{{ .Assignment }}** wurde
+erfolgreich ausgeführt.
+
+- **Ausgeführt (geplant für):** {{ datetime .RunAt }}
+{{ if .Log }}
+Ausgabe:
+
+```
+{{ .Log }}
+```
+{{ end }}

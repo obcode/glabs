@@ -17,11 +17,13 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/rs/cors v1.11.1
 	github.com/rs/zerolog v1.35.1
+	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/testcontainers/testcontainers-go v0.42.0
 	github.com/theckman/yacspin v0.13.12
 	github.com/vektah/gqlparser/v2 v2.5.36
+	github.com/wneessen/go-mail v0.7.3
 	gitlab.com/gitlab-org/api/client-go/v2 v2.20.1
 	go.mongodb.org/mongo-driver/v2 v2.8.0
 	golang.org/x/term v0.45.0

@@ -1,0 +1,10 @@
+## Operation abgelaufen
+
+Die geplante Operation **{{ .Op }}** für **{{ .Course }}/{{ .Assignment }}** wurde
+**nicht** ausgeführt: das Kulanzfenster von {{ .GraceMin }} Minuten nach dem
+geplanten Zeitpunkt ({{ datetime .RunAt }}) war beim nächsten Lauf bereits
+überschritten.
+
+{{ if .Err }}{{ .Err }}
+
+{{ end }}Wenn die Operation noch laufen soll, plane sie in glabs neu.

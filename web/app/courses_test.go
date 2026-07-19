@@ -82,6 +82,35 @@ func (f *fakeStore) JobOf(_ context.Context, owner, id string) (*db.ScheduledJob
 	return j, nil
 }
 
+func (f *fakeStore) ClaimDueJob(_ context.Context, workerID string, now time.Time) (*db.ScheduledJob, error) {
+	var pick *db.ScheduledJob
+	for _, j := range f.jobs {
+		if j.Status == db.JobPending && !j.RunAt.After(now) {
+			if pick == nil || j.RunAt.Before(pick.RunAt) {
+				pick = j
+			}
+		}
+	}
+	if pick == nil {
+		return nil, db.ErrNoDueJob
+	}
+	pick.Status = db.JobRunning
+	pick.StartedAt = &now
+	pick.WorkerID = workerID
+	return pick, nil
+}
+
+func (f *fakeStore) FinishJob(_ context.Context, id, status, logText, errText string) error {
+	j, ok := f.jobs[id]
+	if !ok {
+		return db.ErrJobNotFound
+	}
+	j.Status = status
+	j.Log = logText
+	j.Err = errText
+	return nil
+}
+
 func (f *fakeStore) GetUserByEmail(context.Context, string) (*model.User, error) { return nil, nil }
 
 func (f *fakeStore) CoursesOf(_ context.Context, owner string) ([]*db.StoredCourse, error) {

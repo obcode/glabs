@@ -85,6 +85,10 @@ func Serve() error {
 		return err
 	}
 
+	// The scheduled-job runner polls in the background for the life of the process
+	// (a background context, since StartServer blocks and never returns here).
+	go a.StartJobRunner(context.Background())
+
 	graph.StartServer(a, viper.GetString("server.port"))
 	return nil
 }

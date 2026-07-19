@@ -89,6 +89,22 @@ func TestPlanOp_generateIsPlannableAndNotDestructive(t *testing.T) {
 	}
 }
 
+func TestPlanOp_updateIsDestructive(t *testing.T) {
+	const owner = "prof@hm.edu"
+	fs := newFakeStore()
+	fs.courses[owner+"/uc"] = storedCourse(t, owner, urlsCourse)
+	a := &App{db: fs, gitlabHost: "https://gl", sealer: testSealer(t)}
+
+	// update force-pushes the starter code over existing repos → destructive.
+	plan, err := a.PlanOp(ctxAs(owner), "update", "uc", "blatt1", nil, nil)
+	if err != nil {
+		t.Fatalf("PlanOp(update): %v", err)
+	}
+	if !plan.Destructive || plan.ConfirmPhrase != "uc/blatt1" {
+		t.Fatalf("update should be destructive with a confirm phrase: %+v", plan)
+	}
+}
+
 func TestPlanOp_unknownOpRejected(t *testing.T) {
 	const owner = "prof@hm.edu"
 	fs := newFakeStore()

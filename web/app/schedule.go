@@ -34,7 +34,7 @@ func (a *App) ScheduleOp(ctx context.Context, token string, runAt time.Time, gra
 	}
 	// Destructive ops keep the same confirm-phrase gate as running now: the
 	// deliberate phrase is the human confirmation, since no one watches at fire time.
-	if tok.Op == "archive" || tok.Op == "delete" {
+	if isDestructiveOp(tok.Op) {
 		want := tok.Course + "/" + tok.Assignment
 		if confirmPhrase != want {
 			return nil, fmt.Errorf("type %q to confirm scheduling this destructive operation", want)

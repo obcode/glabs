@@ -2199,6 +2199,7 @@ enum Op {
   ARCHIVE
   DELETE
   GENERATE
+  UPDATE
 }
 
 "Optional parameters for an operation (op-specific; unset fields fall back to the assignment config)."

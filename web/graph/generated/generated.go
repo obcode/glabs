@@ -296,6 +296,13 @@ type ComplexityRoot struct {
 		MergeRequest func(childComplexity int) int
 	}
 
+	RepoOverviewEvent struct {
+		Assignment func(childComplexity int) int
+		Done       func(childComplexity int) int
+		Error      func(childComplexity int) int
+		Total      func(childComplexity int) int
+	}
+
 	RepoStatus struct {
 		Exists func(childComplexity int) int
 		For    func(childComplexity int) int
@@ -344,9 +351,10 @@ type ComplexityRoot struct {
 	}
 
 	Subscription struct {
-		AssignmentReportProgress func(childComplexity int, course string, name string) int
-		CourseCheckProgress      func(childComplexity int, name string) int
-		RunOp                    func(childComplexity int, token string, confirmPhrase *string) int
+		AssignmentReportProgress   func(childComplexity int, course string, name string) int
+		CourseCheckProgress        func(childComplexity int, name string) int
+		CourseRepoOverviewProgress func(childComplexity int, course string) int
+		RunOp                      func(childComplexity int, token string, confirmPhrase *string) int
 	}
 
 	User struct {
@@ -413,6 +421,7 @@ type SubscriptionResolver interface {
 	AssignmentReportProgress(ctx context.Context, course string, name string) (<-chan *model.ReportProgress, error)
 	CourseCheckProgress(ctx context.Context, name string) (<-chan *model.CheckProgress, error)
 	RunOp(ctx context.Context, token string, confirmPhrase *string) (<-chan *model.LogLine, error)
+	CourseRepoOverviewProgress(ctx context.Context, course string) (<-chan *model.RepoOverviewEvent, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -1622,6 +1631,31 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ReleaseReport.MergeRequest(childComplexity), true
 
+	case "RepoOverviewEvent.assignment":
+		if e.ComplexityRoot.RepoOverviewEvent.Assignment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RepoOverviewEvent.Assignment(childComplexity), true
+	case "RepoOverviewEvent.done":
+		if e.ComplexityRoot.RepoOverviewEvent.Done == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RepoOverviewEvent.Done(childComplexity), true
+	case "RepoOverviewEvent.error":
+		if e.ComplexityRoot.RepoOverviewEvent.Error == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RepoOverviewEvent.Error(childComplexity), true
+	case "RepoOverviewEvent.total":
+		if e.ComplexityRoot.RepoOverviewEvent.Total == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RepoOverviewEvent.Total(childComplexity), true
+
 	case "RepoStatus.exists":
 		if e.ComplexityRoot.RepoStatus.Exists == nil {
 			break
@@ -1824,6 +1858,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Subscription.CourseCheckProgress(childComplexity, args["name"].(string)), true
+	case "Subscription.courseRepoOverviewProgress":
+		if e.ComplexityRoot.Subscription.CourseRepoOverviewProgress == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_courseRepoOverviewProgress_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Subscription.CourseRepoOverviewProgress(childComplexity, args["course"].(string)), true
 	case "Subscription.runOp":
 		if e.ComplexityRoot.Subscription.RunOp == nil {
 			break
@@ -2583,6 +2628,25 @@ extend type Query {
   "Per assignment of one of the caller's courses, which target repositories actually exist in GitLab. Needs a stored GitLab token."
   courseRepoOverview(course: String!): [AssignmentRepos!]!
 }
+
+"""
+One streamed item of a course repo overview: a completed assignment as it is
+checked, then a final event with ` + "`" + `done: true` + "`" + `. ` + "`" + `error` + "`" + ` is set (with done) when the
+overview cannot start — e.g. no stored GitLab token.
+"""
+type RepoOverviewEvent {
+  "The assignment just checked (null on the final done event)."
+  assignment: AssignmentRepos
+  "Total number of assignments to check (for a progress count)."
+  total: Int!
+  done: Boolean!
+  error: String
+}
+
+extend type Subscription {
+  "Stream the repo overview of one of the caller's courses assignment by assignment, so the GUI shows progress. Needs a stored GitLab token."
+  courseRepoOverviewProgress(course: String!): RepoOverviewEvent!
+}
 `, BuiltIn: false},
 	{Name: "../scheduling.graphqls", Input: `"The lifecycle state of a scheduled job. It starts PENDING, is claimed to RUNNING, and ends in exactly one terminal state."
 enum JobStatus {
@@ -3126,6 +3190,20 @@ func (ec *executionContext) childFields_ReleaseReport(ctx context.Context, field
 		return ec.fieldContext_ReleaseReport_dockerImages(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type ReleaseReport", field.Name)
+}
+
+func (ec *executionContext) childFields_RepoOverviewEvent(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "assignment":
+		return ec.fieldContext_RepoOverviewEvent_assignment(ctx, field)
+	case "total":
+		return ec.fieldContext_RepoOverviewEvent_total(ctx, field)
+	case "done":
+		return ec.fieldContext_RepoOverviewEvent_done(ctx, field)
+	case "error":
+		return ec.fieldContext_RepoOverviewEvent_error(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type RepoOverviewEvent", field.Name)
 }
 
 func (ec *executionContext) childFields_RepoStatus(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -4085,6 +4163,20 @@ func (ec *executionContext) field_Subscription_courseCheckProgress_args(ctx cont
 		return nil, err
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Subscription_courseRepoOverviewProgress_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "course",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["course"] = arg0
 	return args, nil
 }
 
@@ -8983,6 +9075,107 @@ func (ec *executionContext) fieldContext_ReleaseReport_dockerImages(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _RepoOverviewEvent_assignment(ctx context.Context, field graphql.CollectedField, obj *model.RepoOverviewEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RepoOverviewEvent_assignment(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Assignment, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.AssignmentRepos) graphql.Marshaler {
+			return ec.marshalOAssignmentRepos2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAssignmentRepos(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_RepoOverviewEvent_assignment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RepoOverviewEvent",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_AssignmentRepos(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _RepoOverviewEvent_total(ctx context.Context, field graphql.CollectedField, obj *model.RepoOverviewEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RepoOverviewEvent_total(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Total, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_RepoOverviewEvent_total(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RepoOverviewEvent", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _RepoOverviewEvent_done(ctx context.Context, field graphql.CollectedField, obj *model.RepoOverviewEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RepoOverviewEvent_done(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Done, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_RepoOverviewEvent_done(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RepoOverviewEvent", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _RepoOverviewEvent_error(ctx context.Context, field graphql.CollectedField, obj *model.RepoOverviewEvent) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RepoOverviewEvent_error(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Error, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_RepoOverviewEvent_error(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RepoOverviewEvent", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _RepoStatus_for(ctx context.Context, field graphql.CollectedField, obj *model.RepoStatus) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -9794,6 +9987,50 @@ func (ec *executionContext) fieldContext_Subscription_runOp(ctx context.Context,
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Subscription_runOp_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Subscription_courseRepoOverviewProgress(ctx context.Context, field graphql.CollectedField) (ret func(ctx context.Context) graphql.Marshaler) {
+	return graphql.ResolveFieldStream(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Subscription_courseRepoOverviewProgress(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Subscription().CourseRepoOverviewProgress(ctx, fc.Args["course"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.RepoOverviewEvent) graphql.Marshaler {
+			return ec.marshalNRepoOverviewEvent2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐRepoOverviewEvent(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Subscription_courseRepoOverviewProgress(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_RepoOverviewEvent(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Subscription_courseRepoOverviewProgress_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -13398,6 +13635,59 @@ func (ec *executionContext) _ReleaseReport(ctx context.Context, sel ast.Selectio
 	return out
 }
 
+var repoOverviewEventImplementors = []string{"RepoOverviewEvent"}
+
+func (ec *executionContext) _RepoOverviewEvent(ctx context.Context, sel ast.SelectionSet, obj *model.RepoOverviewEvent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, repoOverviewEventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("RepoOverviewEvent")
+		case "assignment":
+			out.Values[i] = ec._RepoOverviewEvent_assignment(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "total":
+			out.Values[i] = ec._RepoOverviewEvent_total(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "done":
+			out.Values[i] = ec._RepoOverviewEvent_done(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "error":
+			out.Values[i] = ec._RepoOverviewEvent_error(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var repoStatusImplementors = []string{"RepoStatus"}
 
 func (ec *executionContext) _RepoStatus(ctx context.Context, sel ast.SelectionSet, obj *model.RepoStatus) graphql.Marshaler {
@@ -13760,6 +14050,8 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 		return ec._Subscription_courseCheckProgress(ctx, fields[0])
 	case "runOp":
 		return ec._Subscription_runOp(ctx, fields[0])
+	case "courseRepoOverviewProgress":
+		return ec._Subscription_courseRepoOverviewProgress(ctx, fields[0])
 	default:
 		panic("unknown field " + strconv.Quote(fields[0].Name))
 	}
@@ -14879,6 +15171,20 @@ func (ec *executionContext) marshalNProjectReport2ᚖgithubᚗcomᚋobcodeᚋgla
 	return ec._ProjectReport(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNRepoOverviewEvent2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐRepoOverviewEvent(ctx context.Context, sel ast.SelectionSet, v model.RepoOverviewEvent) graphql.Marshaler {
+	return ec._RepoOverviewEvent(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNRepoOverviewEvent2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐRepoOverviewEvent(ctx context.Context, sel ast.SelectionSet, v *model.RepoOverviewEvent) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._RepoOverviewEvent(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNRepoStatus2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐRepoStatusᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.RepoStatus) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
@@ -15259,6 +15565,13 @@ func (ec *executionContext) marshalOAssignmentReport2ᚖgithubᚗcomᚋobcodeᚋ
 		return graphql.Null
 	}
 	return ec._AssignmentReport(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOAssignmentRepos2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAssignmentRepos(ctx context.Context, sel ast.SelectionSet, v *model.AssignmentRepos) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AssignmentRepos(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOAssignmentUrls2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAssignmentUrls(ctx context.Context, sel ast.SelectionSet, v *model.AssignmentUrls) graphql.Marshaler {

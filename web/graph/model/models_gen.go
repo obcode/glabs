@@ -357,6 +357,18 @@ type ReleaseReport struct {
 	DockerImages *DockerImagesReport        `json:"dockerImages,omitempty"`
 }
 
+// One streamed item of a course repo overview: a completed assignment as it is
+// checked, then a final event with `done: true`. `error` is set (with done) when the
+// overview cannot start — e.g. no stored GitLab token.
+type RepoOverviewEvent struct {
+	// The assignment just checked (null on the final done event).
+	Assignment *AssignmentRepos `json:"assignment,omitempty"`
+	// Total number of assignments to check (for a progress count).
+	Total int     `json:"total"`
+	Done  bool    `json:"done"`
+	Error *string `json:"error,omitempty"`
+}
+
 // One target repository of an assignment and whether it actually exists in GitLab.
 type RepoStatus struct {
 	// The student's email (or username/id) or the group's name.

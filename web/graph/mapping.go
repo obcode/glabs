@@ -127,6 +127,23 @@ func toDBStatuses(in []model.JobStatus) []string {
 	return out
 }
 
+// toGraphAssignmentRepos projects an assignment's repo status onto the GraphQL
+// type.
+func toGraphAssignmentRepos(a *app.AssignmentRepos) *model.AssignmentRepos {
+	repos := make([]*model.RepoStatus, 0, len(a.Repos))
+	for _, r := range a.Repos {
+		repos = append(repos, &model.RepoStatus{For: r.For, Repo: r.Repo, URL: r.URL, Exists: r.Exists})
+	}
+	return &model.AssignmentRepos{
+		Name:     a.Name,
+		Per:      a.Per,
+		Targets:  a.Targets,
+		Existing: a.Existing,
+		Repos:    repos,
+		Note:     emptyToNil(a.Note),
+	}
+}
+
 // toGraphActivity projects the activity log onto the GraphQL type.
 func toGraphActivity(entries []*db.ActivityEntry) []*model.ActivityEntry {
 	out := make([]*model.ActivityEntry, 0, len(entries))

@@ -19,18 +19,35 @@ func (r *queryResolver) CourseRepoOverview(ctx context.Context, course string) (
 	}
 	out := make([]*model.AssignmentRepos, 0, len(overview))
 	for _, a := range overview {
-		repos := make([]*model.RepoStatus, 0, len(a.Repos))
-		for _, r := range a.Repos {
-			repos = append(repos, &model.RepoStatus{For: r.For, Repo: r.Repo, URL: r.URL, Exists: r.Exists})
-		}
-		out = append(out, &model.AssignmentRepos{
-			Name:     a.Name,
-			Per:      a.Per,
-			Targets:  a.Targets,
-			Existing: a.Existing,
-			Repos:    repos,
-			Note:     emptyToNil(a.Note),
-		})
+		out = append(out, toGraphAssignmentRepos(a))
 	}
+	return out, nil
+}
+
+// CourseRepoOverviewProgress is the resolver for the courseRepoOverviewProgress field.
+func (r *subscriptionResolver) CourseRepoOverviewProgress(ctx context.Context, course string) (<-chan *model.RepoOverviewEvent, error) {
+	events, err := r.app.StreamCourseRepoOverview(ctx, course)
+	if err != nil {
+		return nil, err
+	}
+	out := make(chan *model.RepoOverviewEvent)
+	go func() {
+		defer close(out)
+		for ev := range events {
+			p := &model.RepoOverviewEvent{Total: ev.Total, Done: ev.Done}
+			if ev.Assignment != nil {
+				p.Assignment = toGraphAssignmentRepos(ev.Assignment)
+			}
+			if ev.Error != "" {
+				msg := ev.Error
+				p.Error = &msg
+			}
+			select {
+			case out <- p:
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
 	return out, nil
 }

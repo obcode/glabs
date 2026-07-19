@@ -239,6 +239,61 @@ func (a *App) SetCourseGroups(ctx context.Context, name string, groups map[strin
 	return a.saveCourseSource(ctx, stored, &newSource)
 }
 
+// RenameCourse renames one of the caller's own courses. The course name is the
+// YAML file's top-level key, so the raw bytes are re-encoded under the new name.
+// It fails if the new name is not path-safe or the caller already has a course
+// by that name. Assignments, students and groups are carried over unchanged.
+func (a *App) RenameCourse(ctx context.Context, oldName, newName string) (*db.StoredCourse, error) {
+	o, err := owner(ctx)
+	if err != nil {
+		return nil, err
+	}
+	newName = strings.TrimSpace(newName)
+	if !nameRe.MatchString(newName) {
+		return nil, fmt.Errorf("invalid course name %q: use only letters, digits, '.', '-' and '_'", newName)
+	}
+
+	stored, err := a.db.CourseOf(ctx, o, oldName)
+	if err != nil {
+		return nil, err
+	}
+	if newName == oldName {
+		return stored, nil
+	}
+
+	existing, err := a.db.CourseOf(ctx, o, newName)
+	if err != nil && !errors.Is(err, db.ErrCourseNotFound) {
+		return nil, err
+	}
+	if existing != nil {
+		return nil, fmt.Errorf("a course named %q already exists", newName)
+	}
+
+	newSource := *stored.Source
+	newSource.Name = newName
+	raw, err := config.EncodeCourse(&newSource)
+	if err != nil {
+		return nil, err
+	}
+	renamed := &db.StoredCourse{
+		Owner:      o,
+		Name:       newName,
+		Source:     &newSource,
+		RawYAML:    raw,
+		ImportedAt: stored.ImportedAt,
+		UpdatedAt:  time.Now(),
+	}
+	// Save the new-named course first, then drop the old one, so a failure never
+	// loses the course (at worst it leaves a duplicate to clean up).
+	if err := a.db.SaveCourse(ctx, renamed); err != nil {
+		return nil, err
+	}
+	if err := a.db.DeleteCourse(ctx, o, oldName); err != nil {
+		return nil, err
+	}
+	return renamed, nil
+}
+
 // DeleteCourse removes one of the caller's own courses.
 func (a *App) DeleteCourse(ctx context.Context, name string) error {
 	o, err := owner(ctx)

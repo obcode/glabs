@@ -1,7 +1,9 @@
 package app
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -114,6 +116,47 @@ func TestCourseOperationsScopeToThePrincipal(t *testing.T) {
 	}
 	if fs.saved == nil || fs.saved.Owner != "prof@hm.edu" {
 		t.Errorf("saved course owner = %v, want prof@hm.edu", fs.saved)
+	}
+}
+
+func TestRenameCourse(t *testing.T) {
+	fs := newFakeStore()
+	a := &App{db: fs}
+	ctx := ctxAs("prof@hm.edu")
+
+	if _, err := a.ImportCourseYAML(ctx, "tc:\n  coursepath: tc/s\n"); err != nil {
+		t.Fatalf("import: %v", err)
+	}
+
+	renamed, err := a.RenameCourse(ctx, "tc", "mpd")
+	if err != nil {
+		t.Fatalf("rename: %v", err)
+	}
+	if renamed.Name != "mpd" || renamed.Source.Name != "mpd" {
+		t.Errorf("renamed name = %q/%q, want mpd", renamed.Name, renamed.Source.Name)
+	}
+	// The YAML top-level key (the course name) must follow.
+	if !bytes.Contains(renamed.RawYAML, []byte("mpd:")) {
+		t.Errorf("rawYAML not re-encoded under the new name:\n%s", renamed.RawYAML)
+	}
+	// The old name is gone, the new one resolves.
+	if _, err := a.Course(ctx, "tc"); !errors.Is(err, db.ErrCourseNotFound) {
+		t.Errorf("old course tc still present, err = %v", err)
+	}
+	if _, err := a.Course(ctx, "mpd"); err != nil {
+		t.Errorf("new course mpd not found: %v", err)
+	}
+
+	// Renaming onto an existing course name is rejected.
+	if _, err := a.ImportCourseYAML(ctx, "vss:\n  coursepath: vss/s\n"); err != nil {
+		t.Fatalf("import vss: %v", err)
+	}
+	if _, err := a.RenameCourse(ctx, "mpd", "vss"); err == nil {
+		t.Error("renaming onto an existing course name should fail")
+	}
+	// An invalid target name is rejected.
+	if _, err := a.RenameCourse(ctx, "mpd", "bad name"); err == nil {
+		t.Error("an invalid course name should fail")
 	}
 }
 

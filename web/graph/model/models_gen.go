@@ -657,6 +657,7 @@ const (
 	OpArchive   Op = "ARCHIVE"
 	OpDelete    Op = "DELETE"
 	OpGenerate  Op = "GENERATE"
+	OpUpdate    Op = "UPDATE"
 )
 
 var AllOp = []Op{
@@ -665,11 +666,12 @@ var AllOp = []Op{
 	OpArchive,
 	OpDelete,
 	OpGenerate,
+	OpUpdate,
 }
 
 func (e Op) IsValid() bool {
 	switch e {
-	case OpSetaccess, OpProtect, OpArchive, OpDelete, OpGenerate:
+	case OpSetaccess, OpProtect, OpArchive, OpDelete, OpGenerate, OpUpdate:
 		return true
 	}
 	return false

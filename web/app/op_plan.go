@@ -14,9 +14,18 @@ import (
 )
 
 // validOps are the mutating GitLab operations the web can plan and run. All but
-// generate are pure GitLab API calls; generate also pushes starter code over git
-// (in memory, so no server disk is involved).
-var validOps = map[string]bool{"setaccess": true, "protect": true, "archive": true, "delete": true, "generate": true}
+// generate/update are pure GitLab API calls; those two also push starter code
+// over git (in memory, so no server disk is involved).
+var validOps = map[string]bool{"setaccess": true, "protect": true, "archive": true, "delete": true, "generate": true, "update": true}
+
+// isDestructiveOp reports whether an op needs the extra confirm-phrase gate. delete
+// and archive are obvious; update force-pushes the starter code over existing
+// student repositories (the CLI warns "USE WITH CARE — only untouched repos"), so
+// it can wipe student work and is treated the same. Kept in one place so the plan,
+// run and schedule paths cannot disagree.
+func isDestructiveOp(op string) bool {
+	return op == "archive" || op == "delete" || op == "update"
+}
 
 // PlannedTarget is one repository an operation would touch.
 type PlannedTarget struct {
@@ -122,7 +131,7 @@ func (a *App) PlanOp(ctx context.Context, op, course, assignment string, params 
 		Resolved:    cfg.Show(),
 		Targets:     targets,
 		Warnings:    warnings,
-		Destructive: op == "archive" || op == "delete",
+		Destructive: isDestructiveOp(op),
 		Token:       token,
 		ExpiresAt:   now.Add(opTokenTTL),
 	}

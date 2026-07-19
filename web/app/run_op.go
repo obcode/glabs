@@ -60,7 +60,7 @@ func (a *App) RunOp(ctx context.Context, token, confirmPhrase string) (<-chan Ru
 	if cfg.Seeder != nil {
 		return nil, fmt.Errorf("assignment %q configures a seeder, which the web cannot run — use the CLI", tok.Assignment)
 	}
-	if tok.Op == "archive" || tok.Op == "delete" {
+	if isDestructiveOp(tok.Op) {
 		want := tok.Course + "/" + tok.Assignment
 		if confirmPhrase != want {
 			return nil, fmt.Errorf("type %q to confirm this destructive operation", want)
@@ -126,6 +126,8 @@ func executeOp(client *gitlab.Client, tok *opToken, cfg *config.AssignmentConfig
 		return client.Delete(cfg)
 	case "generate":
 		return client.Generate(cfg)
+	case "update":
+		return client.Update(cfg)
 	}
 	return fmt.Errorf("unknown operation %q", tok.Op)
 }

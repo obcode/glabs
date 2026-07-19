@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/obcode/glabs/v3/git"
 	"github.com/obcode/glabs/v3/reporter"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -17,6 +18,12 @@ type Client struct {
 	// because a per-user web request builds its own Client anyway (per-user
 	// token), so the reporter is naturally request-scoped and never shared.
 	rep reporter.Reporter
+	// host and token are kept so the client can build git credentials (git and
+	// the API share one token) without reading the global viper config.
+	host  string
+	token string
+	// committer authors starter-code commits; empty falls back to the glabs bot.
+	committer git.Committer
 }
 
 // clientOptions holds what a Client needs to reach GitLab. They are injected
@@ -29,6 +36,8 @@ type clientOptions struct {
 	httpClient     *http.Client
 	withoutRetries bool
 	reporter       reporter.Reporter
+	committerName  string
+	committerEmail string
 }
 
 type Option func(*clientOptions)
@@ -45,6 +54,16 @@ func WithHTTPClient(hc *http.Client) Option {
 // ConsoleReporter (spinners on stdout); the web server passes a streaming one.
 func WithReporter(r reporter.Reporter) Option {
 	return func(o *clientOptions) { o.reporter = r }
+}
+
+// WithCommitter sets the identity that authors starter-code commits. Empty
+// values fall back to the glabs bot identity. The web server passes the acting
+// user so a generated commit is attributed to them.
+func WithCommitter(name, email string) Option {
+	return func(o *clientOptions) {
+		o.committerName = name
+		o.committerEmail = email
+	}
 }
 
 // WithoutRetries disables the client's retry-on-5xx wrapper. The contract tests
@@ -88,7 +107,19 @@ func NewClient(opts ...Option) (*Client, error) {
 		rep = reporter.NewConsoleReporter()
 	}
 
-	return &Client{Client: client, rep: rep}, nil
+	return &Client{
+		Client:    client,
+		rep:       rep,
+		host:      o.host,
+		token:     o.token,
+		committer: git.Committer{Name: o.committerName, Email: o.committerEmail},
+	}, nil
+}
+
+// gitAuth is the credential the client uses for git clone/push: the same token
+// as the API, attached only to the configured GitLab host.
+func (c *Client) gitAuth() git.TokenAuth {
+	return git.TokenAuth{GitLabHost: c.host, Token: c.token}
 }
 
 // NewClientFromViper builds a client from the global config. It is the CLI's
@@ -98,5 +129,6 @@ func NewClientFromViper() (*Client, error) {
 	return NewClient(
 		WithHost(viper.GetString("gitlab.host")),
 		WithToken(viper.GetString("gitlab.token")),
+		WithCommitter(viper.GetString("committer.name"), viper.GetString("committer.email")),
 	)
 }

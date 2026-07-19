@@ -13,10 +13,32 @@ import (
 	"github.com/logrusorgru/aurora"
 	"github.com/obcode/glabs/v3/config"
 	"github.com/obcode/glabs/v3/reporter"
-	"github.com/spf13/viper"
 )
 
-func PrepareSourceRepo(rep reporter.Reporter, url, fromBranch string, singleCommit bool, commitMessage string) (*SourceRepo, error) {
+// Committer identifies who authors the starter-code commit. Empty fields fall
+// back to the glabs bot identity, so a caller that does not care (the common
+// case) can pass the zero value. The web server passes the acting user.
+type Committer struct {
+	Name  string
+	Email string
+}
+
+func (c Committer) signature(when time.Time) object.Signature {
+	name, email := c.Name, c.Email
+	if name == "" {
+		name = "glabs"
+	}
+	if email == "" {
+		email = "glabs-bot@noreply.example.com"
+	}
+	return object.Signature{Name: name, Email: email, When: when}
+}
+
+// PrepareSourceRepo clones the starter code into memory and returns it ready to
+// push. auth resolves the clone credential from an explicit host+token (no
+// viper), and committer authors the squashed single commit — both injected so
+// the web server can act as a specific user.
+func PrepareSourceRepo(rep reporter.Reporter, auth TokenAuth, committer Committer, url, fromBranch string, singleCommit bool, commitMessage string) (*SourceRepo, error) {
 	task := rep.Task(aurora.Sprintf(aurora.Cyan(" cloning source code from %s, branch %s"),
 		aurora.Yellow(url),
 		aurora.Yellow(fromBranch),
@@ -34,7 +56,7 @@ func PrepareSourceRepo(rep reporter.Reporter, url, fromBranch string, singleComm
 		return fail(err)
 	}
 
-	auth, err := AuthForURL(cloneURL)
+	resolvedAuth, err := auth.forURL(cloneURL)
 	if err != nil {
 		return fail(err)
 	}
@@ -48,7 +70,7 @@ func PrepareSourceRepo(rep reporter.Reporter, url, fromBranch string, singleComm
 		URL:           cloneURL,
 		ReferenceName: sourceRef,
 		SingleBranch:  true,
-		Auth:          auth,
+		Auth:          resolvedAuth,
 	})
 	if err != nil {
 		return fail(err)
@@ -71,7 +93,7 @@ func PrepareSourceRepo(rep reporter.Reporter, url, fromBranch string, singleComm
 		return &SourceRepo{
 			Repo: repo,
 			Ref:  sourceRef,
-			Auth: auth,
+			Auth: resolvedAuth,
 		}, nil
 	}
 
@@ -93,28 +115,13 @@ func PrepareSourceRepo(rep reporter.Reporter, url, fromBranch string, singleComm
 	singleCommitBranchName := fmt.Sprintf("orphan-%s-%d", sourceRef.Short(), time.Now().UnixNano())
 	refName := plumbing.NewBranchReferenceName(singleCommitBranchName)
 
-	committerName := "glabs"
-	committerEmail := "glabs-bot@noreply.example.com"
-
-	if viper.IsSet("committer") {
-		committerName = viper.GetString("committer.name")
-		committerEmail = viper.GetString("committer.email")
-	}
-
 	now := time.Now()
+	sig := committer.signature(now)
 	commit := &object.Commit{
-		Author: object.Signature{
-			Name:  committerName,
-			Email: committerEmail,
-			When:  now,
-		},
-		Committer: object.Signature{
-			Name:  committerName,
-			Email: committerEmail,
-			When:  now,
-		},
-		Message:  commitMessage,
-		TreeHash: tree.Hash,
+		Author:    sig,
+		Committer: sig,
+		Message:   commitMessage,
+		TreeHash:  tree.Hash,
 	}
 
 	encoded := repo.Storer.NewEncodedObject()
@@ -150,6 +157,6 @@ func PrepareSourceRepo(rep reporter.Reporter, url, fromBranch string, singleComm
 	return &SourceRepo{
 		Repo: repo,
 		Ref:  refName,
-		Auth: auth,
+		Auth: resolvedAuth,
 	}, nil
 }

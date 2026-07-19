@@ -71,8 +71,10 @@ func (c *Client) updatePerStudent(assignmentCfg *config.AssignmentConfig, starte
 			&gitlab.GetProjectOptions{},
 		)
 		if err != nil {
+			// Skip a missing repo (e.g. one never generated) instead of aborting the
+			// whole run — one 404 must not stop every remaining repo (cf. #109).
 			c.rep.Printf("cannot update project %s failed with %s", projectname, err)
-			return
+			continue
 		}
 		c.update(assignmentCfg, project, starterrepo)
 	}
@@ -91,8 +93,10 @@ func (c *Client) updatePerGroup(assignmentCfg *config.AssignmentConfig, starterr
 			&gitlab.GetProjectOptions{},
 		)
 		if err != nil {
+			// Skip a missing repo (e.g. one never generated) instead of aborting the
+			// whole run — one 404 must not stop every remaining repo (cf. #109).
 			c.rep.Printf("cannot update project %s failed with %s", projectname, err)
-			return
+			continue
 		}
 		c.update(assignmentCfg, project, starterrepo)
 	}

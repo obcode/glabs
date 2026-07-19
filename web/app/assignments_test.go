@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 
@@ -90,6 +91,10 @@ func TestAssignment_resolvesWithInheritance(t *testing.T) {
 	}
 	if v.Extends != "base" {
 		t.Errorf("extends = %q, want base", v.Extends)
+	}
+	// ExtendsOptions offers the sibling assignments (base), never blatt1 itself.
+	if !slices.Equal(v.ExtendsOptions, []string{"base"}) {
+		t.Errorf("extendsOptions = %v, want [base]", v.ExtendsOptions)
 	}
 	if v.ResolveError != "" {
 		t.Errorf("unexpected resolveError: %s", v.ResolveError)

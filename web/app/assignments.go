@@ -3,12 +3,27 @@ package app
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/obcode/glabs/v3/config"
 )
+
+// siblingNames returns the names of all assignments in the course except the
+// given one, sorted. These are the valid targets for `extends` (which is
+// course-internal), i.e. the choices for the editor's inheritance dropdown.
+func siblingNames(src *config.CourseSource, self string) []string {
+	names := make([]string, 0, len(src.Assignments))
+	for name := range src.Assignments {
+		if name != self {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	return names
+}
 
 // FieldValue is one field's own (source) value, stringified and keyed by the
 // same key as FieldMeta so the GUI can pre-fill the schema-driven form.
@@ -174,6 +189,11 @@ type AssignmentView struct {
 	Name     string
 	Extends  string
 	Abstract bool
+	// ExtendsOptions lists the names of the sibling assignments this one may
+	// inherit from (all assignments in the same course except this one, sorted).
+	// `extends` is course-internal, so these are exactly the valid choices for
+	// the editor's dropdown.
+	ExtendsOptions []string
 	// Own holds the assignment's own (source) field values, keyed by
 	// FieldMeta.key, for pre-filling the editor form.
 	Own []FieldValue
@@ -202,11 +222,12 @@ func (a *App) Assignment(ctx context.Context, course, name string) (*AssignmentV
 	}
 
 	view := &AssignmentView{
-		Course:   course,
-		Name:     name,
-		Extends:  src.Extends,
-		Abstract: src.Abstract,
-		Own:      assignmentOwn(src),
+		Course:         course,
+		Name:           name,
+		Extends:        src.Extends,
+		Abstract:       src.Abstract,
+		ExtendsOptions: siblingNames(stored.Source, name),
+		Own:            assignmentOwn(src),
 	}
 
 	// Resolve from the stored bytes so the preview matches the CLI exactly

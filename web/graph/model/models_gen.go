@@ -133,6 +133,24 @@ type Course struct {
 	UpdatedAt    time.Time `json:"updatedAt"`
 }
 
+// One roster entry of a course, enriched with ZPA (Prüfungsamt) student details when
+// they could be found. `found` is false and the detail fields are null when ZPA is
+// not configured or has no unambiguous match — the GUI then shows just the email.
+type CourseStudent struct {
+	// The roster email (the identity glabs keys students on).
+	Email string `json:"email"`
+	// Whether ZPA details were found for this email.
+	Found     bool    `json:"found"`
+	FirstName *string `json:"firstName,omitempty"`
+	LastName  *string `json:"lastName,omitempty"`
+	// The ZPA gender field (sensitive — shown only when the course owner opts in).
+	Gender *string `json:"gender,omitempty"`
+	// The ZPA group/study programme.
+	Group *string `json:"group,omitempty"`
+	// The Matrikelnummer.
+	Mtknr *string `json:"mtknr,omitempty"`
+}
+
 type DockerImageReport struct {
 	Wanted string  `json:"wanted"`
 	Image  *string `json:"image,omitempty"`

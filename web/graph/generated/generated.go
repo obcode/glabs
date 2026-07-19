@@ -38,6 +38,14 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	ActivityEntry struct {
+		Assignment func(childComplexity int) int
+		At         func(childComplexity int) int
+		Detail     func(childComplexity int) int
+		Op         func(childComplexity int) int
+		Status     func(childComplexity int) int
+	}
+
 	AssignmentReport struct {
 		Assignment             func(childComplexity int) int
 		Course                 func(childComplexity int) int
@@ -230,11 +238,13 @@ type ComplexityRoot struct {
 		ApprovalRuleSchema      func(childComplexity int) int
 		ApprovalSettingsSchema  func(childComplexity int) int
 		Assignment              func(childComplexity int, course string, name string) int
+		AssignmentActivity      func(childComplexity int, course string, name string) int
 		AssignmentReport        func(childComplexity int, course string, name string) int
 		AssignmentSchema        func(childComplexity int) int
 		AssignmentUrls          func(childComplexity int, course string, name string) int
 		BranchRuleSchema        func(childComplexity int) int
 		Course                  func(childComplexity int, name string) int
+		CourseActivity          func(childComplexity int, course string) int
 		CourseCheck             func(childComplexity int, name string) int
 		CourseLint              func(childComplexity int, name string) int
 		CourseYaml              func(childComplexity int, name string) int
@@ -323,6 +333,8 @@ type MutationResolver interface {
 type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
 	ServerInfo(ctx context.Context) (*model.ServerInfo, error)
+	AssignmentActivity(ctx context.Context, course string, name string) ([]*model.ActivityEntry, error)
+	CourseActivity(ctx context.Context, course string) ([]*model.ActivityEntry, error)
 	AssignmentSchema(ctx context.Context) ([]*model.FieldMeta, error)
 	BranchRuleSchema(ctx context.Context) ([]*model.FieldMeta, error)
 	ApprovalSettingsSchema(ctx context.Context) ([]*model.FieldMeta, error)
@@ -361,6 +373,37 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := newExecutionContext(nil, e, nil)
 	_ = ec
 	switch typeName + "." + field {
+
+	case "ActivityEntry.assignment":
+		if e.ComplexityRoot.ActivityEntry.Assignment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ActivityEntry.Assignment(childComplexity), true
+	case "ActivityEntry.at":
+		if e.ComplexityRoot.ActivityEntry.At == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ActivityEntry.At(childComplexity), true
+	case "ActivityEntry.detail":
+		if e.ComplexityRoot.ActivityEntry.Detail == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ActivityEntry.Detail(childComplexity), true
+	case "ActivityEntry.op":
+		if e.ComplexityRoot.ActivityEntry.Op == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ActivityEntry.Op(childComplexity), true
+	case "ActivityEntry.status":
+		if e.ComplexityRoot.ActivityEntry.Status == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ActivityEntry.Status(childComplexity), true
 
 	case "AssignmentReport.assignment":
 		if e.ComplexityRoot.AssignmentReport.Assignment == nil {
@@ -1192,6 +1235,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Assignment(childComplexity, args["course"].(string), args["name"].(string)), true
+	case "Query.assignmentActivity":
+		if e.ComplexityRoot.Query.AssignmentActivity == nil {
+			break
+		}
+
+		args, err := ec.field_Query_assignmentActivity_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.AssignmentActivity(childComplexity, args["course"].(string), args["name"].(string)), true
 	case "Query.assignmentReport":
 		if e.ComplexityRoot.Query.AssignmentReport == nil {
 			break
@@ -1237,6 +1291,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Course(childComplexity, args["name"].(string)), true
+	case "Query.courseActivity":
+		if e.ComplexityRoot.Query.CourseActivity == nil {
+			break
+		}
+
+		args, err := ec.field_Query_courseActivity_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.CourseActivity(childComplexity, args["course"].(string)), true
 	case "Query.courseCheck":
 		if e.ComplexityRoot.Query.CourseCheck == nil {
 			break
@@ -1590,6 +1655,32 @@ func newExecutionContext(
 }
 
 var sources = []*ast.Source{
+	{Name: "../activity.graphqls", Input: `"""
+One recorded operation performed through the web against an assignment — the
+web's stand-in for the shell history the CLI leaves behind. The course page reads
+it to show, per assignment, what has already happened (setaccess, protect,
+archive, delete; later generate).
+"""
+type ActivityEntry {
+  "The assignment this entry is about (its name within the course)."
+  assignment: String!
+  "The operation that ran (setaccess, protect, archive, delete, …)."
+  op: String!
+  "The terminal outcome: ` + "`" + `done` + "`" + ` or ` + "`" + `failed` + "`" + `."
+  status: String!
+  "A short human summary — the repository count on success, the error on failure."
+  detail: String!
+  "When the operation finished."
+  at: Time!
+}
+
+extend type Query {
+  "The activity log of one of the caller's assignments, newest first."
+  assignmentActivity(course: String!, name: String!): [ActivityEntry!]!
+  "The activity log across a whole course of the caller's, newest first (the GUI groups it by assignment for a per-assignment status)."
+  courseActivity(course: String!): [ActivityEntry!]!
+}
+`, BuiltIn: false},
 	{Name: "../assignments.graphqls", Input: `"""
 The assignment editor is schema-driven: the GUI renders a guided, validated form
 from this server-authoritative metadata, so labels, help text and dropdown
@@ -2162,6 +2253,22 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // childFields_* functions provide shared child field context lookups.
 // Each function is generated once per unique object type, deduplicating the
 // switch statements that were previously inlined in every fieldContext_* function.
+
+func (ec *executionContext) childFields_ActivityEntry(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "assignment":
+		return ec.fieldContext_ActivityEntry_assignment(ctx, field)
+	case "op":
+		return ec.fieldContext_ActivityEntry_op(ctx, field)
+	case "status":
+		return ec.fieldContext_ActivityEntry_status(ctx, field)
+	case "detail":
+		return ec.fieldContext_ActivityEntry_detail(ctx, field)
+	case "at":
+		return ec.fieldContext_ActivityEntry_at(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ActivityEntry", field.Name)
+}
 
 func (ec *executionContext) childFields_AssignmentReport(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
@@ -3107,6 +3214,28 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_assignmentActivity_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "course",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["course"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "name",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["name"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_assignmentReport_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -3170,6 +3299,20 @@ func (ec *executionContext) field_Query_assignment_args(ctx context.Context, raw
 		return nil, err
 	}
 	args["name"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_courseActivity_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "course",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["course"] = arg0
 	return args, nil
 }
 
@@ -3376,6 +3519,121 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ***************************** args.gotpl *****************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _ActivityEntry_assignment(ctx context.Context, field graphql.CollectedField, obj *model.ActivityEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ActivityEntry_assignment(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Assignment, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ActivityEntry_assignment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ActivityEntry", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ActivityEntry_op(ctx context.Context, field graphql.CollectedField, obj *model.ActivityEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ActivityEntry_op(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Op, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ActivityEntry_op(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ActivityEntry", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ActivityEntry_status(ctx context.Context, field graphql.CollectedField, obj *model.ActivityEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ActivityEntry_status(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Status, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ActivityEntry_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ActivityEntry", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ActivityEntry_detail(ctx context.Context, field graphql.CollectedField, obj *model.ActivityEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ActivityEntry_detail(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Detail, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ActivityEntry_detail(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ActivityEntry", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ActivityEntry_at(ctx context.Context, field graphql.CollectedField, obj *model.ActivityEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ActivityEntry_at(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.At, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ActivityEntry_at(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ActivityEntry", field, false, false, errors.New("field of type Time does not have child fields"))
+}
 
 func (ec *executionContext) _AssignmentReport_course(ctx context.Context, field graphql.CollectedField, obj *model.AssignmentReport) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
@@ -6616,6 +6874,94 @@ func (ec *executionContext) fieldContext_Query_serverInfo(_ context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_assignmentActivity(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_assignmentActivity(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().AssignmentActivity(ctx, fc.Args["course"].(string), fc.Args["name"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.ActivityEntry) graphql.Marshaler {
+			return ec.marshalNActivityEntry2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐActivityEntryᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_assignmentActivity(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ActivityEntry(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_assignmentActivity_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_courseActivity(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_courseActivity(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().CourseActivity(ctx, fc.Args["course"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.ActivityEntry) graphql.Marshaler {
+			return ec.marshalNActivityEntry2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐActivityEntryᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_courseActivity(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ActivityEntry(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_courseActivity_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_assignmentSchema(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -9109,6 +9455,64 @@ func (ec *executionContext) unmarshalInputOpParams(ctx context.Context, obj any)
 
 // region    **************************** object.gotpl ****************************
 
+var activityEntryImplementors = []string{"ActivityEntry"}
+
+func (ec *executionContext) _ActivityEntry(ctx context.Context, sel ast.SelectionSet, obj *model.ActivityEntry) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, activityEntryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ActivityEntry")
+		case "assignment":
+			out.Values[i] = ec._ActivityEntry_assignment(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "op":
+			out.Values[i] = ec._ActivityEntry_op(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "status":
+			out.Values[i] = ec._ActivityEntry_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "detail":
+			out.Values[i] = ec._ActivityEntry_detail(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "at":
+			out.Values[i] = ec._ActivityEntry_at(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var assignmentReportImplementors = []string{"AssignmentReport"}
 
 func (ec *executionContext) _AssignmentReport(ctx context.Context, sel ast.SelectionSet, obj *model.AssignmentReport) graphql.Marshaler {
@@ -10565,6 +10969,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "assignmentActivity":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_assignmentActivity(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "courseActivity":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_courseActivity(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "assignmentSchema":
 			field := field
 
@@ -11702,6 +12150,32 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 // endregion **************************** object.gotpl ****************************
 
 // region    ***************************** type.gotpl *****************************
+
+func (ec *executionContext) marshalNActivityEntry2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐActivityEntryᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ActivityEntry) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNActivityEntry2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐActivityEntry(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNActivityEntry2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐActivityEntry(ctx context.Context, sel ast.SelectionSet, v *model.ActivityEntry) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ActivityEntry(ctx, sel, v)
+}
 
 func (ec *executionContext) marshalNAssignmentView2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAssignmentView(ctx context.Context, sel ast.SelectionSet, v model.AssignmentView) graphql.Marshaler {
 	return ec._AssignmentView(ctx, sel, &v)

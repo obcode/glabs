@@ -17,6 +17,7 @@ const (
 	collectionUsers       = "users"
 	collectionCourses     = "courses"
 	collectionUserSecrets = "user_secrets"
+	collectionActivity    = "activity"
 )
 
 type DB struct {

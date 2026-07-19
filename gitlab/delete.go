@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/obcode/glabs/v3/config"
-	"github.com/rs/zerolog/log"
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
@@ -38,7 +37,7 @@ func (c *Client) deletePerStudent(assignmentCfg *config.AssignmentConfig, assign
 
 func (c *Client) deletePerGroup(assignmentCfg *config.AssignmentConfig, assignmentGroupID int64) {
 	if len(assignmentCfg.Groups) == 0 {
-		log.Info().Str("group", assignmentCfg.Course).Msg("no groups found")
+		c.rep.Println("no groups in config for assignment found")
 		return
 	}
 
@@ -50,22 +49,23 @@ func (c *Client) deletePerGroup(assignmentCfg *config.AssignmentConfig, assignme
 func (c *Client) delete(gid int64, name string) {
 	projects, _, err := c.Search.ProjectsByGroup(gid, name, &gitlab.SearchOptions{})
 	if err != nil {
-		log.Error().Str("project", name).Msg("searching for projects failed")
+		c.rep.Printf("searching for project %s failed with %s", name, err)
 		return
 	}
 	if len(projects) == 0 {
+		c.rep.Printf("no project %s to delete (skipped)", name)
 		return
 	}
 	for _, project := range projects {
 		if project.Name == name {
-			log.Info().Str("project", project.Name).Msg("deleting project")
+			task := c.rep.Task(fmt.Sprintf(" deleting project %s", project.Name))
 			_, err = c.Projects.DeleteProject(project.ID, &gitlab.DeleteProjectOptions{})
 			if err != nil {
-				log.Error().Err(err).Str("project", name).Msg("deleting project failed")
+				task.Fail(fmt.Sprintf("deleting project %s failed: %v", name, err))
 				return
 			}
+			task.Done("")
 			break
 		}
 	}
-
 }

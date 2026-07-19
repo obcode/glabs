@@ -1,0 +1,62 @@
+"The lifecycle state of a scheduled job. It starts PENDING, is claimed to RUNNING, and ends in exactly one terminal state."
+enum JobStatus {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+"One key/value operation parameter of a scheduled job (e.g. accessLevel, branch)."
+type JobParam {
+  key: String!
+  value: String!
+}
+
+"""
+A mutating operation queued to run at a wall-clock time. It is persisted in Mongo,
+so it survives restarts and a missed run is caught up after downtime; the runner
+re-checks the plan's config hash and a stored GitLab token when it fires, and
+emails the outcome.
+"""
+type ScheduledJob {
+  id: ID!
+  "The operation (setaccess, protect, archive, delete)."
+  op: String!
+  course: String!
+  assignment: String!
+  "The subset of students/groups the op targets (empty = all)."
+  onlyFor: [String!]!
+  "Op-specific parameters (e.g. accessLevel), sorted by key."
+  params: [JobParam!]!
+  "When the job is scheduled to run."
+  runAt: Time!
+  "How long after runAt the job may still start before it is marked EXPIRED."
+  graceMinutes: Int!
+  status: JobStatus!
+  createdAt: Time!
+  startedAt: Time
+  finishedAt: Time
+  "The error message when the job FAILED or EXPIRED."
+  err: String
+}
+
+extend type Mutation {
+  """
+  Schedule a planned mutating operation (from planOp's token) to run at runAt. Reuses
+  the SAME confirm token as runOp; the token's config hash is re-checked when the job
+  fires. graceMinutes defaults to 60. For a destructive op (archive/delete)
+  confirmPhrase must equal the plan's confirmPhrase. Requires a stored GitLab token.
+  """
+  scheduleOp(token: String!, runAt: Time!, graceMinutes: Int, confirmPhrase: String): ScheduledJob!
+  "Cancel one of the caller's PENDING jobs. A running or finished job cannot be cancelled."
+  cancelScheduledJob(id: ID!): ScheduledJob!
+}
+
+extend type Query {
+  "The caller's scheduled jobs, newest scheduled first, optionally filtered by status."
+  scheduledJobs(status: [JobStatus!]): [ScheduledJob!]!
+  "One of the caller's scheduled jobs."
+  scheduledJob(id: ID!): ScheduledJob
+}

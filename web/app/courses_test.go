@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -21,10 +22,64 @@ type fakeStore struct {
 	saved      *db.StoredCourse
 	userSecret map[string]*db.UserSecret // keyed by owner
 	activity   []*db.ActivityEntry
+	jobs       map[string]*db.ScheduledJob // keyed by id
+	jobSeq     int
 }
 
 func newFakeStore() *fakeStore {
-	return &fakeStore{courses: map[string]*db.StoredCourse{}, userSecret: map[string]*db.UserSecret{}}
+	return &fakeStore{
+		courses:    map[string]*db.StoredCourse{},
+		userSecret: map[string]*db.UserSecret{},
+		jobs:       map[string]*db.ScheduledJob{},
+	}
+}
+
+func (f *fakeStore) SaveJob(_ context.Context, job *db.ScheduledJob) error {
+	f.seenOwners = append(f.seenOwners, job.Owner)
+	if job.ID == "" {
+		f.jobSeq++
+		job.ID = fmt.Sprintf("job-%d", f.jobSeq)
+	}
+	f.jobs[job.ID] = job
+	return nil
+}
+
+func (f *fakeStore) CancelJob(_ context.Context, owner, id string) (*db.ScheduledJob, error) {
+	f.seenOwners = append(f.seenOwners, owner)
+	j, ok := f.jobs[id]
+	if !ok || j.Owner != owner || j.Status != db.JobPending {
+		return nil, db.ErrJobNotFound
+	}
+	j.Status = db.JobCancelled
+	return j, nil
+}
+
+func (f *fakeStore) JobsOf(_ context.Context, owner string, statuses []string) ([]*db.ScheduledJob, error) {
+	f.seenOwners = append(f.seenOwners, owner)
+	allowed := map[string]bool{}
+	for _, s := range statuses {
+		allowed[s] = true
+	}
+	var out []*db.ScheduledJob
+	for _, j := range f.jobs {
+		if j.Owner != owner {
+			continue
+		}
+		if len(statuses) > 0 && !allowed[j.Status] {
+			continue
+		}
+		out = append(out, j)
+	}
+	return out, nil
+}
+
+func (f *fakeStore) JobOf(_ context.Context, owner, id string) (*db.ScheduledJob, error) {
+	f.seenOwners = append(f.seenOwners, owner)
+	j, ok := f.jobs[id]
+	if !ok || j.Owner != owner {
+		return nil, db.ErrJobNotFound
+	}
+	return j, nil
 }
 
 func (f *fakeStore) GetUserByEmail(context.Context, string) (*model.User, error) { return nil, nil }

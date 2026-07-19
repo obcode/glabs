@@ -13,9 +13,10 @@ import (
 	"github.com/obcode/glabs/v3/web/secrets"
 )
 
-// validOps are the mutating GitLab operations the web can plan and run. None of
-// them touch git — they are pure GitLab API calls.
-var validOps = map[string]bool{"setaccess": true, "protect": true, "archive": true, "delete": true}
+// validOps are the mutating GitLab operations the web can plan and run. All but
+// generate are pure GitLab API calls; generate also pushes starter code over git
+// (in memory, so no server disk is involved).
+var validOps = map[string]bool{"setaccess": true, "protect": true, "archive": true, "delete": true, "generate": true}
 
 // PlannedTarget is one repository an operation would touch.
 type PlannedTarget struct {

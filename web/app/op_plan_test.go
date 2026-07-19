@@ -62,6 +62,33 @@ func TestPlanOp_deleteIsDestructive(t *testing.T) {
 	}
 }
 
+func TestPlanOp_generateIsPlannableAndNotDestructive(t *testing.T) {
+	const owner = "prof@hm.edu"
+	fs := newFakeStore()
+	fs.courses[owner+"/uc"] = storedCourse(t, owner, urlsCourse)
+	a := &App{db: fs, gitlabHost: "https://gl", sealer: testSealer(t)}
+
+	plan, err := a.PlanOp(ctxAs(owner), "generate", "uc", "blatt1", nil, nil)
+	if err != nil {
+		t.Fatalf("PlanOp(generate): %v", err)
+	}
+	if plan.Op != "generate" || len(plan.Targets) != 2 {
+		t.Fatalf("generate plan wrong: op=%q targets=%d", plan.Op, len(plan.Targets))
+	}
+	// Generate creates repositories; it is not destructive, so no confirm phrase.
+	if plan.Destructive || plan.ConfirmPhrase != "" {
+		t.Errorf("generate must not be destructive: %+v", plan)
+	}
+	// The token carries the op so runOp dispatches to Generate.
+	tok, err := a.openOpToken(plan.Token)
+	if err != nil {
+		t.Fatalf("openOpToken: %v", err)
+	}
+	if tok.Op != "generate" {
+		t.Errorf("token op = %q, want generate", tok.Op)
+	}
+}
+
 func TestPlanOp_unknownOpRejected(t *testing.T) {
 	const owner = "prof@hm.edu"
 	fs := newFakeStore()

@@ -33,6 +33,9 @@ func (a *App) gitlabClientFor(ctx context.Context, owner string, rep reporter.Re
 		gitlab.WithHost(a.gitlabHost),
 		gitlab.WithToken(token),
 		gitlab.WithReporter(rep),
+		// Attribute starter-code commits (generate/update) to the acting user;
+		// harmless for the read-only and git-less ops that also use this client.
+		gitlab.WithCommitter(owner, owner),
 	)
 }
 

@@ -35,6 +35,8 @@ type store interface {
 	CancelJob(ctx context.Context, owner, id string) (*db.ScheduledJob, error)
 	JobsOf(ctx context.Context, owner string, statuses []string) ([]*db.ScheduledJob, error)
 	JobOf(ctx context.Context, owner, id string) (*db.ScheduledJob, error)
+	ClaimDueJob(ctx context.Context, workerID string, now time.Time) (*db.ScheduledJob, error)
+	FinishJob(ctx context.Context, id, status, logText, errText string) error
 }
 
 type App struct {

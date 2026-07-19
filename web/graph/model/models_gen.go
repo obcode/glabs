@@ -250,6 +250,8 @@ type OpParams struct {
 	Branch *string `json:"branch,omitempty"`
 	// archive: unarchive instead of archive.
 	Unarchive *bool `json:"unarchive,omitempty"`
+	// generate: create repos and push starter code but do NOT add/invite students or groups (for debugging).
+	SkipInvite *bool `json:"skipInvite,omitempty"`
 }
 
 // The preview of a mutating operation before it runs: the resolved config, the

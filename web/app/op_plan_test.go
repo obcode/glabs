@@ -105,6 +105,25 @@ func TestPlanOp_updateIsDestructive(t *testing.T) {
 	}
 }
 
+func TestPlanOp_generateSkipInviteCarriedInToken(t *testing.T) {
+	const owner = "prof@hm.edu"
+	fs := newFakeStore()
+	fs.courses[owner+"/uc"] = storedCourse(t, owner, urlsCourse)
+	a := &App{db: fs, gitlabHost: "https://gl", sealer: testSealer(t)}
+
+	plan, err := a.PlanOp(ctxAs(owner), "generate", "uc", "blatt1", map[string]string{"skipInvite": "true"}, nil)
+	if err != nil {
+		t.Fatalf("PlanOp: %v", err)
+	}
+	tok, err := a.openOpToken(plan.Token)
+	if err != nil {
+		t.Fatalf("openOpToken: %v", err)
+	}
+	if tok.Params["skipInvite"] != "true" {
+		t.Errorf("token skipInvite = %q, want true — the --no-invite choice must survive into runOp", tok.Params["skipInvite"])
+	}
+}
+
 func TestPlanOp_unknownOpRejected(t *testing.T) {
 	const owner = "prof@hm.edu"
 	fs := newFakeStore()

@@ -24,7 +24,7 @@ func TestGenerateReturnsErrorForInvalidPer(t *testing.T) {
 		Per:    config.PerFailed,
 	}
 
-	if err := client.Generate(cfg); err == nil {
+	if err := client.Generate(cfg, false); err == nil {
 		t.Fatal("Generate with an invalid per succeeded, want an error")
 	}
 }

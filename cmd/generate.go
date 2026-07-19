@@ -9,8 +9,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var noInvite bool
+
 func init() {
 	rootCmd.AddCommand(generateCmd)
+	generateCmd.Flags().BoolVar(&noInvite, "no-invite", false,
+		"create repos and push starter code but do NOT add/invite students or groups (for debugging)")
 }
 
 var generateCmd = &cobra.Command{
@@ -32,7 +36,7 @@ A student needs to exist on GitLab, a group needs to exist in the configuration 
 		if err != nil {
 			er(err)
 		}
-		if err := c.Generate(assignmentConfig); err != nil {
+		if err := c.Generate(assignmentConfig, noInvite); err != nil {
 			er(err)
 		}
 	},

@@ -30,6 +30,9 @@ func paramsToMap(p *model.OpParams) map[string]string {
 	if p.Unarchive != nil {
 		m["unarchive"] = strconv.FormatBool(*p.Unarchive)
 	}
+	if p.SkipInvite != nil {
+		m["skipInvite"] = strconv.FormatBool(*p.SkipInvite)
+	}
 	return m
 }
 

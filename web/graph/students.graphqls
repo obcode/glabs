@@ -1,0 +1,24 @@
+"""
+One roster entry of a course, enriched with ZPA (Prüfungsamt) student details when
+they could be found. `found` is false and the detail fields are null when ZPA is
+not configured or has no unambiguous match — the GUI then shows just the email.
+"""
+type CourseStudent {
+  "The roster email (the identity glabs keys students on)."
+  email: String!
+  "Whether ZPA details were found for this email."
+  found: Boolean!
+  firstName: String
+  lastName: String
+  "The ZPA gender field (sensitive — shown only when the course owner opts in)."
+  gender: String
+  "The ZPA group/study programme."
+  group: String
+  "The Matrikelnummer."
+  mtknr: String
+}
+
+extend type Query {
+  "The course-level roster of one of the caller's courses, enriched with ZPA details, sorted by last name."
+  courseStudents(course: String!): [CourseStudent!]!
+}

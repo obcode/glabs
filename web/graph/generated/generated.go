@@ -2210,6 +2210,8 @@ input OpParams {
   branch: String
   "archive: unarchive instead of archive."
   unarchive: Boolean
+  "generate: create repos and push starter code but do NOT add/invite students or groups (for debugging)."
+  skipInvite: Boolean
 }
 
 "One repository an operation would touch."
@@ -10296,7 +10298,7 @@ func (ec *executionContext) unmarshalInputOpParams(ctx context.Context, obj any)
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"accessLevel", "branch", "unarchive"}
+	fieldsInOrder := [...]string{"accessLevel", "branch", "unarchive", "skipInvite"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -10324,6 +10326,13 @@ func (ec *executionContext) unmarshalInputOpParams(ctx context.Context, obj any)
 				return it, err
 			}
 			it.Unarchive = data
+		case "skipInvite":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("skipInvite"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SkipInvite = data
 		}
 	}
 	return it, nil

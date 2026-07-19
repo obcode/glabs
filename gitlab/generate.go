@@ -9,7 +9,11 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func (c *Client) Generate(assignmentCfg *config.AssignmentConfig) error {
+// Generate creates the repositories for an assignment. When skipInvite is true,
+// the repos are created and seeded with starter code but students/groups are NOT
+// added or invited — a debugging aid to exercise generation without notifying
+// anyone.
+func (c *Client) Generate(assignmentCfg *config.AssignmentConfig, skipInvite bool) error {
 	assignmentGitLabGroupID, err := c.getGroupID(assignmentCfg)
 	if err != nil {
 		// try to create group if it does not exist, otherwise return an error
@@ -39,9 +43,9 @@ func (c *Client) Generate(assignmentCfg *config.AssignmentConfig) error {
 
 	switch per := assignmentCfg.Per; per {
 	case config.PerGroup:
-		c.generatePerGroup(assignmentCfg, assignmentGitLabGroupID, starterrepo)
+		c.generatePerGroup(assignmentCfg, assignmentGitLabGroupID, starterrepo, skipInvite)
 	case config.PerStudent:
-		c.generatePerStudent(assignmentCfg, assignmentGitLabGroupID, starterrepo)
+		c.generatePerStudent(assignmentCfg, assignmentGitLabGroupID, starterrepo, skipInvite)
 	default:
 		return fmt.Errorf("it is only possible to generate for students or groups, not for %v", per)
 	}
@@ -49,7 +53,7 @@ func (c *Client) Generate(assignmentCfg *config.AssignmentConfig) error {
 }
 
 func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGroupID int64,
-	projectname string, members []*config.Student, starterrepo *git.SourceRepo) {
+	projectname string, members []*config.Student, starterrepo *git.SourceRepo, skipInvite bool) {
 
 	task := c.rep.Task(aurora.Sprintf(aurora.Cyan(" generating project %s at %s"),
 		aurora.Yellow(projectname),
@@ -173,11 +177,15 @@ func (c *Client) generate(assignmentCfg *config.AssignmentConfig, assignmentGrou
 		}
 	}
 
+	if skipInvite {
+		c.rep.Println(aurora.Yellow("    ↪ skipping student/group invitation (--no-invite)"))
+		return
+	}
 	c.setaccess(assignmentCfg, project, members)
 }
 
 func (c *Client) generatePerStudent(assignmentCfg *config.AssignmentConfig, assignmentGroupID int64,
-	starterrepo *git.SourceRepo) {
+	starterrepo *git.SourceRepo, skipInvite bool) {
 	if len(assignmentCfg.Students) == 0 {
 		log.Info().Str("group", assignmentCfg.Course).Msg("no students found")
 		return
@@ -185,18 +193,18 @@ func (c *Client) generatePerStudent(assignmentCfg *config.AssignmentConfig, assi
 
 	for _, student := range assignmentCfg.Students {
 		name := assignmentCfg.RepoNameForStudent(student)
-		c.generate(assignmentCfg, assignmentGroupID, name, []*config.Student{student}, starterrepo)
+		c.generate(assignmentCfg, assignmentGroupID, name, []*config.Student{student}, starterrepo, skipInvite)
 	}
 }
 
 func (c *Client) generatePerGroup(assignmentCfg *config.AssignmentConfig, assignmentGroupID int64,
-	starterrepo *git.SourceRepo) {
+	starterrepo *git.SourceRepo, skipInvite bool) {
 	if len(assignmentCfg.Groups) == 0 {
 		log.Info().Str("group", assignmentCfg.Course).Msg("no groups found")
 		return
 	}
 
 	for _, grp := range assignmentCfg.Groups {
-		c.generate(assignmentCfg, assignmentGroupID, assignmentCfg.RepoNameForGroup(grp), grp.Members, starterrepo)
+		c.generate(assignmentCfg, assignmentGroupID, assignmentCfg.RepoNameForGroup(grp), grp.Members, starterrepo, skipInvite)
 	}
 }

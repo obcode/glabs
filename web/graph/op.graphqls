@@ -16,6 +16,8 @@ input OpParams {
   branch: String
   "archive: unarchive instead of archive."
   unarchive: Boolean
+  "generate: create repos and push starter code but do NOT add/invite students or groups (for debugging)."
+  skipInvite: Boolean
 }
 
 "One repository an operation would touch."

@@ -125,7 +125,7 @@ func executeOp(client *gitlab.Client, tok *opToken, cfg *config.AssignmentConfig
 	case "delete":
 		return client.Delete(cfg)
 	case "generate":
-		return client.Generate(cfg)
+		return client.Generate(cfg, tok.Params["skipInvite"] == "true")
 	case "update":
 		return client.Update(cfg)
 	}

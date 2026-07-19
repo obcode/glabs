@@ -226,6 +226,12 @@ type GroupInput struct {
 	Members []string `json:"members"`
 }
 
+// One key/value operation parameter of a scheduled job (e.g. accessLevel, branch).
+type JobParam struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 // One line of a running operation's streamed output.
 type LogLine struct {
 	Level LogLevel `json:"level"`
@@ -335,6 +341,32 @@ type ReportProgress struct {
 	Report *AssignmentReport `json:"report,omitempty"`
 	// Why generation failed — set only on the final event on failure.
 	Error *string `json:"error,omitempty"`
+}
+
+// A mutating operation queued to run at a wall-clock time. It is persisted in Mongo,
+// so it survives restarts and a missed run is caught up after downtime; the runner
+// re-checks the plan's config hash and a stored GitLab token when it fires, and
+// emails the outcome.
+type ScheduledJob struct {
+	ID string `json:"id"`
+	// The operation (setaccess, protect, archive, delete).
+	Op         string `json:"op"`
+	Course     string `json:"course"`
+	Assignment string `json:"assignment"`
+	// The subset of students/groups the op targets (empty = all).
+	OnlyFor []string `json:"onlyFor"`
+	// Op-specific parameters (e.g. accessLevel), sorted by key.
+	Params []*JobParam `json:"params"`
+	// When the job is scheduled to run.
+	RunAt time.Time `json:"runAt"`
+	// How long after runAt the job may still start before it is marked EXPIRED.
+	GraceMinutes int        `json:"graceMinutes"`
+	Status       JobStatus  `json:"status"`
+	CreatedAt    time.Time  `json:"createdAt"`
+	StartedAt    *time.Time `json:"startedAt,omitempty"`
+	FinishedAt   *time.Time `json:"finishedAt,omitempty"`
+	// The error message when the job FAILED or EXPIRED.
+	Err *string `json:"err,omitempty"`
 }
 
 // Version and build metadata for the running server.
@@ -483,6 +515,70 @@ func (e *FindingSeverity) UnmarshalJSON(b []byte) error {
 }
 
 func (e FindingSeverity) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+// The lifecycle state of a scheduled job. It starts PENDING, is claimed to RUNNING, and ends in exactly one terminal state.
+type JobStatus string
+
+const (
+	JobStatusPending   JobStatus = "PENDING"
+	JobStatusRunning   JobStatus = "RUNNING"
+	JobStatusDone      JobStatus = "DONE"
+	JobStatusFailed    JobStatus = "FAILED"
+	JobStatusExpired   JobStatus = "EXPIRED"
+	JobStatusCancelled JobStatus = "CANCELLED"
+)
+
+var AllJobStatus = []JobStatus{
+	JobStatusPending,
+	JobStatusRunning,
+	JobStatusDone,
+	JobStatusFailed,
+	JobStatusExpired,
+	JobStatusCancelled,
+}
+
+func (e JobStatus) IsValid() bool {
+	switch e {
+	case JobStatusPending, JobStatusRunning, JobStatusDone, JobStatusFailed, JobStatusExpired, JobStatusCancelled:
+		return true
+	}
+	return false
+}
+
+func (e JobStatus) String() string {
+	return string(e)
+}
+
+func (e *JobStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = JobStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid JobStatus", str)
+	}
+	return nil
+}
+
+func (e JobStatus) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *JobStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e JobStatus) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

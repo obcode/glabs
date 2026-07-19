@@ -171,12 +171,18 @@ type ComplexityRoot struct {
 		Name    func(childComplexity int) int
 	}
 
+	JobParam struct {
+		Key   func(childComplexity int) int
+		Value func(childComplexity int) int
+	}
+
 	LogLine struct {
 		Level func(childComplexity int) int
 		Text  func(childComplexity int) int
 	}
 
 	Mutation struct {
+		CancelScheduledJob   func(childComplexity int, id string) int
 		CopyAssignment       func(childComplexity int, course string, from string, newName string) int
 		CreateCourse         func(childComplexity int, name string, coursePath string, semesterPath string, useCoursenameAsPrefix bool, useEmailDomainAsSuffix bool) int
 		DeleteAssignment     func(childComplexity int, course string, name string) int
@@ -187,6 +193,7 @@ type ComplexityRoot struct {
 		RemoveGitlabToken    func(childComplexity int) int
 		RenameAssignment     func(childComplexity int, course string, oldName string, newName string) int
 		RenameCourse         func(childComplexity int, oldName string, newName string) int
+		ScheduleOp           func(childComplexity int, token string, runAt time.Time, graceMinutes *int, confirmPhrase *string) int
 		SetAssignment        func(childComplexity int, course string, name string, draft []*model.FieldValueInput) int
 		SetCourse            func(childComplexity int, name string, coursePath string, semesterPath string, useCoursenameAsPrefix bool, useEmailDomainAsSuffix bool) int
 		SetCourseGroups      func(childComplexity int, name string, groups []*model.GroupInput) int
@@ -251,6 +258,8 @@ type ComplexityRoot struct {
 		Courses                 func(childComplexity int) int
 		GitlabToken             func(childComplexity int) int
 		Me                      func(childComplexity int) int
+		ScheduledJob            func(childComplexity int, id string) int
+		ScheduledJobs           func(childComplexity int, status []model.JobStatus) int
 		ServerInfo              func(childComplexity int) int
 		ValidateAssignmentDraft func(childComplexity int, course string, name string, draft []*model.FieldValueInput) int
 	}
@@ -276,6 +285,22 @@ type ComplexityRoot struct {
 		Error   func(childComplexity int) int
 		Message func(childComplexity int) int
 		Report  func(childComplexity int) int
+	}
+
+	ScheduledJob struct {
+		Assignment   func(childComplexity int) int
+		Course       func(childComplexity int) int
+		CreatedAt    func(childComplexity int) int
+		Err          func(childComplexity int) int
+		FinishedAt   func(childComplexity int) int
+		GraceMinutes func(childComplexity int) int
+		ID           func(childComplexity int) int
+		OnlyFor      func(childComplexity int) int
+		Op           func(childComplexity int) int
+		Params       func(childComplexity int) int
+		RunAt        func(childComplexity int) int
+		StartedAt    func(childComplexity int) int
+		Status       func(childComplexity int) int
 	}
 
 	ServerInfo struct {
@@ -329,6 +354,8 @@ type MutationResolver interface {
 	SetGitlabToken(ctx context.Context, token string) (*model.GitLabTokenStatus, error)
 	RemoveGitlabToken(ctx context.Context) (*model.GitLabTokenStatus, error)
 	PlanOp(ctx context.Context, op model.Op, course string, assignment string, params *model.OpParams, onlyFor []string) (*model.OpPlan, error)
+	ScheduleOp(ctx context.Context, token string, runAt time.Time, graceMinutes *int, confirmPhrase *string) (*model.ScheduledJob, error)
+	CancelScheduledJob(ctx context.Context, id string) (*model.ScheduledJob, error)
 }
 type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
@@ -349,6 +376,8 @@ type QueryResolver interface {
 	CourseLint(ctx context.Context, name string) ([]*model.Finding, error)
 	GitlabToken(ctx context.Context) (*model.GitLabTokenStatus, error)
 	AssignmentReport(ctx context.Context, course string, name string) (*model.AssignmentReport, error)
+	ScheduledJobs(ctx context.Context, status []model.JobStatus) ([]*model.ScheduledJob, error)
+	ScheduledJob(ctx context.Context, id string) (*model.ScheduledJob, error)
 }
 type SubscriptionResolver interface {
 	AssignmentReportProgress(ctx context.Context, course string, name string) (<-chan *model.ReportProgress, error)
@@ -866,6 +895,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.GroupCheck.Name(childComplexity), true
 
+	case "JobParam.key":
+		if e.ComplexityRoot.JobParam.Key == nil {
+			break
+		}
+
+		return e.ComplexityRoot.JobParam.Key(childComplexity), true
+	case "JobParam.value":
+		if e.ComplexityRoot.JobParam.Value == nil {
+			break
+		}
+
+		return e.ComplexityRoot.JobParam.Value(childComplexity), true
+
 	case "LogLine.level":
 		if e.ComplexityRoot.LogLine.Level == nil {
 			break
@@ -879,6 +921,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.LogLine.Text(childComplexity), true
 
+	case "Mutation.cancelScheduledJob":
+		if e.ComplexityRoot.Mutation.CancelScheduledJob == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_cancelScheduledJob_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CancelScheduledJob(childComplexity, args["id"].(string)), true
 	case "Mutation.copyAssignment":
 		if e.ComplexityRoot.Mutation.CopyAssignment == nil {
 			break
@@ -984,6 +1037,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.RenameCourse(childComplexity, args["oldName"].(string), args["newName"].(string)), true
+	case "Mutation.scheduleOp":
+		if e.ComplexityRoot.Mutation.ScheduleOp == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_scheduleOp_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.ScheduleOp(childComplexity, args["token"].(string), args["runAt"].(time.Time), args["graceMinutes"].(*int), args["confirmPhrase"].(*string)), true
 	case "Mutation.setAssignment":
 		if e.ComplexityRoot.Mutation.SetAssignment == nil {
 			break
@@ -1354,6 +1418,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Me(childComplexity), true
+	case "Query.scheduledJob":
+		if e.ComplexityRoot.Query.ScheduledJob == nil {
+			break
+		}
+
+		args, err := ec.field_Query_scheduledJob_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.ScheduledJob(childComplexity, args["id"].(string)), true
+	case "Query.scheduledJobs":
+		if e.ComplexityRoot.Query.ScheduledJobs == nil {
+			break
+		}
+
+		args, err := ec.field_Query_scheduledJobs_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.ScheduledJobs(childComplexity, args["status"].([]model.JobStatus)), true
 	case "Query.serverInfo":
 		if e.ComplexityRoot.Query.ServerInfo == nil {
 			break
@@ -1441,6 +1527,85 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ReportProgress.Report(childComplexity), true
+
+	case "ScheduledJob.assignment":
+		if e.ComplexityRoot.ScheduledJob.Assignment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ScheduledJob.Assignment(childComplexity), true
+	case "ScheduledJob.course":
+		if e.ComplexityRoot.ScheduledJob.Course == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ScheduledJob.Course(childComplexity), true
+	case "ScheduledJob.createdAt":
+		if e.ComplexityRoot.ScheduledJob.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ScheduledJob.CreatedAt(childComplexity), true
+	case "ScheduledJob.err":
+		if e.ComplexityRoot.ScheduledJob.Err == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ScheduledJob.Err(childComplexity), true
+	case "ScheduledJob.finishedAt":
+		if e.ComplexityRoot.ScheduledJob.FinishedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ScheduledJob.FinishedAt(childComplexity), true
+	case "ScheduledJob.graceMinutes":
+		if e.ComplexityRoot.ScheduledJob.GraceMinutes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ScheduledJob.GraceMinutes(childComplexity), true
+	case "ScheduledJob.id":
+		if e.ComplexityRoot.ScheduledJob.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ScheduledJob.ID(childComplexity), true
+	case "ScheduledJob.onlyFor":
+		if e.ComplexityRoot.ScheduledJob.OnlyFor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ScheduledJob.OnlyFor(childComplexity), true
+	case "ScheduledJob.op":
+		if e.ComplexityRoot.ScheduledJob.Op == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ScheduledJob.Op(childComplexity), true
+	case "ScheduledJob.params":
+		if e.ComplexityRoot.ScheduledJob.Params == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ScheduledJob.Params(childComplexity), true
+	case "ScheduledJob.runAt":
+		if e.ComplexityRoot.ScheduledJob.RunAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ScheduledJob.RunAt(childComplexity), true
+	case "ScheduledJob.startedAt":
+		if e.ComplexityRoot.ScheduledJob.StartedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ScheduledJob.StartedAt(childComplexity), true
+	case "ScheduledJob.status":
+		if e.ComplexityRoot.ScheduledJob.Status == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ScheduledJob.Status(childComplexity), true
 
 	case "ServerInfo.commit":
 		if e.ComplexityRoot.ServerInfo.Commit == nil {
@@ -2224,6 +2389,69 @@ type Subscription {
   assignmentReportProgress(course: String!, name: String!): ReportProgress!
 }
 `, BuiltIn: false},
+	{Name: "../scheduling.graphqls", Input: `"The lifecycle state of a scheduled job. It starts PENDING, is claimed to RUNNING, and ends in exactly one terminal state."
+enum JobStatus {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+"One key/value operation parameter of a scheduled job (e.g. accessLevel, branch)."
+type JobParam {
+  key: String!
+  value: String!
+}
+
+"""
+A mutating operation queued to run at a wall-clock time. It is persisted in Mongo,
+so it survives restarts and a missed run is caught up after downtime; the runner
+re-checks the plan's config hash and a stored GitLab token when it fires, and
+emails the outcome.
+"""
+type ScheduledJob {
+  id: ID!
+  "The operation (setaccess, protect, archive, delete)."
+  op: String!
+  course: String!
+  assignment: String!
+  "The subset of students/groups the op targets (empty = all)."
+  onlyFor: [String!]!
+  "Op-specific parameters (e.g. accessLevel), sorted by key."
+  params: [JobParam!]!
+  "When the job is scheduled to run."
+  runAt: Time!
+  "How long after runAt the job may still start before it is marked EXPIRED."
+  graceMinutes: Int!
+  status: JobStatus!
+  createdAt: Time!
+  startedAt: Time
+  finishedAt: Time
+  "The error message when the job FAILED or EXPIRED."
+  err: String
+}
+
+extend type Mutation {
+  """
+  Schedule a planned mutating operation (from planOp's token) to run at runAt. Reuses
+  the SAME confirm token as runOp; the token's config hash is re-checked when the job
+  fires. graceMinutes defaults to 60. For a destructive op (archive/delete)
+  confirmPhrase must equal the plan's confirmPhrase. Requires a stored GitLab token.
+  """
+  scheduleOp(token: String!, runAt: Time!, graceMinutes: Int, confirmPhrase: String): ScheduledJob!
+  "Cancel one of the caller's PENDING jobs. A running or finished job cannot be cancelled."
+  cancelScheduledJob(id: ID!): ScheduledJob!
+}
+
+extend type Query {
+  "The caller's scheduled jobs, newest scheduled first, optionally filtered by status."
+  scheduledJobs(status: [JobStatus!]): [ScheduledJob!]!
+  "One of the caller's scheduled jobs."
+  scheduledJob(id: ID!): ScheduledJob
+}
+`, BuiltIn: false},
 	{Name: "../schema.graphqls", Input: `"""
 An authenticated user of glabs-web. Identity comes from the auth proxy; there
 are no roles — each user manages only their own courses.
@@ -2520,6 +2748,16 @@ func (ec *executionContext) childFields_GroupCheck(ctx context.Context, field gr
 	return nil, fmt.Errorf("no field named %q was found under type GroupCheck", field.Name)
 }
 
+func (ec *executionContext) childFields_JobParam(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "key":
+		return ec.fieldContext_JobParam_key(ctx, field)
+	case "value":
+		return ec.fieldContext_JobParam_value(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type JobParam", field.Name)
+}
+
 func (ec *executionContext) childFields_LogLine(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "level":
@@ -2654,6 +2892,38 @@ func (ec *executionContext) childFields_ReportProgress(ctx context.Context, fiel
 		return ec.fieldContext_ReportProgress_error(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type ReportProgress", field.Name)
+}
+
+func (ec *executionContext) childFields_ScheduledJob(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "id":
+		return ec.fieldContext_ScheduledJob_id(ctx, field)
+	case "op":
+		return ec.fieldContext_ScheduledJob_op(ctx, field)
+	case "course":
+		return ec.fieldContext_ScheduledJob_course(ctx, field)
+	case "assignment":
+		return ec.fieldContext_ScheduledJob_assignment(ctx, field)
+	case "onlyFor":
+		return ec.fieldContext_ScheduledJob_onlyFor(ctx, field)
+	case "params":
+		return ec.fieldContext_ScheduledJob_params(ctx, field)
+	case "runAt":
+		return ec.fieldContext_ScheduledJob_runAt(ctx, field)
+	case "graceMinutes":
+		return ec.fieldContext_ScheduledJob_graceMinutes(ctx, field)
+	case "status":
+		return ec.fieldContext_ScheduledJob_status(ctx, field)
+	case "createdAt":
+		return ec.fieldContext_ScheduledJob_createdAt(ctx, field)
+	case "startedAt":
+		return ec.fieldContext_ScheduledJob_startedAt(ctx, field)
+	case "finishedAt":
+		return ec.fieldContext_ScheduledJob_finishedAt(ctx, field)
+	case "err":
+		return ec.fieldContext_ScheduledJob_err(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type ScheduledJob", field.Name)
 }
 
 func (ec *executionContext) childFields_ServerInfo(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -2819,6 +3089,20 @@ func (ec *executionContext) childFields___Type(ctx context.Context, field graphq
 // endregion ************************** internal!.gotpl ***************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_cancelScheduledJob_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNID2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_copyAssignment_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -3063,6 +3347,44 @@ func (ec *executionContext) field_Mutation_renameCourse_args(ctx context.Context
 		return nil, err
 	}
 	args["newName"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_scheduleOp_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "token",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["token"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "runAt",
+		func(ctx context.Context, v any) (time.Time, error) {
+			return ec.unmarshalNTime2timeᚐTime(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["runAt"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "graceMinutes",
+		func(ctx context.Context, v any) (*int, error) {
+			return ec.unmarshalOInt2ᚖint(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["graceMinutes"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "confirmPhrase",
+		func(ctx context.Context, v any) (*string, error) {
+			return ec.unmarshalOString2ᚖstring(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["confirmPhrase"] = arg3
 	return args, nil
 }
 
@@ -3369,6 +3691,34 @@ func (ec *executionContext) field_Query_course_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_scheduledJob_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNID2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_scheduledJobs_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "status",
+		func(ctx context.Context, v any) ([]model.JobStatus, error) {
+			return ec.unmarshalOJobStatus2ᚕgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐJobStatusᚄ(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["status"] = arg0
 	return args, nil
 }
 
@@ -5436,6 +5786,52 @@ func (ec *executionContext) fieldContext_GroupCheck_members(_ context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _JobParam_key(ctx context.Context, field graphql.CollectedField, obj *model.JobParam) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_JobParam_key(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Key, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_JobParam_key(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("JobParam", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _JobParam_value(ctx context.Context, field graphql.CollectedField, obj *model.JobParam) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_JobParam_value(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Value, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_JobParam_value(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("JobParam", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _LogLine_level(ctx context.Context, field graphql.CollectedField, obj *model.LogLine) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -6124,6 +6520,94 @@ func (ec *executionContext) fieldContext_Mutation_planOp(ctx context.Context, fi
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_planOp_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_scheduleOp(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_scheduleOp(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ScheduleOp(ctx, fc.Args["token"].(string), fc.Args["runAt"].(time.Time), fc.Args["graceMinutes"].(*int), fc.Args["confirmPhrase"].(*string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ScheduledJob) graphql.Marshaler {
+			return ec.marshalNScheduledJob2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐScheduledJob(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_scheduleOp(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ScheduledJob(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_scheduleOp_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_cancelScheduledJob(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_cancelScheduledJob(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().CancelScheduledJob(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ScheduledJob) graphql.Marshaler {
+			return ec.marshalNScheduledJob2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐScheduledJob(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_cancelScheduledJob(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ScheduledJob(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_cancelScheduledJob_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -7506,6 +7990,94 @@ func (ec *executionContext) fieldContext_Query_assignmentReport(ctx context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_scheduledJobs(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_scheduledJobs(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().ScheduledJobs(ctx, fc.Args["status"].([]model.JobStatus))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.ScheduledJob) graphql.Marshaler {
+			return ec.marshalNScheduledJob2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐScheduledJobᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_scheduledJobs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ScheduledJob(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_scheduledJobs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_scheduledJob(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_scheduledJob(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().ScheduledJob(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.ScheduledJob) graphql.Marshaler {
+			return ec.marshalOScheduledJob2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐScheduledJob(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Query_scheduledJob(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_ScheduledJob(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_scheduledJob_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7860,6 +8432,314 @@ func (ec *executionContext) _ReportProgress_error(ctx context.Context, field gra
 }
 func (ec *executionContext) fieldContext_ReportProgress_error(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("ReportProgress", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ScheduledJob_id(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ScheduledJob_id(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNID2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ScheduledJob_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ScheduledJob", field, false, false, errors.New("field of type ID does not have child fields"))
+}
+
+func (ec *executionContext) _ScheduledJob_op(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ScheduledJob_op(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Op, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ScheduledJob_op(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ScheduledJob", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ScheduledJob_course(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ScheduledJob_course(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Course, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ScheduledJob_course(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ScheduledJob", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ScheduledJob_assignment(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ScheduledJob_assignment(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Assignment, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ScheduledJob_assignment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ScheduledJob", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ScheduledJob_onlyFor(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ScheduledJob_onlyFor(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OnlyFor, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ScheduledJob_onlyFor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ScheduledJob", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ScheduledJob_params(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ScheduledJob_params(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Params, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.JobParam) graphql.Marshaler {
+			return ec.marshalNJobParam2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐJobParamᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ScheduledJob_params(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ScheduledJob",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_JobParam(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ScheduledJob_runAt(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ScheduledJob_runAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RunAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ScheduledJob_runAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ScheduledJob", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _ScheduledJob_graceMinutes(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ScheduledJob_graceMinutes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.GraceMinutes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ScheduledJob_graceMinutes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ScheduledJob", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _ScheduledJob_status(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ScheduledJob_status(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Status, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v model.JobStatus) graphql.Marshaler {
+			return ec.marshalNJobStatus2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐJobStatus(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ScheduledJob_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ScheduledJob", field, false, false, errors.New("field of type JobStatus does not have child fields"))
+}
+
+func (ec *executionContext) _ScheduledJob_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ScheduledJob_createdAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ScheduledJob_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ScheduledJob", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _ScheduledJob_startedAt(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ScheduledJob_startedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.StartedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ScheduledJob_startedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ScheduledJob", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _ScheduledJob_finishedAt(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ScheduledJob_finishedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.FinishedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ScheduledJob_finishedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ScheduledJob", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _ScheduledJob_err(ctx context.Context, field graphql.CollectedField, obj *model.ScheduledJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ScheduledJob_err(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Err, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
+			return ec.marshalOString2ᚖstring(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ScheduledJob_err(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ScheduledJob", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _ServerInfo_version(ctx context.Context, field graphql.CollectedField, obj *model.ServerInfo) (ret graphql.Marshaler) {
@@ -10444,6 +11324,49 @@ func (ec *executionContext) _GroupCheck(ctx context.Context, sel ast.SelectionSe
 	return out
 }
 
+var jobParamImplementors = []string{"JobParam"}
+
+func (ec *executionContext) _JobParam(ctx context.Context, sel ast.SelectionSet, obj *model.JobParam) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, jobParamImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("JobParam")
+		case "key":
+			out.Values[i] = ec._JobParam_key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "value":
+			out.Values[i] = ec._JobParam_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var logLineImplementors = []string{"LogLine"}
 
 func (ec *executionContext) _LogLine(ctx context.Context, sel ast.SelectionSet, obj *model.LogLine) graphql.Marshaler {
@@ -10608,6 +11531,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "planOp":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_planOp(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "scheduleOp":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_scheduleOp(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "cancelScheduledJob":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_cancelScheduledJob(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -11321,6 +12258,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "scheduledJobs":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_scheduledJobs(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "scheduledJob":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_scheduledJob(ctx, field)
+				if res == graphql.RequiredNull {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -11519,6 +12500,104 @@ func (ec *executionContext) _ReportProgress(ctx context.Context, sel ast.Selecti
 			}
 		case "error":
 			out.Values[i] = ec._ReportProgress_error(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var scheduledJobImplementors = []string{"ScheduledJob"}
+
+func (ec *executionContext) _ScheduledJob(ctx context.Context, sel ast.SelectionSet, obj *model.ScheduledJob) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, scheduledJobImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ScheduledJob")
+		case "id":
+			out.Values[i] = ec._ScheduledJob_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "op":
+			out.Values[i] = ec._ScheduledJob_op(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "course":
+			out.Values[i] = ec._ScheduledJob_course(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "assignment":
+			out.Values[i] = ec._ScheduledJob_assignment(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "onlyFor":
+			out.Values[i] = ec._ScheduledJob_onlyFor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "params":
+			out.Values[i] = ec._ScheduledJob_params(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "runAt":
+			out.Values[i] = ec._ScheduledJob_runAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "graceMinutes":
+			out.Values[i] = ec._ScheduledJob_graceMinutes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "status":
+			out.Values[i] = ec._ScheduledJob_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._ScheduledJob_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "startedAt":
+			out.Values[i] = ec._ScheduledJob_startedAt(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "finishedAt":
+			out.Values[i] = ec._ScheduledJob_finishedAt(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "err":
+			out.Values[i] = ec._ScheduledJob_err(ctx, field, obj)
 			if out.Values[i] == graphql.RequiredNull {
 				out.Invalids++
 			}
@@ -12531,6 +13610,22 @@ func (ec *executionContext) unmarshalNGroupInput2ᚖgithubᚗcomᚋobcodeᚋglab
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNID2string(ctx context.Context, v any) (string, error) {
+	res, err := graphql.UnmarshalID(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalID(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v any) (int, error) {
 	res, err := graphql.UnmarshalInt(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -12545,6 +13640,42 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNJobParam2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐJobParamᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.JobParam) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNJobParam2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐJobParam(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNJobParam2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐJobParam(ctx context.Context, sel ast.SelectionSet, v *model.JobParam) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._JobParam(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNJobStatus2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐJobStatus(ctx context.Context, v any) (model.JobStatus, error) {
+	var res model.JobStatus
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNJobStatus2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐJobStatus(ctx context.Context, sel ast.SelectionSet, v model.JobStatus) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNLogLevel2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐLogLevel(ctx context.Context, v any) (model.LogLevel, error) {
@@ -12711,6 +13842,36 @@ func (ec *executionContext) marshalNReportProgress2ᚖgithubᚗcomᚋobcodeᚋgl
 		return graphql.Null
 	}
 	return ec._ReportProgress(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNScheduledJob2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐScheduledJob(ctx context.Context, sel ast.SelectionSet, v model.ScheduledJob) graphql.Marshaler {
+	return ec._ScheduledJob(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNScheduledJob2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐScheduledJobᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ScheduledJob) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNScheduledJob2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐScheduledJob(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNScheduledJob2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐScheduledJob(ctx context.Context, sel ast.SelectionSet, v *model.ScheduledJob) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ScheduledJob(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNServerInfo2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐServerInfo(ctx context.Context, sel ast.SelectionSet, v model.ServerInfo) graphql.Marshaler {
@@ -13071,6 +14232,60 @@ func (ec *executionContext) marshalODockerImagesReport2ᚖgithubᚗcomᚋobcode�
 	return ec._DockerImagesReport(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v any) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalInt(*v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOJobStatus2ᚕgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐJobStatusᚄ(ctx context.Context, v any) ([]model.JobStatus, error) {
+	if v == nil {
+		return nil, nil
+	}
+	vSlice := graphql.CoerceList(v)
+	var err error
+	res := make([]model.JobStatus, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNJobStatus2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐJobStatus(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalOJobStatus2ᚕgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐJobStatusᚄ(ctx context.Context, sel ast.SelectionSet, v []model.JobStatus) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNJobStatus2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐJobStatus(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalOOpParams2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐOpParams(ctx context.Context, v any) (*model.OpParams, error) {
 	if v == nil {
 		return nil, nil
@@ -13091,6 +14306,13 @@ func (ec *executionContext) marshalOReleaseReport2ᚖgithubᚗcomᚋobcodeᚋgla
 		return graphql.Null
 	}
 	return ec._ReleaseReport(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOScheduledJob2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐScheduledJob(ctx context.Context, sel ast.SelectionSet, v *model.ScheduledJob) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ScheduledJob(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2ᚕstringᚄ(ctx context.Context, v any) ([]string, error) {

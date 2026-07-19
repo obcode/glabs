@@ -2,6 +2,7 @@ package graph
 
 import (
 	"sort"
+	"strings"
 
 	"github.com/obcode/glabs/v3/config"
 	"github.com/obcode/glabs/v3/web/app"
@@ -69,6 +70,61 @@ func toGraphSeverity(s config.Severity) model.FindingSeverity {
 
 func toGraphTokenStatus(s *app.GitLabTokenStatus) *model.GitLabTokenStatus {
 	return &model.GitLabTokenStatus{Set: s.Set, UpdatedAt: s.UpdatedAt}
+}
+
+// toGraphJob projects a scheduled job onto the GraphQL type. The status string
+// maps to the enum by upper-casing (the enum values are the upper-case forms of
+// the stored lower-case statuses).
+func toGraphJob(j *db.ScheduledJob) *model.ScheduledJob {
+	keys := make([]string, 0, len(j.Params))
+	for k := range j.Params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	params := make([]*model.JobParam, 0, len(keys))
+	for _, k := range keys {
+		params = append(params, &model.JobParam{Key: k, Value: j.Params[k]})
+	}
+	onlyFor := j.OnlyFor
+	if onlyFor == nil {
+		onlyFor = []string{}
+	}
+	return &model.ScheduledJob{
+		ID:           j.ID,
+		Op:           j.Op,
+		Course:       j.Course,
+		Assignment:   j.Assignment,
+		OnlyFor:      onlyFor,
+		Params:       params,
+		RunAt:        j.RunAt,
+		GraceMinutes: j.GraceMin,
+		Status:       model.JobStatus(strings.ToUpper(j.Status)),
+		CreatedAt:    j.CreatedAt,
+		StartedAt:    j.StartedAt,
+		FinishedAt:   j.FinishedAt,
+		Err:          emptyToNil(j.Err),
+	}
+}
+
+func toGraphJobs(jobs []*db.ScheduledJob) []*model.ScheduledJob {
+	out := make([]*model.ScheduledJob, 0, len(jobs))
+	for _, j := range jobs {
+		out = append(out, toGraphJob(j))
+	}
+	return out
+}
+
+// toDBStatuses lower-cases the GraphQL enum values back to the stored status
+// strings for a query filter.
+func toDBStatuses(in []model.JobStatus) []string {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(in))
+	for _, s := range in {
+		out = append(out, strings.ToLower(string(s)))
+	}
+	return out
 }
 
 // toGraphActivity projects the activity log onto the GraphQL type.

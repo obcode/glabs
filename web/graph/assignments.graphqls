@@ -136,6 +136,8 @@ extend type Mutation {
   setAssignment(course: String!, name: String!, draft: [FieldValueInput!]!): AssignmentView!
   "Import a single assignment into one of the caller's courses from a YAML snippet keyed by the assignment name (as it appears in a course file), upserting it: validate against the real resolver, then persist. Rejects a concrete assignment that does not resolve."
   importAssignmentYAML(course: String!, yaml: String!): AssignmentView!
+  "Copy one of the caller's assignments to a new name within the same course. Only the name must be unique; the copy is otherwise identical (including `extends`). Rejects a name that already exists or is not path-safe."
+  copyAssignment(course: String!, from: String!, newName: String!): AssignmentView!
   "Delete one assignment from one of the caller's courses. Returns false if there was no such assignment."
   deleteAssignment(course: String!, name: String!): Boolean!
 }

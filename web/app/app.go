@@ -12,6 +12,7 @@ import (
 	"github.com/obcode/glabs/v3/web/db"
 	"github.com/obcode/glabs/v3/web/graph/model"
 	"github.com/obcode/glabs/v3/web/secrets"
+	"github.com/obcode/glabs/v3/web/zpa"
 	"github.com/spf13/viper"
 )
 
@@ -63,9 +64,12 @@ type App struct {
 	// configured test recipient.
 	mailer     Mailer
 	mailDryRun bool
+	// zpa enriches the roster with student details; nil when ZPA is not configured
+	// (then the students page shows just the emails).
+	zpa *zpa.Client
 }
 
-func New(database *db.DB, sealer *secrets.Sealer, gitlabHost string, mailer Mailer, mailDryRun bool) *App {
+func New(database *db.DB, sealer *secrets.Sealer, gitlabHost string, mailer Mailer, mailDryRun bool, zpaClient *zpa.Client) *App {
 	return &App{
 		db:         database,
 		sealer:     sealer,
@@ -73,6 +77,7 @@ func New(database *db.DB, sealer *secrets.Sealer, gitlabHost string, mailer Mail
 		ops:        newOpGuard(),
 		mailer:     mailer,
 		mailDryRun: mailDryRun,
+		zpa:        zpaClient,
 	}
 }
 

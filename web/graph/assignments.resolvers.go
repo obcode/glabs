@@ -41,6 +41,15 @@ func (r *mutationResolver) CopyAssignment(ctx context.Context, course string, fr
 	return toGraphAssignmentView(view), nil
 }
 
+// RenameAssignment is the resolver for the renameAssignment field.
+func (r *mutationResolver) RenameAssignment(ctx context.Context, course string, oldName string, newName string) (*model.AssignmentView, error) {
+	view, err := r.app.RenameAssignment(ctx, course, oldName, newName)
+	if err != nil {
+		return nil, err
+	}
+	return toGraphAssignmentView(view), nil
+}
+
 // DeleteAssignment is the resolver for the deleteAssignment field.
 func (r *mutationResolver) DeleteAssignment(ctx context.Context, course string, name string) (bool, error) {
 	return r.app.DeleteAssignment(ctx, course, name)

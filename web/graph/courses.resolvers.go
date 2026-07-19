@@ -65,6 +65,15 @@ func (r *mutationResolver) SetCourseGroups(ctx context.Context, name string, gro
 	return toGraphCourse(stored), nil
 }
 
+// RenameCourse is the resolver for the renameCourse field.
+func (r *mutationResolver) RenameCourse(ctx context.Context, oldName string, newName string) (*model.Course, error) {
+	stored, err := r.app.RenameCourse(ctx, oldName, newName)
+	if err != nil {
+		return nil, err
+	}
+	return toGraphCourse(stored), nil
+}
+
 // DeleteCourse is the resolver for the deleteCourse field.
 func (r *mutationResolver) DeleteCourse(ctx context.Context, name string) (bool, error) {
 	if err := r.app.DeleteCourse(ctx, name); err != nil {

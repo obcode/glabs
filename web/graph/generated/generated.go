@@ -177,6 +177,8 @@ type ComplexityRoot struct {
 		ImportCourseYaml     func(childComplexity int, yaml string) int
 		PlanOp               func(childComplexity int, op model.Op, course string, assignment string, params *model.OpParams, onlyFor []string) int
 		RemoveGitlabToken    func(childComplexity int) int
+		RenameAssignment     func(childComplexity int, course string, oldName string, newName string) int
+		RenameCourse         func(childComplexity int, oldName string, newName string) int
 		SetAssignment        func(childComplexity int, course string, name string, draft []*model.FieldValueInput) int
 		SetCourse            func(childComplexity int, name string, coursePath string, semesterPath string, useCoursenameAsPrefix bool, useEmailDomainAsSuffix bool) int
 		SetCourseGroups      func(childComplexity int, name string, groups []*model.GroupInput) int
@@ -307,10 +309,12 @@ type MutationResolver interface {
 	SetCourse(ctx context.Context, name string, coursePath string, semesterPath string, useCoursenameAsPrefix bool, useEmailDomainAsSuffix bool) (*model.Course, error)
 	SetCourseStudents(ctx context.Context, name string, students []string) (*model.Course, error)
 	SetCourseGroups(ctx context.Context, name string, groups []*model.GroupInput) (*model.Course, error)
+	RenameCourse(ctx context.Context, oldName string, newName string) (*model.Course, error)
 	DeleteCourse(ctx context.Context, name string) (bool, error)
 	SetAssignment(ctx context.Context, course string, name string, draft []*model.FieldValueInput) (*model.AssignmentView, error)
 	ImportAssignmentYaml(ctx context.Context, course string, yaml string) (*model.AssignmentView, error)
 	CopyAssignment(ctx context.Context, course string, from string, newName string) (*model.AssignmentView, error)
+	RenameAssignment(ctx context.Context, course string, oldName string, newName string) (*model.AssignmentView, error)
 	DeleteAssignment(ctx context.Context, course string, name string) (bool, error)
 	SetGitlabToken(ctx context.Context, token string) (*model.GitLabTokenStatus, error)
 	RemoveGitlabToken(ctx context.Context) (*model.GitLabTokenStatus, error)
@@ -915,6 +919,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.RemoveGitlabToken(childComplexity), true
+	case "Mutation.renameAssignment":
+		if e.ComplexityRoot.Mutation.RenameAssignment == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_renameAssignment_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.RenameAssignment(childComplexity, args["course"].(string), args["oldName"].(string), args["newName"].(string)), true
+	case "Mutation.renameCourse":
+		if e.ComplexityRoot.Mutation.RenameCourse == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_renameCourse_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.RenameCourse(childComplexity, args["oldName"].(string), args["newName"].(string)), true
 	case "Mutation.setAssignment":
 		if e.ComplexityRoot.Mutation.SetAssignment == nil {
 			break
@@ -1704,6 +1730,8 @@ extend type Mutation {
   importAssignmentYAML(course: String!, yaml: String!): AssignmentView!
   "Copy one of the caller's assignments to a new name within the same course. Only the name must be unique; the copy is otherwise identical (including ` + "`" + `extends` + "`" + `). Rejects a name that already exists or is not path-safe."
   copyAssignment(course: String!, from: String!, newName: String!): AssignmentView!
+  "Rename one of the caller's assignments within a course. Any sibling that inherits from the old name via ` + "`" + `extends` + "`" + ` is repointed to the new name. Rejects a name that already exists or is not path-safe."
+  renameAssignment(course: String!, oldName: String!, newName: String!): AssignmentView!
   "Delete one assignment from one of the caller's courses. Returns false if there was no such assignment."
   deleteAssignment(course: String!, name: String!): Boolean!
 }
@@ -1877,6 +1905,8 @@ type Mutation {
   setCourseStudents(name: String!, students: [String!]!): Course!
   "Replace the course-level groups of one of the caller's courses. The GUI merges additively before calling this."
   setCourseGroups(name: String!, groups: [GroupInput!]!): Course!
+  "Rename one of the caller's courses. The course name is the YAML file's top-level key, so this re-encodes the raw bytes. Rejects a new name that already exists or is not path-safe."
+  renameCourse(oldName: String!, newName: String!): Course!
   "Delete one of the current user's courses."
   deleteCourse(name: String!): Boolean!
 }
@@ -2874,6 +2904,58 @@ func (ec *executionContext) field_Mutation_planOp_args(ctx context.Context, rawA
 		return nil, err
 	}
 	args["onlyFor"] = arg4
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_renameAssignment_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "course",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["course"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "oldName",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["oldName"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "newName",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["newName"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_renameCourse_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "oldName",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["oldName"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "newName",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["newName"] = arg1
 	return args, nil
 }
 
@@ -5362,6 +5444,50 @@ func (ec *executionContext) fieldContext_Mutation_setCourseGroups(ctx context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_renameCourse(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_renameCourse(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().RenameCourse(ctx, fc.Args["oldName"].(string), fc.Args["newName"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.Course) graphql.Marshaler {
+			return ec.marshalNCourse2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCourse(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_renameCourse(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Course(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_renameCourse_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_deleteCourse(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5532,6 +5658,50 @@ func (ec *executionContext) fieldContext_Mutation_copyAssignment(ctx context.Con
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_copyAssignment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_renameAssignment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_renameAssignment(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().RenameAssignment(ctx, fc.Args["course"].(string), fc.Args["oldName"].(string), fc.Args["newName"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.AssignmentView) graphql.Marshaler {
+			return ec.marshalNAssignmentView2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAssignmentView(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_renameAssignment(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_AssignmentView(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_renameAssignment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -9968,6 +10138,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "renameCourse":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_renameCourse(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "deleteCourse":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteCourse(ctx, field)
@@ -9992,6 +10169,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "copyAssignment":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_copyAssignment(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "renameAssignment":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_renameAssignment(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

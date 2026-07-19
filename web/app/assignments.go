@@ -693,6 +693,56 @@ func (a *App) CopyAssignment(ctx context.Context, course, from, newName string) 
 	return a.Assignment(ctx, course, newName)
 }
 
+// RenameAssignment renames one of the caller's assignments within a course and
+// re-marshals the course YAML. Any sibling that inherits from the old name via
+// `extends` is repointed to the new name (so, unlike editing plain YAML by hand,
+// no inheritance chain silently breaks). It fails if the new name is not
+// path-safe or already exists.
+func (a *App) RenameAssignment(ctx context.Context, course, oldName, newName string) (*AssignmentView, error) {
+	stored, err := a.Course(ctx, course)
+	if err != nil {
+		return nil, err
+	}
+	src, ok := stored.Source.Assignments[oldName]
+	if !ok || src == nil {
+		return nil, fmt.Errorf("course %q has no assignment %q to rename", course, oldName)
+	}
+	newName = strings.TrimSpace(newName)
+	if !nameRe.MatchString(newName) {
+		return nil, fmt.Errorf("invalid assignment name %q: use only letters, digits, '.', '-' and '_'", newName)
+	}
+	if newName == oldName {
+		return a.Assignment(ctx, course, oldName)
+	}
+	if _, exists := stored.Source.Assignments[newName]; exists {
+		return nil, fmt.Errorf("an assignment named %q already exists in course %q", newName, course)
+	}
+
+	newSource := *stored.Source
+	assignments := make(map[string]*config.AssignmentSource, len(stored.Source.Assignments))
+	for k, v := range stored.Source.Assignments {
+		if k == oldName {
+			continue
+		}
+		// Repoint any sibling that extends the old name onto the new one. Copy
+		// the struct first so the stored original is never mutated.
+		if v != nil && v.Extends == oldName {
+			cp := *v
+			cp.Extends = newName
+			v = &cp
+		}
+		assignments[k] = v
+	}
+	// The renamed assignment keeps its own `extends` (it points at its parent).
+	assignments[newName] = src
+	newSource.Assignments = assignments
+
+	if _, err := a.saveCourseSource(ctx, stored, &newSource); err != nil {
+		return nil, err
+	}
+	return a.Assignment(ctx, course, newName)
+}
+
 // DeleteAssignment removes one assignment from one of the caller's courses and
 // re-marshals the course YAML. It returns false when there was no such
 // assignment (and does not touch the course).

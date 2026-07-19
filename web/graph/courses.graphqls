@@ -87,6 +87,8 @@ type Mutation {
   setCourseStudents(name: String!, students: [String!]!): Course!
   "Replace the course-level groups of one of the caller's courses. The GUI merges additively before calling this."
   setCourseGroups(name: String!, groups: [GroupInput!]!): Course!
+  "Rename one of the caller's courses. The course name is the YAML file's top-level key, so this re-encodes the raw bytes. Rejects a new name that already exists or is not path-safe."
+  renameCourse(oldName: String!, newName: String!): Course!
   "Delete one of the current user's courses."
   deleteCourse(name: String!): Boolean!
 }

@@ -526,6 +526,49 @@ func TestCopyAssignment(t *testing.T) {
 	}
 }
 
+func TestRenameAssignment(t *testing.T) {
+	const owner = "prof@hm.edu"
+	fs := newFakeStore()
+	fs.courses[owner+"/tc"] = storedCourse(t, owner, tcCourse)
+	a := &App{db: fs, gitlabHost: "https://gl"}
+	ctx := ctxAs(owner)
+
+	// Rename the base that blatt1 extends: the sibling's `extends` must follow.
+	view, err := a.RenameAssignment(ctx, "tc", "base", "foundation")
+	if err != nil {
+		t.Fatalf("rename: %v", err)
+	}
+	if view.Name != "foundation" {
+		t.Errorf("renamed name = %q, want foundation", view.Name)
+	}
+	as := fs.saved.Source.Assignments
+	if _, gone := as["base"]; gone {
+		t.Error("old name base should be gone")
+	}
+	if _, ok := as["foundation"]; !ok {
+		t.Error("new name foundation should exist")
+	}
+	if as["blatt1"].Extends != "foundation" {
+		t.Errorf("blatt1.extends = %q, want foundation (repointed)", as["blatt1"].Extends)
+	}
+	if !bytes.Contains(fs.saved.RawYAML, []byte("foundation")) {
+		t.Errorf("rawYAML not re-marshalled with the new name:\n%s", fs.saved.RawYAML)
+	}
+
+	// Renaming onto an existing name is rejected.
+	if _, err := a.RenameAssignment(ctx, "tc", "blatt1", "foundation"); err == nil {
+		t.Error("renaming onto an existing name should fail")
+	}
+	// Renaming a missing assignment is rejected.
+	if _, err := a.RenameAssignment(ctx, "tc", "nope", "x"); err == nil {
+		t.Error("renaming a missing assignment should fail")
+	}
+	// An invalid target name is rejected.
+	if _, err := a.RenameAssignment(ctx, "tc", "blatt1", "bad name"); err == nil {
+		t.Error("an invalid target name should fail")
+	}
+}
+
 func TestSetAssignment_issuesBlock(t *testing.T) {
 	const owner = "prof@hm.edu"
 	fs := newFakeStore()

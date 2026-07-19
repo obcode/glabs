@@ -13,7 +13,7 @@ func (c *Client) Push(assignmentCfg *config.AssignmentConfig, branchname string)
 		return fmt.Errorf("error: no config for deferred branch \"%s\" found\n", branchname)
 	}
 
-	sourceRepo, err := git.PrepareSourceRepo(c.rep, branch.URL, branch.FromBranch, branch.Orphan, branch.OrphanMessage)
+	sourceRepo, err := git.PrepareSourceRepo(c.rep, c.gitAuth(), c.committer, branch.URL, branch.FromBranch, branch.Orphan, branch.OrphanMessage)
 	if err != nil {
 		return err
 	}

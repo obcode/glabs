@@ -30,7 +30,9 @@ func GetAuth() (transport.AuthMethod, error) {
 	return &githttp.BasicAuth{Username: "oauth2", Password: token}, nil
 }
 
-// AuthForURL returns the credential to use when cloning the given URL.
+// AuthForURL returns the credential to use when cloning the given URL, reading
+// the token and host from viper. It is the CLI's single-token path; the web
+// server uses TokenAuth with a per-user token instead.
 //
 // The token authenticates against one host: the configured GitLab instance.
 // Under SSH this was invisible — the operator's key worked against any host, so
@@ -40,18 +42,38 @@ func GetAuth() (transport.AuthMethod, error) {
 // any other host is cloned unauthenticated, which works for public repositories
 // and fails with a plain "authentication required" for private ones.
 func AuthForURL(rawURL string) (transport.AuthMethod, error) {
-	onGitLab, err := isConfiguredGitLabHost(rawURL)
+	return TokenAuth{
+		GitLabHost: viper.GetString("gitlab.host"),
+		Token:      viper.GetString("gitlab.token"),
+	}.forURL(rawURL)
+}
+
+// TokenAuth resolves git credentials from an explicit GitLab host and token,
+// without touching viper — so the web server can authenticate git as a specific
+// user (its per-user PAT), rather than through a single package-global token that
+// cannot serve multiple users. It applies the same host rule as AuthForURL: the
+// token is attached only to URLs on the GitLab host, never to a foreign one.
+type TokenAuth struct {
+	GitLabHost string
+	Token      string
+}
+
+func (a TokenAuth) forURL(rawURL string) (transport.AuthMethod, error) {
+	onGitLab, err := sameHost(rawURL, a.GitLabHost)
 	if err != nil {
 		return nil, err
 	}
 	if !onGitLab {
 		return nil, nil
 	}
-	return GetAuth()
+	if a.Token == "" {
+		return nil, fmt.Errorf("gitlab token is required for git operations (needs the api and write_repository scopes)")
+	}
+	return &githttp.BasicAuth{Username: "oauth2", Password: a.Token}, nil
 }
 
-func isConfiguredGitLabHost(rawURL string) (bool, error) {
-	gitlabHost := viper.GetString("gitlab.host")
+// sameHost reports whether rawURL is on the given GitLab host.
+func sameHost(rawURL, gitlabHost string) (bool, error) {
 	if gitlabHost == "" {
 		return false, fmt.Errorf("gitlab.host is not configured")
 	}

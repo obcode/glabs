@@ -328,7 +328,8 @@ func TestIntegration_GitLab_Operations(t *testing.T) {
 		gitURL := func(p *gitlabapi.Project) string { return baseURL + "/" + p.PathWithNamespace + ".git" }
 
 		// Clone it over HTTPS+PAT — proves the clone side of the transport.
-		sourceRepo, err := g.PrepareSourceRepo(reporter.NewDiscardReporter(), gitURL(srcProject), "main", false, "")
+		auth := g.TokenAuth{GitLabHost: baseURL, Token: gitLabRootToken}
+		sourceRepo, err := g.PrepareSourceRepo(reporter.NewDiscardReporter(), auth, g.Committer{}, gitURL(srcProject), "main", false, "")
 		if err != nil {
 			t.Fatalf("PrepareSourceRepo over HTTPS failed: %v", err)
 		}

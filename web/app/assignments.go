@@ -651,6 +651,48 @@ func (a *App) SetAssignment(ctx context.Context, course, name string, draft map[
 	return a.Assignment(ctx, course, name)
 }
 
+// CopyAssignment duplicates one of the caller's assignments under a new name.
+// Only the name has to be unique — the copy is otherwise identical to the
+// source, including its `extends`. It validates the new name (it becomes a
+// GitLab path segment), rejects a name that already exists, then persists —
+// re-marshalling the whole course YAML. The persisted round-trip
+// (encode → store → decode) makes the copy fully independent of the source.
+func (a *App) CopyAssignment(ctx context.Context, course, from, newName string) (*AssignmentView, error) {
+	stored, err := a.Course(ctx, course)
+	if err != nil {
+		return nil, err
+	}
+	src, ok := stored.Source.Assignments[from]
+	if !ok || src == nil {
+		return nil, fmt.Errorf("course %q has no assignment %q to copy", course, from)
+	}
+	newName = strings.TrimSpace(newName)
+	if !nameRe.MatchString(newName) {
+		return nil, fmt.Errorf("invalid assignment name %q: use only letters, digits, '.', '-' and '_'", newName)
+	}
+	if _, exists := stored.Source.Assignments[newName]; exists {
+		return nil, fmt.Errorf("an assignment named %q already exists in course %q", newName, course)
+	}
+
+	// Copy the source struct under the new key. Nested block pointers are shared
+	// in memory but only ever read here; EncodeCourse serialises them into
+	// independent bytes and the reload below decodes fresh structs.
+	cp := *src
+	newCourse := courseWithDraft(stored.Source, newName, &cp)
+
+	raw, err := config.EncodeCourse(newCourse)
+	if err != nil {
+		return nil, err
+	}
+	stored.Source = newCourse
+	stored.RawYAML = raw
+	stored.UpdatedAt = time.Now()
+	if err := a.db.SaveCourse(ctx, stored); err != nil {
+		return nil, err
+	}
+	return a.Assignment(ctx, course, newName)
+}
+
 // DeleteAssignment removes one assignment from one of the caller's courses and
 // re-marshals the course YAML. It returns false when there was no such
 // assignment (and does not touch the course).

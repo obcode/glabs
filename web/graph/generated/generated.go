@@ -169,6 +169,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
+		CopyAssignment       func(childComplexity int, course string, from string, newName string) int
 		CreateCourse         func(childComplexity int, name string, coursePath string, semesterPath string, useCoursenameAsPrefix bool, useEmailDomainAsSuffix bool) int
 		DeleteAssignment     func(childComplexity int, course string, name string) int
 		DeleteCourse         func(childComplexity int, name string) int
@@ -309,6 +310,7 @@ type MutationResolver interface {
 	DeleteCourse(ctx context.Context, name string) (bool, error)
 	SetAssignment(ctx context.Context, course string, name string, draft []*model.FieldValueInput) (*model.AssignmentView, error)
 	ImportAssignmentYaml(ctx context.Context, course string, yaml string) (*model.AssignmentView, error)
+	CopyAssignment(ctx context.Context, course string, from string, newName string) (*model.AssignmentView, error)
 	DeleteAssignment(ctx context.Context, course string, name string) (bool, error)
 	SetGitlabToken(ctx context.Context, token string) (*model.GitLabTokenStatus, error)
 	RemoveGitlabToken(ctx context.Context) (*model.GitLabTokenStatus, error)
@@ -830,6 +832,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.LogLine.Text(childComplexity), true
 
+	case "Mutation.copyAssignment":
+		if e.ComplexityRoot.Mutation.CopyAssignment == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_copyAssignment_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CopyAssignment(childComplexity, args["course"].(string), args["from"].(string), args["newName"].(string)), true
 	case "Mutation.createCourse":
 		if e.ComplexityRoot.Mutation.CreateCourse == nil {
 			break
@@ -1689,6 +1702,8 @@ extend type Mutation {
   setAssignment(course: String!, name: String!, draft: [FieldValueInput!]!): AssignmentView!
   "Import a single assignment into one of the caller's courses from a YAML snippet keyed by the assignment name (as it appears in a course file), upserting it: validate against the real resolver, then persist. Rejects a concrete assignment that does not resolve."
   importAssignmentYAML(course: String!, yaml: String!): AssignmentView!
+  "Copy one of the caller's assignments to a new name within the same course. Only the name must be unique; the copy is otherwise identical (including ` + "`" + `extends` + "`" + `). Rejects a name that already exists or is not path-safe."
+  copyAssignment(course: String!, from: String!, newName: String!): AssignmentView!
   "Delete one assignment from one of the caller's courses. Returns false if there was no such assignment."
   deleteAssignment(course: String!, name: String!): Boolean!
 }
@@ -2667,6 +2682,36 @@ func (ec *executionContext) childFields___Type(ctx context.Context, field graphq
 // endregion ************************** internal!.gotpl ***************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_copyAssignment_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "course",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["course"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "from",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["from"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "newName",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["newName"] = arg2
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_createCourse_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -5443,6 +5488,50 @@ func (ec *executionContext) fieldContext_Mutation_importAssignmentYAML(ctx conte
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_importAssignmentYAML_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_copyAssignment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_copyAssignment(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().CopyAssignment(ctx, fc.Args["course"].(string), fc.Args["from"].(string), fc.Args["newName"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.AssignmentView) graphql.Marshaler {
+			return ec.marshalNAssignmentView2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAssignmentView(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_copyAssignment(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_AssignmentView(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_copyAssignment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -9896,6 +9985,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "importAssignmentYAML":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_importAssignmentYAML(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "copyAssignment":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_copyAssignment(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++

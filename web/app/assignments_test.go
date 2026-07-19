@@ -483,6 +483,49 @@ func TestDeleteAssignment(t *testing.T) {
 	}
 }
 
+func TestCopyAssignment(t *testing.T) {
+	const owner = "prof@hm.edu"
+	fs := newFakeStore()
+	fs.courses[owner+"/tc"] = storedCourse(t, owner, tcCourse)
+	a := &App{db: fs, gitlabHost: "https://gl"}
+	ctx := ctxAs(owner)
+
+	// Copy blatt1 → blatt2: identical content (extends, description), new name.
+	view, err := a.CopyAssignment(ctx, "tc", "blatt1", "blatt2")
+	if err != nil {
+		t.Fatalf("copy: %v", err)
+	}
+	if view.Name != "blatt2" {
+		t.Errorf("copy name = %q, want blatt2", view.Name)
+	}
+	if view.Extends != "base" {
+		t.Errorf("copy extends = %q, want base (carried over)", view.Extends)
+	}
+	if ownMap(view.Own)["description"] != "First sheet" {
+		t.Errorf("copy description = %q, want 'First sheet'", ownMap(view.Own)["description"])
+	}
+	// Both the source and the copy exist; the source is untouched.
+	if _, ok := fs.saved.Source.Assignments["blatt1"]; !ok {
+		t.Error("source blatt1 should still exist after copy")
+	}
+	if _, ok := fs.saved.Source.Assignments["blatt2"]; !ok {
+		t.Error("copy blatt2 should exist in the stored source")
+	}
+
+	// Copying onto an existing name is rejected.
+	if _, err := a.CopyAssignment(ctx, "tc", "blatt1", "base"); err == nil {
+		t.Error("copying onto an existing name should fail")
+	}
+	// Copying a non-existent source is rejected.
+	if _, err := a.CopyAssignment(ctx, "tc", "nope", "blatt3"); err == nil {
+		t.Error("copying a missing source should fail")
+	}
+	// An invalid target name is rejected.
+	if _, err := a.CopyAssignment(ctx, "tc", "blatt1", "bad name"); err == nil {
+		t.Error("an invalid target name should fail")
+	}
+}
+
 func TestSetAssignment_issuesBlock(t *testing.T) {
 	const owner = "prof@hm.edu"
 	fs := newFakeStore()

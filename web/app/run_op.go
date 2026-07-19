@@ -124,6 +124,8 @@ func executeOp(client *gitlab.Client, tok *opToken, cfg *config.AssignmentConfig
 		return client.Archive(cfg, tok.Params["unarchive"] == "true")
 	case "delete":
 		return client.Delete(cfg)
+	case "generate":
+		return client.Generate(cfg)
 	}
 	return fmt.Errorf("unknown operation %q", tok.Op)
 }

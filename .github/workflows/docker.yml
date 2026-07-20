@@ -63,5 +63,55 @@ jobs:
           build-args: |
             VERSION=${{ env.VERSION }}
 
-  # The deploy job (self-hosted runner, on-host docker-compose) comes with the
-  # deploy/ stack (Caddyfile + docker-compose.yml), the second Milestone-F PR.
+  # Ship the freshly pushed image to the on-host compose stack. The runner lives ON the
+  # deploy host (outbound-only long-poll to GitHub; the host is VPN-internal, so no inbound
+  # is possible). It syncs only the NON-secret infra (compose file + Caddyfile) from the
+  # repo; secrets (.env, .glabs-web.yaml) and the caddy-data volume (TLS certs) are never
+  # touched. See deploy/README.md "Automatischer Deploy".
+  deploy:
+    needs: build-and-push-image
+    # Gate: only runs once the self-hosted runner on the deploy host exists — set the repo
+    # variable AUTO_DEPLOY=true then. Until then the image is still built & pushed above;
+    # this job is simply skipped (no stuck queue waiting for a missing runner).
+    if: ${{ vars.AUTO_DEPLOY == 'true' }}
+    runs-on: [self-hosted, glabs-deploy]
+    env:
+      # The v-prefixed release tag (from whichever trigger fired). docker/metadata-action
+      # tags the image with this raw ref (v3.38.0), so GLABS_WEB_TAG must carry the v too.
+      VERSION: ${{ github.event.release.tag_name || inputs.tag }}
+      # On-host deploy dir; override via repo variable DEPLOY_DIR if different.
+      DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/home/glabs/glabs/deploy' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Sync the deploy/ files as they were at the released tag.
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+
+      - name: Sync infra + deploy pinned image
+        run: |
+          set -euo pipefail
+          # Sync non-secret infra into the on-host deploy dir. Secrets (.env,
+          # .glabs-web.yaml) and the caddy-data volume (certs) stay put.
+          cp deploy/docker-compose.yml "$DEPLOY_DIR/"
+          CADDY_CHANGED=0
+          if ! diff deploy/Caddyfile "$DEPLOY_DIR/Caddyfile" >/dev/null 2>&1; then
+            cp deploy/Caddyfile "$DEPLOY_DIR/"
+            CADDY_CHANGED=1
+          fi
+
+          cd "$DEPLOY_DIR"
+          # Pin the backend tag so the host reflects the running version
+          # (manual rollback = edit .env + `docker compose up -d glabs-web`).
+          sed -i "s/^GLABS_WEB_TAG=.*/GLABS_WEB_TAG=$VERSION/" .env
+
+          docker compose pull glabs-web
+          # Reconcile the stack: only glabs-web (new tag) + any changed service is recreated.
+          # The gh-runner services are under `profiles: [runner]`, so this plain `up -d`
+          # ignores them — the runner never restarts itself mid-deploy.
+          docker compose up -d
+          # Caddy re-reads its Caddyfile only on container (re)start.
+          if [ "$CADDY_CHANGED" = "1" ]; then
+            docker compose up -d --force-recreate caddy
+          fi
+          docker image prune -f

@@ -132,6 +132,64 @@ services:
       - caddy-data:/data     # certificates + ACME account/EAB registration — MUST persist
       - caddy-config:/config
 
+  # --- Self-hosted GitHub Actions runners for auto-deploy (profile "runner") ---
+  # The deploy host is VPN-internal — GitHub cannot push in. These runners poll GitHub
+  # OUTBOUND and, on a release, run `docker compose` locally (see README "Automatischer
+  # Deploy"). obcode is a personal account (no org), so runners are REPO-scoped: one per
+  # repo, sharing the label `glabs-deploy`.
+  #
+  # `profiles: [runner]` keeps them OUT of the default stack: a bare `docker compose up -d`
+  # (what the deploy job runs) ignores profiled services entirely, so a runner never
+  # restarts itself mid-deploy and aborts its own job. Start them once, separately:
+  #   docker compose --profile runner up -d gh-runner gh-runner-gui
+  gh-runner:
+    image: myoung34/github-runner:latest
+    container_name: glabs-gh-runner
+    restart: unless-stopped
+    profiles: ["runner"]
+    environment:
+      REPO_URL: https://github.com/obcode/glabs
+      RUNNER_NAME: glabs-deploy
+      RUNNER_SCOPE: repo
+      LABELS: glabs-deploy
+      # PAT (classic: repo + workflow, or fine-grained: Administration RW) so the container
+      # renews registration tokens itself and survives restarts without a token swap.
+      ACCESS_TOKEN: ${GH_RUNNER_PAT:-}
+      RUNNER_WORKDIR: /tmp/runner/work
+    security_opt:
+      - label:disable
+    volumes:
+      # Host Docker socket → `docker compose` in the deploy job talks to the HOST daemon.
+      - /var/run/docker.sock:/var/run/docker.sock
+      # The on-host deploy dir at the SAME path inside the container, so `cp`/`sed` in the
+      # job and the compose bind-mounts resolve to identical host paths (the socket resolves
+      # mounts against the host). Keep DEPLOY_DIR in sync with the workflow's DEPLOY_DIR var.
+      - ${DEPLOY_DIR:-/home/glabs/glabs/deploy}:${DEPLOY_DIR:-/home/glabs/glabs/deploy}
+      - /tmp/runner:/tmp/runner
+
+  # Second runner for the glabs.gui repo (personal account → no org-wide sharing, each repo
+  # needs its own repo-scoped runner). Same stack, same `runner` profile, same PAT (classic
+  # repo+workflow covers both repos), same label — only REPO_URL + RUNNER_NAME differ. The
+  # GUI deploy job only touches the `gui` service.
+  gh-runner-gui:
+    image: myoung34/github-runner:latest
+    container_name: glabs-gh-runner-gui
+    restart: unless-stopped
+    profiles: ["runner"]
+    environment:
+      REPO_URL: https://github.com/obcode/glabs.gui
+      RUNNER_NAME: glabs-deploy-gui
+      RUNNER_SCOPE: repo
+      LABELS: glabs-deploy
+      ACCESS_TOKEN: ${GH_RUNNER_PAT:-}
+      RUNNER_WORKDIR: /tmp/runner-gui/work
+    security_opt:
+      - label:disable
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DEPLOY_DIR:-/home/glabs/glabs/deploy}:${DEPLOY_DIR:-/home/glabs/glabs/deploy}
+      - /tmp/runner-gui:/tmp/runner-gui
+
 volumes:
   mongo-data:
   caddy-data:

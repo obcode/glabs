@@ -100,6 +100,41 @@ ssh -L 27017:127.0.0.1:27017 <user>@<host>
 # then: mongodb://<MONGO_USER>:<MONGO_PASSWORD>@localhost:27017/?authSource=admin
 ```
 
+## Automatischer Deploy (self-hosted runners)
+
+CI builds and pushes the images on GitHub-hosted runners (`docker.yml`). The deploy host is
+VPN-internal, so GitHub can't push into it — instead a **self-hosted runner on the host** polls
+GitHub outbound and, on a release, runs `docker compose` locally. Each repo's `docker.yml` has
+a gated `deploy` job (`runs-on: [self-hosted, glabs-deploy]`):
+
+- **glabs** (backend) — syncs `docker-compose.yml` + `Caddyfile` into `$DEPLOY_DIR` (secrets and
+  the `caddy-data` volume untouched), pins `GLABS_WEB_TAG` in `.env`, `docker compose pull
+  glabs-web` + `up -d`, and force-recreates Caddy if the Caddyfile changed.
+- **glabs.gui** — pins `GUI_TAG` and rolls only the `gui` service.
+
+Because `obcode` is a personal account (no org), runners are **repo-scoped**: one per repo,
+sharing the label `glabs-deploy`. Both run as containers in this compose under the `runner`
+profile.
+
+### One-time host setup
+
+1. Set `DEPLOY_DIR` and `GH_RUNNER_PAT` in `.env` (see `.env.example`). `GH_RUNNER_PAT` is a
+   classic PAT with `repo` + `workflow` (covers both repos).
+2. Start the runners (the `runner` profile keeps them out of the default stack, so a deploy's
+   `docker compose up -d` never restarts them mid-job):
+   ```sh
+   docker compose --profile runner up -d gh-runner gh-runner-gui
+   ```
+3. Confirm both appear under **Settings → Actions → Runners** in each repo (idle, label
+   `glabs-deploy`).
+4. Flip the gate: set the repo variable **`AUTO_DEPLOY=true`** in **both** `obcode/glabs` and
+   `obcode/glabs.gui` (Settings → Secrets and variables → Actions → Variables). Optionally set
+   `DEPLOY_DIR` there too if it differs from the default. Until `AUTO_DEPLOY=true`, images are
+   still built and pushed — only the deploy step is skipped.
+
+From then on, every release rolls itself out. Manual rollback stays available: set an older
+`GLABS_WEB_TAG`/`GUI_TAG` in `.env` and `docker compose up -d glabs-web` (or `gui`).
+
 ## Notes
 
 - **Rollback:** set `GLABS_WEB_TAG` / `GUI_TAG` in `.env` to an older release tag and

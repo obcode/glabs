@@ -28,6 +28,16 @@ func (a *App) CourseActivity(ctx context.Context, course string) ([]*db.Activity
 	return a.db.CourseActivityFor(ctx, o, course)
 }
 
+// ActivityLog returns the caller's complete activity log across all their courses,
+// newest first — the audit-log dump behind the activity page and its JSON download.
+func (a *App) ActivityLog(ctx context.Context) ([]*db.ActivityEntry, error) {
+	o, err := owner(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return a.db.AllActivityFor(ctx, o)
+}
+
 // recordOp appends one terminal-state entry to the activity log. It is
 // best-effort: a logging failure must never fail the operation itself, so the
 // caller decides how to surface the returned error (RunOp streams it as a WARN).

@@ -31,13 +31,29 @@ func TestActivityRecordAndRead(t *testing.T) {
 		t.Errorf("assignment activity wrong: %+v", got)
 	}
 
-	// Course-wide: both entries.
+	// A third entry in a DIFFERENT course, to prove the dump is cross-course.
+	if err := a.recordOp(context.Background(), owner,
+		&opToken{Owner: owner, Op: "generate", Course: "other", Assignment: "ex1"},
+		"done", "5 repositories"); err != nil {
+		t.Fatalf("recordOp: %v", err)
+	}
+
+	// Course-wide: both tc entries, not the "other" one.
 	all, err := a.CourseActivity(ctx, "tc")
 	if err != nil {
 		t.Fatalf("CourseActivity: %v", err)
 	}
 	if len(all) != 2 {
 		t.Errorf("course activity = %d entries, want 2", len(all))
+	}
+
+	// Owner-wide dump: every entry across all courses.
+	dump, err := a.ActivityLog(ctx)
+	if err != nil {
+		t.Fatalf("ActivityLog: %v", err)
+	}
+	if len(dump) != 3 {
+		t.Errorf("activity dump = %d entries, want 3 (across all courses)", len(dump))
 	}
 
 	// Every store call scoped to the principal's owner.
@@ -56,5 +72,8 @@ func TestActivityRequiresAuthentication(t *testing.T) {
 	}
 	if _, err := a.CourseActivity(context.Background(), "tc"); err == nil {
 		t.Error("CourseActivity without a principal succeeded, want an error")
+	}
+	if _, err := a.ActivityLog(context.Background()); err == nil {
+		t.Error("ActivityLog without a principal succeeded, want an error")
 	}
 }

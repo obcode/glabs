@@ -5,6 +5,8 @@ it to show, per assignment, what has already happened (setaccess, protect,
 archive, delete; later generate).
 """
 type ActivityEntry {
+  "The course this entry is about (its name)."
+  course: String!
   "The assignment this entry is about (its name within the course)."
   assignment: String!
   "The operation that ran (setaccess, protect, archive, delete, …)."
@@ -22,4 +24,6 @@ extend type Query {
   assignmentActivity(course: String!, name: String!): [ActivityEntry!]!
   "The activity log across a whole course of the caller's, newest first (the GUI groups it by assignment for a per-assignment status)."
   courseActivity(course: String!): [ActivityEntry!]!
+  "The caller's complete activity log across ALL their courses, newest first — the audit-log dump (uncapped, for the activity page and its JSON download)."
+  activityLog: [ActivityEntry!]!
 }

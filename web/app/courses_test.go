@@ -195,6 +195,17 @@ func (f *fakeStore) CourseActivityFor(_ context.Context, owner, course string) (
 	return out, nil
 }
 
+func (f *fakeStore) AllActivityFor(_ context.Context, owner string) ([]*db.ActivityEntry, error) {
+	f.seenOwners = append(f.seenOwners, owner)
+	var out []*db.ActivityEntry
+	for _, e := range f.activity {
+		if e.Owner == owner {
+			out = append(out, e)
+		}
+	}
+	return out, nil
+}
+
 func (f *fakeStore) GetUserSecret(_ context.Context, owner string) (*db.UserSecret, error) {
 	f.seenOwners = append(f.seenOwners, owner)
 	return f.userSecret[owner], nil

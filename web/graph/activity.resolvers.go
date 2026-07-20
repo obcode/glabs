@@ -28,3 +28,12 @@ func (r *queryResolver) CourseActivity(ctx context.Context, course string) ([]*m
 	}
 	return toGraphActivity(entries), nil
 }
+
+// ActivityLog is the resolver for the activityLog field.
+func (r *queryResolver) ActivityLog(ctx context.Context) ([]*model.ActivityEntry, error) {
+	entries, err := r.app.ActivityLog(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return toGraphActivity(entries), nil
+}

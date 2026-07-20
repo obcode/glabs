@@ -100,11 +100,16 @@ jobs:
       - test-fast
     permissions:
       contents: write
+      # actions: write lets the trigger step below dispatch docker.yml.
+      actions: write
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: true
+      - name: Record the latest tag before the release
+        id: before
+        run: echo "tag=$(git tag --sort=-v:refname | head -n1)" >> "$GITHUB_OUTPUT"
       - uses: go-semantic-release/action@v1
         id: semrel
         with:
@@ -114,3 +119,18 @@ jobs:
           hooks: goreleaser
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Trigger the glabs-web Docker image build on a new release
+        # A GITHUB_TOKEN-authored release does not fire the `release` event, so
+        # dispatch docker.yml ourselves when semantic-release created a new tag.
+        # workflow_dispatch IS allowed to run when invoked with GITHUB_TOKEN.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git fetch --tags --force
+          new_tag=$(git tag --sort=-v:refname | head -n1)
+          if [ -n "$new_tag" ] && [ "$new_tag" != "${{ steps.before.outputs.tag }}" ]; then
+            echo "New release tag $new_tag — dispatching docker.yml"
+            gh workflow run docker.yml -f tag="$new_tag"
+          else
+            echo "No new tag (was: ${{ steps.before.outputs.tag }}, now: $new_tag) — skipping Docker build"
+          fi

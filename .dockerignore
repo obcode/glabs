@@ -1,0 +1,25 @@
+# Keep the build context lean and reproducible. Excluding .git also disables
+# main.go's VCS build-info fallback, which is why docker.yml passes VERSION as a
+# build-arg instead.
+.git
+.github
+.gitignore
+.gitattributes
+.dockerignore
+Dockerfile
+*.md
+docs
+deploy
+
+# Editor / tooling
+.vscode
+.idea
+.claude
+
+# Server config carries secrets (secrets.key, SMTP/ZPA tokens) — never in an image.
+.glabs-web.yaml
+.glabs.yaml
+
+# Untracked per-participant working data must never enter the build context.
+courseid_*
+ob-vss-*

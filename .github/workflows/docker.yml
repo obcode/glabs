@@ -1,0 +1,67 @@
+name: Create and publish the glabs-web Docker image
+
+on:
+  # Triggered explicitly from ci.yml after a release (go-semantic-release creates
+  # the release with GITHUB_TOKEN, which does not fire the `release` event). The
+  # `release` trigger is kept for a manually published release.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build (e.g. v3.22.0)"
+        required: true
+        type: string
+  release:
+    types: [published]
+
+env:
+  REGISTRY: ghcr.io
+  # The CLI repo is obcode/glabs; the web server image is published as glabs-web.
+  IMAGE_NAME: ${{ github.repository }}-web
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    # The release tag to build, from whichever trigger fired.
+    env:
+      VERSION: ${{ github.event.release.tag_name || inputs.tag }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Build the released code, not whatever is on main now.
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # Tag the image with the release tag and latest (works for both triggers).
+          tags: |
+            type=raw,value=${{ env.VERSION }}
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Version metadata into the build (main.go ldflags via the Dockerfile).
+          build-args: |
+            VERSION=${{ env.VERSION }}
+
+  # The deploy job (self-hosted runner, on-host docker-compose) comes with the
+  # deploy/ stack (Caddyfile + docker-compose.yml), the second Milestone-F PR.

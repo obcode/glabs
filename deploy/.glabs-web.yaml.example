@@ -1,0 +1,63 @@
+# glabs-web server config for the deployment. Copy to .glabs-web.yaml, fill in, and keep it
+# SECRET (it holds secrets.key and, optionally, SMTP/ZPA tokens). It is bind-mounted read-only
+# into the glabs-web container at /app/.glabs-web.yaml. NEVER commit the real file.
+
+server:
+  port: "8080"
+  # true disables the GraphQL playground and verbose surface. Keep true in production.
+  production: true
+  # Origins allowed for CORS AND the WebSocket subscription upgrade (live operation logs).
+  # Must be the public browser origin.
+  allowedorigins:
+    - https://glabs.cs.hm.edu
+
+db:
+  # Mongo is reachable as `mongo` on the compose network. Credentials MUST match MONGO_USER /
+  # MONGO_PASSWORD in .env; authSource=admin because they are the root user.
+  uri: mongodb://glabs:change-me-strong-password@mongo:27017/?authSource=admin
+  database: glabs
+
+auth:
+  # true = trust the X-Remote-User header that Caddy sets from the verified OIDC email.
+  # The GUI forwards X-Remote-User on its internal SSR hop, so this works end-to-end.
+  # false = every request runs as a local dev user (NO SSO) — only for local testing.
+  enabled: true
+  # Header carrying the identity (email). Default X-Remote-User — matches the Caddyfile.
+  header: X-Remote-User
+  displaynameheader: X-Remote-Displayname
+  # Seeded ONLY when the users collection is empty (a fresh deployment). Later edits never
+  # resurrect a removed user. Add the people allowed in; identity is the email.
+  seedusers:
+    - email: oliver.braun@hm.edu
+      name: Oliver Braun
+
+# Key-encryption key for per-user GitLab PATs (AES-256-GCM at rest). base64 of 32 bytes:
+#   openssl rand -base64 32
+# Empty/invalid → token storage is disabled (config editor still works, fail-closed).
+secrets:
+  key: change-me-openssl-rand-base64-32
+
+# The GitLab instance repos are created on. Used to scope per-user tokens and build URLs.
+gitlab:
+  host: gitlab.lrz.de
+
+# --- Optional: SMTP for scheduled-job notifications ---
+# Without smtp.host, scheduling and running still work; only the emails are skipped.
+# smtp:
+#   host: postout.lrz.de
+#   port: 587
+#   username: your-smtp-user
+#   password: your-smtp-password
+#   from: glabs@cs.hm.edu
+#   hostname: glabs.cs.hm.edu        # HELO/EHLO + Message-ID domain
+#   tlsInsecureSkipVerify: false     # keep false (verify the cert) unless the relay needs otherwise
+#   testRecipient: you@hm.edu        # used by the dry-run smoke test
+#   dryRun: false                    # true renders but never sends
+
+# --- Optional: ZPA (Prüfungsamt) to enrich the students page ---
+# Without zpa.baseurl + zpa.token the students page shows only the roster emails.
+# NOTE: per-email lookup (ask=<email>) currently does NOT work at the HM ZPA endpoint —
+# the students page stays roster-only until that is resolved.
+# zpa:
+#   baseurl: https://zpa.example.hm.edu/api
+#   token: your-zpa-token

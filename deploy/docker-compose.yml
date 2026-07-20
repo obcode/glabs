@@ -1,0 +1,138 @@
+# glabs.cs.hm.edu server deployment — Caddy + oauth2-proxy (OIDC against sso.hm.edu).
+#
+# Topology:
+#   internet ──443/TLS──> caddy
+#                           ├── forward_auth → oauth2-proxy (OIDC handshake w/ sso.hm.edu)
+#                           ├── /oauth2/*    → oauth2-proxy (login/callback)
+#                           ├── sets X-Remote-User from the verified email claim
+#                           ├── /query,/query (ws) → glabs-web:8080
+#                           └── /            → gui (glabs.gui container; incl. YAML download)
+#   glabs-web / gui / mongo / oauth2-proxy ── internal only (never published)
+#
+# Only caddy publishes 80/443. glabs-web trusts the X-Remote-User header caddy sets, so it
+# MUST NOT be reachable except through caddy — hence no `ports:` on it.
+# TLS is managed by Caddy's built-in ACME client (HM CA via EAB) — no acme.sh, no tls/ mount.
+#
+# Backend + GUI run as pre-built images from ghcr.io (tags pinned via GLABS_WEB_TAG / GUI_TAG
+# in .env). No local build here.
+#
+# Setup: copy .env.example -> .env and .glabs-web.yaml.example -> .glabs-web.yaml, fill both
+# (incl. the ACME_* / EAB values and matching Mongo credentials), then: docker compose up -d
+# (Caddy fetches the TLS certificate itself on first start — see README.md.)
+
+services:
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    volumes:
+      - mongo-data:/data/db
+    # Published ONLY on the host loopback (127.0.0.1), never 0.0.0.0. That keeps Mongo
+    # unreachable from the network — the only way in from outside is an SSH tunnel onto the
+    # host (see README "Von außen an die MongoDB"):
+    #   ssh -L 27017:127.0.0.1:27017 <user>@<host>
+    #   then connect Compass to mongodb://<MONGO_USER>:<pw>@localhost:27017/?authSource=admin
+    ports:
+      - "127.0.0.1:27017:27017"
+    # So glabs-web can wait for Mongo to be *ready* (not just started) — avoids the boot race
+    # where the backend fails to connect and crash-loops until Mongo is up.
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  glabs-web:
+    image: ghcr.io/obcode/glabs-web:${GLABS_WEB_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    volumes:
+      # Carries secrets (secrets.key, SMTP/ZPA tokens, Mongo credentials in db.uri) — the
+      # real file is gitignored; copy .glabs-web.yaml.example and fill it in.
+      - ./.glabs-web.yaml:/app/.glabs-web.yaml:ro
+    # No ports: — only Caddy reaches it (http://glabs-web:8080) over the internal network.
+    expose:
+      - "8080"
+
+  gui:
+    image: ghcr.io/obcode/glabs.gui:${GUI_TAG:-latest}
+    restart: unless-stopped
+    # SvelteKit app, served internally on 3000 (adapter-node default, PORT/HOST set in its
+    # Dockerfile). No ports: — only Caddy reaches it (http://gui:3000). Keep the port in sync
+    # with the GUI Dockerfile and the Caddyfile `reverse_proxy gui:3000`.
+    environment:
+      # Two hops need DIFFERENT URLs because only one of them carries an OIDC session cookie:
+      #   PUBLIC_* → client bundle: runs in the BROWSER, has the oauth2-proxy cookie, so it
+      #     goes through Caddy (public URL). Also drives the wss:// subscription upgrade.
+      #   GLABS_SERVER → SSR node server (+page.server.ts load(), hooks, /api proxies): runs
+      #     in THIS container with NO cookie. If it hit the public URL, oauth2-proxy would
+      #     bounce it to the sso.hm.edu login page and the GUI would try to parse that HTML as
+      #     GraphQL (500). So it reaches the backend INTERNALLY, bypassing oauth2-proxy, and
+      #     relays the X-Remote-User that Caddy injected into this container's page request.
+      # The GUI reads both via $env/dynamic/* at runtime, so setting them here is enough.
+      PUBLIC_GLABS_SERVER: https://${SERVER_NAME}/query
+      GLABS_SERVER: ${GLABS_SERVER:-http://glabs-web:8080/query}
+    expose:
+      - "3000"
+
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    restart: unless-stopped
+    environment:
+      OAUTH2_PROXY_PROVIDER: oidc
+      OAUTH2_PROXY_OIDC_ISSUER_URL: https://sso.hm.edu
+      OAUTH2_PROXY_CLIENT_ID: ${OAUTH2_PROXY_CLIENT_ID}
+      OAUTH2_PROXY_CLIENT_SECRET: ${OAUTH2_PROXY_CLIENT_SECRET}
+      OAUTH2_PROXY_COOKIE_SECRET: ${OAUTH2_PROXY_COOKIE_SECRET}
+      # MUST match the redirect URI registered with the HM IdP team.
+      OAUTH2_PROXY_REDIRECT_URL: https://${SERVER_NAME}/oauth2/callback
+      OAUTH2_PROXY_SCOPE: "openid profile email"
+      # Extra layer on top of the DB allow-list (the backend is authoritative via auth.seedusers).
+      OAUTH2_PROXY_EMAIL_DOMAINS: hm.edu
+      OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
+      OAUTH2_PROXY_REVERSE_PROXY: "true"
+      # Expose X-Auth-Request-Email/-Preferred-Username on /oauth2/auth for Caddy's forward_auth.
+      OAUTH2_PROXY_SET_XAUTHREQUEST: "true"
+      OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "true"
+      OAUTH2_PROXY_COOKIE_SECURE: "true"
+      OAUTH2_PROXY_WHITELIST_DOMAINS: ${SERVER_NAME}
+      # oauth2-proxy is used only for auth (via Caddy forward_auth) + the login flow, not as a
+      # real upstream — so a static 200 upstream is enough.
+      OAUTH2_PROXY_UPSTREAMS: static://200
+      # Shibboleth OPs often omit email_verified; tighten to "false" if the IdP sets it.
+      OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL: "true"
+    expose:
+      - "4180"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - glabs-web
+      - gui
+      - oauth2-proxy
+    ports:
+      - "80:80"      # HTTP-01 ACME challenge + HTTP->HTTPS redirect (Caddy handles both)
+      - "443:443"
+    environment:
+      # Substituted into the Caddyfile ({$VAR}) when the config loads.
+      SERVER_NAME: ${SERVER_NAME}
+      # TLS via Caddy's ACME client against the HM CA (External Account Binding).
+      ACME_EMAIL: ${ACME_EMAIL}
+      ACME_DIRECTORY_URL: ${ACME_DIRECTORY_URL}
+      ACME_EAB_KID: ${ACME_EAB_KID}
+      ACME_EAB_HMAC_KEY: ${ACME_EAB_HMAC_KEY}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data     # certificates + ACME account/EAB registration — MUST persist
+      - caddy-config:/config
+
+volumes:
+  mongo-data:
+  caddy-data:
+  caddy-config:

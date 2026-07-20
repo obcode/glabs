@@ -1,0 +1,71 @@
+# glabs.cs.hm.edu deployment — Caddy reverse proxy + oauth2-proxy (OIDC against sso.hm.edu).
+#
+# Trust model: Caddy is the only authenticated entry point. It authenticates every request
+# against oauth2-proxy (OIDC to sso.hm.edu, via forward_auth) and sets X-Remote-User
+# authoritatively from the verified email claim (overwriting any client value). The
+# glabs-web backend trusts that header (auth.header) and is NOT published — it is reachable
+# only over the compose network. glabs identity IS the email; there are no roles/groups
+# (single Owner per resource), so — unlike plexams — no department/groups header is needed.
+#
+# X-Remote-User is injected on EVERY route, including `/` (the SvelteKit GUI): the GUI's
+# SSR/load()/api-proxy hop runs in the gui container with no OIDC cookie, reaches the
+# backend internally (http://glabs-web:8080/query) and RELAYS the X-Remote-User we set here
+# (backend.ts + hooks.server.ts). Without it on `/`, auth.enabled=true would reject those
+# internal calls.
+#
+# TLS is fully managed by Caddy's built-in ACME client against the HM CA (External Account
+# Binding, see the global acme_* options) — no acme.sh, no self-signed bootstrap, no renew
+# cron. Port 80 must stay reachable by the HM ACME CA for the HTTP-01 challenge; Caddy also
+# does the HTTP->HTTPS redirect. NOTE: request a FRESH EAB (kid/hmac) for Caddy — the HM EAB
+# binds exactly ONE ACME account, and one already used by acme.sh is rejected (HTTP 401).
+#
+# {$VAR} placeholders are substituted from the environment (see docker-compose.yml caddy env)
+# when the config loads. Caddy runtime placeholders ({scheme}, {host}, {uri}, ...) are left
+# untouched.
+{
+	email {$ACME_EMAIL}
+	acme_ca {$ACME_DIRECTORY_URL}
+	acme_eab {
+		key_id {$ACME_EAB_KID}
+		mac_key {$ACME_EAB_HMAC_KEY}
+	}
+}
+
+{$SERVER_NAME} {
+	# route{} runs directives in written order, so auth is enforced before any backend proxy.
+	route {
+		# Drop any client-supplied identity headers before authenticating — the browser must
+		# never be able to forge them; only the verified value below is trusted downstream.
+		request_header -X-Remote-User
+		request_header -X-Remote-Displayname
+
+		# oauth2-proxy login/callback flow — NOT auth-gated (terminal for these paths).
+		reverse_proxy /oauth2/* oauth2-proxy:4180 {
+			header_up X-Real-IP {remote_host}
+		}
+
+		# Authenticate every other request against oauth2-proxy (nginx auth_request equivalent).
+		forward_auth oauth2-proxy:4180 {
+			uri /oauth2/auth
+			# Forward the verified identity to the upstream as authoritative X-Remote-* headers.
+			copy_headers X-Auth-Request-Email>X-Remote-User X-Auth-Request-Preferred-Username>X-Remote-Displayname
+
+			# 401 (not signed in) -> redirect to the OIDC login (nginx @oauth2_signin equivalent).
+			@unauth status 401
+			handle_response @unauth {
+				redir * /oauth2/start?rd={scheme}://{host}{uri}
+			}
+		}
+
+		# GraphQL API + subscription websocket (Caddy upgrades websockets automatically).
+		# This is the ONLY backend route — glabs-web serves nothing but /query.
+		reverse_proxy /query* glabs-web:8080
+
+		# glabs.gui (SvelteKit, adapter-node on :3000). Its SSR (load()/hooks/api-proxies)
+		# runs in the gui container with no OIDC cookie, reaches the backend internally
+		# (http://glabs-web:8080/query) and relays the X-Remote-User we injected here — so the
+		# YAML download (/download/...) and every /api proxy are served by the gui, not the
+		# backend.
+		reverse_proxy gui:3000
+	}
+}

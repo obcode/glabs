@@ -15,6 +15,8 @@ import (
 // it to show, per assignment, what has already happened (setaccess, protect,
 // archive, delete; later generate).
 type ActivityEntry struct {
+	// The course this entry is about (its name).
+	Course string `json:"course"`
 	// The assignment this entry is about (its name within the course).
 	Assignment string `json:"assignment"`
 	// The operation that ran (setaccess, protect, archive, delete, …).

@@ -149,6 +149,7 @@ func toGraphActivity(entries []*db.ActivityEntry) []*model.ActivityEntry {
 	out := make([]*model.ActivityEntry, 0, len(entries))
 	for _, e := range entries {
 		out = append(out, &model.ActivityEntry{
+			Course:     e.Course,
 			Assignment: e.Assignment,
 			Op:         e.Op,
 			Status:     e.Status,

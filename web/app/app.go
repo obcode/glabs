@@ -32,6 +32,7 @@ type store interface {
 	RecordActivity(ctx context.Context, e *db.ActivityEntry) error
 	ActivityFor(ctx context.Context, owner, course, assignment string) ([]*db.ActivityEntry, error)
 	CourseActivityFor(ctx context.Context, owner, course string) ([]*db.ActivityEntry, error)
+	AllActivityFor(ctx context.Context, owner string) ([]*db.ActivityEntry, error)
 	SaveJob(ctx context.Context, job *db.ScheduledJob) error
 	CancelJob(ctx context.Context, owner, id string) (*db.ScheduledJob, error)
 	JobsOf(ctx context.Context, owner string, statuses []string) ([]*db.ScheduledJob, error)

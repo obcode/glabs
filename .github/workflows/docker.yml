@@ -80,7 +80,7 @@ jobs:
       # tags the image with this raw ref (v3.38.0), so GLABS_WEB_TAG must carry the v too.
       VERSION: ${{ github.event.release.tag_name || inputs.tag }}
       # On-host deploy dir; override via repo variable DEPLOY_DIR if different.
-      DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/home/glabs/glabs/deploy' }}
+      DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/home/obraun/glabs/deploy' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

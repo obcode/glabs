@@ -52,6 +52,15 @@ jobs:
             type=raw,value=${{ env.VERSION }}
             type=raw,value=latest
 
+      # commit + build timestamp for the Dockerfile ldflags. .git is excluded via
+      # .dockerignore, so main.go's VCS fallback can't fill these — without them
+      # DATE stays "unknown" and the GUI footer shows no build time.
+      - name: Compute build metadata
+        id: build_meta
+        run: |
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -62,6 +71,8 @@ jobs:
           # Version metadata into the build (main.go ldflags via the Dockerfile).
           build-args: |
             VERSION=${{ env.VERSION }}
+            COMMIT=${{ steps.build_meta.outputs.commit }}
+            DATE=${{ steps.build_meta.outputs.date }}
 
   # Ship the freshly pushed image to the on-host compose stack. The runner lives ON the
   # deploy host (outbound-only long-poll to GitHub; the host is VPN-internal, so no inbound

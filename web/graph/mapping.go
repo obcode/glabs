@@ -144,6 +144,84 @@ func toGraphAssignmentRepos(a *app.AssignmentRepos) *model.AssignmentRepos {
 	}
 }
 
+// toGraphEvent projects a monitoring event onto the GraphQL type (all strings
+// non-null; empty is the absent value).
+func toGraphEvent(e *db.Event) *model.Event {
+	return &model.Event{
+		At:         e.At,
+		Type:       e.Type,
+		Severity:   e.Severity,
+		Actor:      e.Actor,
+		ActorName:  e.ActorName,
+		Department: e.Department,
+		Course:     e.Course,
+		Assignment: e.Assignment,
+		Op:         e.Op,
+		Detail:     e.Detail,
+		JobID:      e.JobID,
+	}
+}
+
+func toGraphEvents(events []*db.Event) []*model.Event {
+	out := make([]*model.Event, 0, len(events))
+	for _, e := range events {
+		out = append(out, toGraphEvent(e))
+	}
+	return out
+}
+
+// toGraphLines maps digest EventLines onto the shared Event GraphQL type.
+func toGraphLines(lines []app.EventLine) []*model.Event {
+	out := make([]*model.Event, 0, len(lines))
+	for _, l := range lines {
+		out = append(out, &model.Event{
+			At: l.At, Type: l.Type, Severity: l.Severity, Actor: l.Actor,
+			Course: l.Course, Assignment: l.Assignment, Op: l.Op, Detail: l.Detail,
+		})
+	}
+	return out
+}
+
+// toGraphSummary projects the aggregated digest onto the GraphQL type.
+func toGraphSummary(s *app.Summary) *model.PlatformSummary {
+	users := make([]*model.SummaryUser, 0, len(s.ActiveUsers))
+	for _, u := range s.ActiveUsers {
+		users = append(users, &model.SummaryUser{Email: u.Email, Name: u.Name, Department: u.Department, Logins: u.Logins})
+	}
+	rejected := make([]*model.SummaryRejectedLogin, 0, len(s.RejectedLogins))
+	for _, r := range s.RejectedLogins {
+		rejected = append(rejected, &model.SummaryRejectedLogin{Email: r.Email, Department: r.Department, Count: r.Count})
+	}
+	ops := make([]*model.SummaryLabelCount, 0, len(s.OpsByType))
+	for _, o := range s.OpsByType {
+		ops = append(ops, &model.SummaryLabelCount{Label: o.Label, Count: o.Count})
+	}
+	return &model.PlatformSummary{
+		From:           s.From,
+		Until:          s.Until,
+		TotalEvents:    s.TotalEvents,
+		Quiet:          s.Quiet,
+		ActiveUsers:    users,
+		RejectedLogins: rejected,
+		ScheduledJobs:  toGraphLines(s.ScheduledJobs),
+		JobsRun:        s.JobsRun,
+		JobDone:        s.JobDone,
+		JobFailed:      s.JobFailed,
+		JobExpired:     s.JobExpired,
+		JobCancelled:   s.JobCancelled,
+		JobFailures:    toGraphLines(s.JobFailures),
+		OpDone:         s.OpDone,
+		OpFailed:       s.OpFailed,
+		OpsByType:      ops,
+		OpFailures:     toGraphLines(s.OpFailures),
+		CourseCreated:  s.CourseCreated,
+		CourseDeleted:  s.CourseDeleted,
+		TokenSaved:     s.TokenSaved,
+		TokenDeleted:   s.TokenDeleted,
+		Problems:       toGraphLines(s.Problems),
+	}
+}
+
 // toGraphActivity projects the activity log onto the GraphQL type.
 func toGraphActivity(entries []*db.ActivityEntry) []*model.ActivityEntry {
 	out := make([]*model.ActivityEntry, 0, len(entries))

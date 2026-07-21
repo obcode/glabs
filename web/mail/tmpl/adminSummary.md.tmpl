@@ -1,0 +1,52 @@
+## Nächtliche Zusammenfassung
+
+**Zeitraum:** {{ datetime .From }} – {{ datetime .Until }}
+**Ereignisse gesamt:** {{ .TotalEvents }}
+{{ if .Quiet }}
+In diesem Zeitraum ist nichts Nennenswertes passiert.
+{{ else }}
+### Aktive Nutzer ({{ len .ActiveUsers }})
+{{ if .ActiveUsers }}{{ range .ActiveUsers }}
+- {{ if .Name }}{{ .Name }} ({{ .Email }}){{ else }}{{ .Email }}{{ end }}{{ if .Department }}, FK {{ .Department }}{{ end }} — {{ .Logins }}×{{ end }}
+{{ else }}
+- keine
+{{ end }}
+{{ if .RejectedLogins }}
+### ⚠️ Abgelehnte Logins ({{ len .RejectedLogins }})
+{{ range .RejectedLogins }}
+- {{ .Email }}{{ if .Department }}, FK {{ .Department }}{{ end }} — {{ .Count }} Versuch(e){{ end }}
+{{ end }}
+### Jobs
+
+- **Geplant:** {{ len .ScheduledJobs }}
+- **Gelaufen:** {{ .JobsRun }} (✓ {{ .JobDone }} · ✗ {{ .JobFailed }} · abgelaufen {{ .JobExpired }} · abgebrochen {{ .JobCancelled }})
+{{ if .ScheduledJobs }}
+Neu geplant:
+{{ range .ScheduledJobs }}
+- **{{ .Op }}** {{ .Course }}/{{ .Assignment }} — {{ .Detail }}{{ end }}
+{{ end }}{{ if .JobFailures }}
+Fehlgeschlagen/abgelaufen:
+{{ range .JobFailures }}
+- **{{ .Op }}** {{ .Course }}/{{ .Assignment }} — {{ .Detail }}{{ end }}
+{{ end }}
+### Interaktive Operationen
+
+- **Erfolgreich:** {{ .OpDone }} · **Fehlgeschlagen:** {{ .OpFailed }}
+{{ if .OpsByType }}{{ range .OpsByType }}
+- {{ .Label }}: {{ .Count }}×{{ end }}
+{{ end }}{{ if .OpFailures }}
+Fehlgeschlagen:
+{{ range .OpFailures }}
+- **{{ .Op }}** {{ .Course }}/{{ .Assignment }} — {{ .Detail }}{{ end }}
+{{ end }}{{ if or .CourseCreated .CourseDeleted .TokenSaved .TokenDeleted }}
+### Sonstiges
+{{ if .CourseCreated }}
+- Kurse angelegt: {{ .CourseCreated }}{{ end }}{{ if .CourseDeleted }}
+- Kurse gelöscht: {{ .CourseDeleted }}{{ end }}{{ if .TokenSaved }}
+- GitLab-Token gespeichert: {{ .TokenSaved }}{{ end }}{{ if .TokenDeleted }}
+- GitLab-Token gelöscht: {{ .TokenDeleted }}{{ end }}
+{{ end }}{{ if .Problems }}
+### Warnungen & Fehler ({{ len .Problems }})
+{{ range .Problems }}
+- {{ datetime .At }} · **{{ .Type }}**{{ if .Actor }} · {{ .Actor }}{{ end }}{{ if .Course }} · {{ .Course }}{{ if .Assignment }}/{{ .Assignment }}{{ end }}{{ end }} — {{ .Detail }}{{ end }}
+{{ end }}{{ end }}

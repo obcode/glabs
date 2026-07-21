@@ -13,9 +13,12 @@ import (
 // fakeAuthProvider stands in for the app, so the middleware is tested without a
 // database.
 type fakeAuthProvider struct {
-	allow map[string]*model.User
-	dev   *model.User
-	err   error
+	allow      map[string]*model.User
+	dev        *model.User
+	err        error
+	logins     int
+	rejections int
+	lastDept   string
 }
 
 func (f *fakeAuthProvider) LocalDevUser() *model.User { return f.dev }
@@ -24,6 +27,14 @@ func (f *fakeAuthProvider) GetUserByEmail(_ context.Context, email string) (*mod
 		return nil, f.err
 	}
 	return f.allow[email], nil
+}
+func (f *fakeAuthProvider) NoteLogin(_ context.Context, _, _, department string) {
+	f.logins++
+	f.lastDept = department
+}
+func (f *fakeAuthProvider) NoteRejectedLogin(_ context.Context, _, department, _ string) {
+	f.rejections++
+	f.lastDept = department
 }
 
 // capture records the user the middleware placed in the context, so a test can
@@ -105,6 +116,37 @@ func TestAuthMiddlewareInternalErrorOnLookupFailure(t *testing.T) {
 	code, _ := serve(t, p, "X-Remote-User", "prof@hm.edu")
 	if code != http.StatusInternalServerError {
 		t.Errorf("lookup failure: status = %d, want 500", code)
+	}
+}
+
+// An accepted login is noted once, carrying the department header; a rejected one
+// is noted as a rejection. This is what feeds the monitoring log.
+func TestAuthMiddlewareNotesLoginWithDepartment(t *testing.T) {
+	viper.Reset()
+	t.Cleanup(viper.Reset)
+	viper.Set("auth.enabled", true)
+
+	prof := &model.User{Email: "prof@hm.edu", Name: "Prof"}
+	p := &fakeAuthProvider{allow: map[string]*model.User{"prof@hm.edu": prof}}
+
+	h := authMiddleware(p)(capture(new(*model.User)))
+	req := httptest.NewRequest(http.MethodPost, "/query", nil)
+	req.Header.Set("X-Remote-User", "prof@hm.edu")
+	req.Header.Set("X-Remote-Department", "07")
+	h.ServeHTTP(httptest.NewRecorder(), req)
+
+	if p.logins != 1 || p.rejections != 0 {
+		t.Errorf("accepted login: logins=%d rejections=%d, want 1/0", p.logins, p.rejections)
+	}
+	if p.lastDept != "07" {
+		t.Errorf("department = %q, want %q", p.lastDept, "07")
+	}
+
+	// A stranger is a rejection, not a login.
+	p2 := &fakeAuthProvider{allow: map[string]*model.User{}}
+	code, _ := serve(t, p2, "X-Remote-User", "stranger@hm.edu")
+	if code != http.StatusForbidden || p2.rejections != 1 || p2.logins != 0 {
+		t.Errorf("stranger: code=%d logins=%d rejections=%d, want 403/0/1", code, p2.logins, p2.rejections)
 	}
 }
 

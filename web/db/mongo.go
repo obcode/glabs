@@ -19,6 +19,8 @@ const (
 	collectionUserSecrets = "user_secrets"
 	collectionActivity    = "activity"
 	collectionJobs        = "scheduled_jobs"
+	collectionEvents      = "events"
+	collectionSystem      = "system"
 )
 
 type DB struct {

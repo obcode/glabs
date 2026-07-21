@@ -1,0 +1,92 @@
+# Platform-wide monitoring for admins. Unlike every other query these read ACROSS
+# all users, so each resolver is gated on the caller being a platform admin.
+
+"""
+One thing that happened on the platform, worth an operator's attention: a login,
+a scheduled or finished job, an interactive operation, a course/token change. Most
+fields are optional and depend on the type.
+"""
+type Event {
+  at: Time!
+  "login, login-rejected, job-scheduled, job-done, job-failed, job-expired, job-cancelled, op-done, op-failed, course-created, course-deleted, token-saved, token-deleted."
+  type: String!
+  "info | warning | error."
+  severity: String!
+  "Acting user's email; empty for an anonymous rejected login."
+  actor: String!
+  actorName: String!
+  "Faculty number (fhmDepartment), when the proxy forwards it."
+  department: String!
+  course: String!
+  assignment: String!
+  op: String!
+  detail: String!
+  jobId: String!
+}
+
+"One active user with how often they were seen in the period."
+type SummaryUser {
+  email: String!
+  name: String!
+  department: String!
+  logins: Int!
+}
+
+"One refused identity with its attempt count."
+type SummaryRejectedLogin {
+  email: String!
+  department: String!
+  count: Int!
+}
+
+"A labelled tally (interactive ops by kind)."
+type SummaryLabelCount {
+  label: String!
+  count: Int!
+}
+
+"""
+The aggregated digest of a period's events — the same view the nightly mail sends,
+pre-digested into counts and short lists (never raw log lines).
+"""
+type PlatformSummary {
+  from: Time!
+  until: Time!
+  totalEvents: Int!
+  quiet: Boolean!
+
+  activeUsers: [SummaryUser!]!
+  rejectedLogins: [SummaryRejectedLogin!]!
+
+  scheduledJobs: [Event!]!
+  jobsRun: Int!
+  jobDone: Int!
+  jobFailed: Int!
+  jobExpired: Int!
+  jobCancelled: Int!
+  jobFailures: [Event!]!
+
+  opDone: Int!
+  opFailed: Int!
+  opsByType: [SummaryLabelCount!]!
+  opFailures: [Event!]!
+
+  courseCreated: Int!
+  courseDeleted: Int!
+  tokenSaved: Int!
+  tokenDeleted: Int!
+
+  problems: [Event!]!
+}
+
+extend type Query {
+  "The platform event feed since `since` (default: last 48h), newest first. Admin-only."
+  platformEvents(since: Time): [Event!]!
+  "The aggregated digest for [since, until) (defaults: last 24h). Admin-only."
+  platformSummary(since: Time, until: Time): PlatformSummary!
+}
+
+extend type Mutation {
+  "Send the nightly summary now (last 24h) to the configured recipients. Admin-only."
+  sendSummaryNow: Boolean!
+}

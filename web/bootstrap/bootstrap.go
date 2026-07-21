@@ -72,6 +72,9 @@ func Serve() error {
 	if err := database_.EnsureJobIndexes(ctx); err != nil {
 		return err
 	}
+	if err := database_.EnsureEventIndexes(ctx); err != nil {
+		return err
+	}
 
 	// The KEK for per-user secrets (GitLab PATs). It lives only in the config, never
 	// in the database. A malformed key disables token storage (fail-closed); an
@@ -111,7 +114,11 @@ func Serve() error {
 		log.Warn().Msg("no zpa.baseurl/zpa.token configured; the students page shows only emails")
 	}
 
-	a := app.New(database_, sealer, viper.GetString("gitlab.host"), mailer, viper.GetBool("smtp.dryRun"), zpaClient)
+	// admins may see the platform-wide monitoring page and receive the nightly
+	// summary. It is the ONLY privilege above ordinary owner-scoped access.
+	admins := viper.GetStringSlice("admins")
+
+	a := app.New(database_, sealer, viper.GetString("gitlab.host"), mailer, viper.GetBool("smtp.dryRun"), zpaClient, admins)
 	if err := seedUsers(ctx, database_); err != nil {
 		return err
 	}
@@ -119,6 +126,25 @@ func Serve() error {
 	// The scheduled-job runner polls in the background for the life of the process
 	// (a background context, since StartServer blocks and never returns here).
 	go a.StartJobRunner(context.Background())
+
+	// The nightly admin summary is optional: it needs a mailer, at least one
+	// recipient, and summary.enabled. Recipients default to the admins list.
+	if viper.GetBool("summary.enabled") {
+		recipients := []string{}
+		if r := strings.TrimSpace(viper.GetString("summary.recipient")); r != "" {
+			recipients = append(recipients, r)
+		} else {
+			recipients = admins
+		}
+		hour := 5
+		if viper.IsSet("summary.hour") {
+			hour = viper.GetInt("summary.hour")
+		}
+		a.ConfigureSummary(hour, recipients)
+		go a.StartSummaryMailer(context.Background())
+	} else {
+		log.Info().Msg("nightly admin summary disabled (summary.enabled not set)")
+	}
 
 	graph.StartServer(a, viper.GetString("server.port"))
 	return nil

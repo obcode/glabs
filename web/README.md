@@ -32,6 +32,31 @@ port directly, or the header can be forged.
 With `auth.enabled: false` the server injects a local dev user, so development
 needs no proxy.
 
+## Monitoring & nightly summary
+
+Every operator-relevant thing that happens is written to the `events` collection
+(cross-user, 180-day TTL): logins (throttled to one per user per 8h) and rejected
+logins, scheduled jobs, job outcomes, interactive operations, and course/token
+changes. This is separate from the owner-scoped `activity` log each user sees for
+their own courses — `events` is the platform-wide trail an **admin** reads.
+
+Admins are the emails in the `admins` config list — the only privilege above
+ordinary owner-scoped access. They get:
+
+- **A nightly summary mail** (`summary.enabled`, default hour 05:00 local): an
+  aggregated digest — active users, rejected logins, jobs, operations, and a
+  warnings/errors section — never raw log lines. Recipients default to the admins
+  list. Needs SMTP configured. The window is `(last-sent, now]`, persisted in the
+  `system` collection so a restart never double-sends.
+- **Admin GraphQL** (all admin-gated): `platformEvents(since)` (live feed),
+  `platformSummary(since, until)` (the same digest, live), and the
+  `sendSummaryNow` mutation (send the last 24h on demand). `me.isAdmin` tells the
+  GUI whether to show the admin page.
+
+The optional `X-Remote-Department` header (the HM `fhmDepartment` claim, forwarded
+by the proxy — see `deploy/`) enriches login events with the faculty number; it is
+authorization-irrelevant and absent-safe.
+
 ## Running locally
 
 Needs MongoDB. A throwaway instance:
@@ -85,5 +110,10 @@ go generate ./cmd/glabs-web
 | `auth.enabled` | `false` uses the local dev user; `true` requires the proxy header |
 | `auth.header` | identity header (default `X-Remote-User`) |
 | `auth.displaynameheader` | display-name header (default `X-Remote-Displayname`) |
+| `auth.departmentheader` | optional department header (default `X-Remote-Department`) |
 | `auth.devuser` | dev user email when auth is disabled |
 | `auth.seedusers` | allowlist seeded only when the users collection is empty |
+| `admins` | emails that see the admin monitoring page and get the nightly summary |
+| `summary.enabled` | send the nightly admin summary mail (needs SMTP) |
+| `summary.hour` | local hour to send the summary (default `5`) |
+| `summary.recipient` | optional single recipient; overrides the admins list |

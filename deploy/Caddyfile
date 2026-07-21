@@ -5,7 +5,8 @@
 # authoritatively from the verified email claim (overwriting any client value). The
 # glabs-web backend trusts that header (auth.header) and is NOT published — it is reachable
 # only over the compose network. glabs identity IS the email; there are no roles/groups
-# (single Owner per resource), so — unlike plexams — no department/groups header is needed.
+# (single Owner per resource). The one extra header, X-Remote-Department (fhmDepartment), is
+# authorization-irrelevant — it only enriches the admin monitoring log's login events.
 #
 # X-Remote-User is injected on EVERY route, including `/` (the SvelteKit GUI): the GUI's
 # SSR/load()/api-proxy hop runs in the gui container with no OIDC cookie, reaches the
@@ -38,6 +39,7 @@
 		# never be able to forge them; only the verified value below is trusted downstream.
 		request_header -X-Remote-User
 		request_header -X-Remote-Displayname
+		request_header -X-Remote-Department
 
 		# oauth2-proxy login/callback flow — NOT auth-gated (terminal for these paths).
 		reverse_proxy /oauth2/* oauth2-proxy:4180 {
@@ -48,7 +50,10 @@
 		forward_auth oauth2-proxy:4180 {
 			uri /oauth2/auth
 			# Forward the verified identity to the upstream as authoritative X-Remote-* headers.
-			copy_headers X-Auth-Request-Email>X-Remote-User X-Auth-Request-Preferred-Username>X-Remote-Displayname
+			# X-Auth-Request-Groups carries the fhmDepartment claim (see docker-compose.yml
+			# OAUTH2_PROXY_OIDC_GROUPS_CLAIM); it becomes X-Remote-Department, used only to
+			# enrich the monitoring log's login events.
+			copy_headers X-Auth-Request-Email>X-Remote-User X-Auth-Request-Preferred-Username>X-Remote-Displayname X-Auth-Request-Groups>X-Remote-Department
 
 			# 401 (not signed in) -> redirect to the OIDC login (nginx @oauth2_signin equivalent).
 			@unauth status 401

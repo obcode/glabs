@@ -184,6 +184,27 @@ type DuplicateCheck struct {
 	Groups  []string `json:"groups"`
 }
 
+// One thing that happened on the platform, worth an operator's attention: a login,
+// a scheduled or finished job, an interactive operation, a course/token change. Most
+// fields are optional and depend on the type.
+type Event struct {
+	At time.Time `json:"at"`
+	// login, login-rejected, job-scheduled, job-done, job-failed, job-expired, job-cancelled, op-done, op-failed, course-created, course-deleted, token-saved, token-deleted.
+	Type string `json:"type"`
+	// info | warning | error.
+	Severity string `json:"severity"`
+	// Acting user's email; empty for an anonymous rejected login.
+	Actor     string `json:"actor"`
+	ActorName string `json:"actorName"`
+	// Faculty number (fhmDepartment), when the proxy forwards it.
+	Department string `json:"department"`
+	Course     string `json:"course"`
+	Assignment string `json:"assignment"`
+	Op         string `json:"op"`
+	Detail     string `json:"detail"`
+	JobID      string `json:"jobId"`
+}
+
 // The assignment editor is schema-driven: the GUI renders a guided, validated form
 // from this server-authoritative metadata, so labels, help text and dropdown
 // options live in exactly one place.
@@ -320,6 +341,33 @@ type PlannedTarget struct {
 	URL string `json:"url"`
 }
 
+// The aggregated digest of a period's events — the same view the nightly mail sends,
+// pre-digested into counts and short lists (never raw log lines).
+type PlatformSummary struct {
+	From           time.Time               `json:"from"`
+	Until          time.Time               `json:"until"`
+	TotalEvents    int                     `json:"totalEvents"`
+	Quiet          bool                    `json:"quiet"`
+	ActiveUsers    []*SummaryUser          `json:"activeUsers"`
+	RejectedLogins []*SummaryRejectedLogin `json:"rejectedLogins"`
+	ScheduledJobs  []*Event                `json:"scheduledJobs"`
+	JobsRun        int                     `json:"jobsRun"`
+	JobDone        int                     `json:"jobDone"`
+	JobFailed      int                     `json:"jobFailed"`
+	JobExpired     int                     `json:"jobExpired"`
+	JobCancelled   int                     `json:"jobCancelled"`
+	JobFailures    []*Event                `json:"jobFailures"`
+	OpDone         int                     `json:"opDone"`
+	OpFailed       int                     `json:"opFailed"`
+	OpsByType      []*SummaryLabelCount    `json:"opsByType"`
+	OpFailures     []*Event                `json:"opFailures"`
+	CourseCreated  int                     `json:"courseCreated"`
+	CourseDeleted  int                     `json:"courseDeleted"`
+	TokenSaved     int                     `json:"tokenSaved"`
+	TokenDeleted   int                     `json:"tokenDeleted"`
+	Problems       []*Event                `json:"problems"`
+}
+
 // A member of a repository (only the display fields, never GitLab-internal ids).
 type ProjectMemberReport struct {
 	Name     string `json:"name"`
@@ -447,6 +495,27 @@ type StudentCheck struct {
 }
 
 type Subscription struct {
+}
+
+// A labelled tally (interactive ops by kind).
+type SummaryLabelCount struct {
+	Label string `json:"label"`
+	Count int    `json:"count"`
+}
+
+// One refused identity with its attempt count.
+type SummaryRejectedLogin struct {
+	Email      string `json:"email"`
+	Department string `json:"department"`
+	Count      int    `json:"count"`
+}
+
+// One active user with how often they were seen in the period.
+type SummaryUser struct {
+	Email      string `json:"email"`
+	Name       string `json:"name"`
+	Department string `json:"department"`
+	Logins     int    `json:"logins"`
 }
 
 // Result of validating a draft assignment against the real resolver (the same one

@@ -26,7 +26,18 @@ func (r *queryResolver) ServerInfo(ctx context.Context) (*model.ServerInfo, erro
 	return r.app.ServerInfo(), nil
 }
 
+// IsAdmin is the resolver for the isAdmin field.
+func (r *userResolver) IsAdmin(ctx context.Context, obj *model.User) (bool, error) {
+	return r.app.IsAdminEmail(obj.Email), nil
+}
+
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
-type queryResolver struct{ *Resolver }
+// User returns generated.UserResolver implementation.
+func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
+
+type (
+	queryResolver struct{ *Resolver }
+	userResolver  struct{ *Resolver }
+)

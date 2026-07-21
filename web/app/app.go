@@ -7,6 +7,7 @@ package app
 import (
 	"context"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/obcode/glabs/v3/web/db"
@@ -41,6 +42,11 @@ type store interface {
 	FinishJob(ctx context.Context, id, status, logText, errText string) error
 	UnnotifiedTerminalJobs(ctx context.Context) ([]*db.ScheduledJob, error)
 	MarkNotified(ctx context.Context, id string) error
+	RecordEvent(ctx context.Context, e *db.Event) error
+	EventsBetween(ctx context.Context, since, until time.Time) ([]*db.Event, error)
+	RecentEvents(ctx context.Context, since time.Time, limit int64) ([]*db.Event, error)
+	SystemState(ctx context.Context) (*db.SystemState, error)
+	SetSummarySentAt(ctx context.Context, at time.Time) error
 }
 
 // Mailer sends a rendered notification. *mail.Sender implements it; the App holds
@@ -68,9 +74,27 @@ type App struct {
 	// zpa enriches the roster with student details; nil when ZPA is not configured
 	// (then the students page shows just the emails).
 	zpa *zpa.Client
+	// admins holds the lowercased emails allowed to see the platform-wide monitoring
+	// (the admin page and the nightly summary). Empty means no one is an admin.
+	admins map[string]bool
+	// loginMu/loginSeen throttle login events: X-Remote-User arrives on every
+	// request, so a "login" is recorded at most once per user per loginThrottle.
+	loginMu   sync.Mutex
+	loginSeen map[string]time.Time
+	// summaryHour/summaryRecipients configure the nightly digest (set via
+	// ConfigureSummary from bootstrap); the scheduler and the "send now" path share
+	// them.
+	summaryHour       int
+	summaryRecipients []string
 }
 
-func New(database *db.DB, sealer *secrets.Sealer, gitlabHost string, mailer Mailer, mailDryRun bool, zpaClient *zpa.Client) *App {
+func New(database *db.DB, sealer *secrets.Sealer, gitlabHost string, mailer Mailer, mailDryRun bool, zpaClient *zpa.Client, admins []string) *App {
+	adminSet := make(map[string]bool, len(admins))
+	for _, e := range admins {
+		if e = strings.ToLower(strings.TrimSpace(e)); e != "" {
+			adminSet[e] = true
+		}
+	}
 	return &App{
 		db:         database,
 		sealer:     sealer,
@@ -79,6 +103,8 @@ func New(database *db.DB, sealer *secrets.Sealer, gitlabHost string, mailer Mail
 		mailer:     mailer,
 		mailDryRun: mailDryRun,
 		zpa:        zpaClient,
+		admins:     adminSet,
+		loginSeen:  map[string]time.Time{},
 	}
 }
 

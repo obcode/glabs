@@ -32,6 +32,7 @@ type ResolverRoot interface {
 	Mutation() MutationResolver
 	Query() QueryResolver
 	Subscription() SubscriptionResolver
+	User() UserResolver
 }
 
 type DirectiveRoot struct {
@@ -147,6 +148,20 @@ type ComplexityRoot struct {
 		Student func(childComplexity int) int
 	}
 
+	Event struct {
+		Actor      func(childComplexity int) int
+		ActorName  func(childComplexity int) int
+		Assignment func(childComplexity int) int
+		At         func(childComplexity int) int
+		Course     func(childComplexity int) int
+		Department func(childComplexity int) int
+		Detail     func(childComplexity int) int
+		JobID      func(childComplexity int) int
+		Op         func(childComplexity int) int
+		Severity   func(childComplexity int) int
+		Type       func(childComplexity int) int
+	}
+
 	FieldMeta struct {
 		Deprecated  func(childComplexity int) int
 		Description func(childComplexity int) int
@@ -214,6 +229,7 @@ type ComplexityRoot struct {
 		RenameAssignment     func(childComplexity int, course string, oldName string, newName string) int
 		RenameCourse         func(childComplexity int, oldName string, newName string) int
 		ScheduleOp           func(childComplexity int, token string, runAt time.Time, graceMinutes *int, confirmPhrase *string) int
+		SendSummaryNow       func(childComplexity int) int
 		SetAssignment        func(childComplexity int, course string, name string, draft []*model.FieldValueInput) int
 		SetCourse            func(childComplexity int, name string, coursePath string, semesterPath string, useCoursenameAsPrefix bool, useEmailDomainAsSuffix bool) int
 		SetCourseGroups      func(childComplexity int, name string, groups []*model.GroupInput) int
@@ -238,6 +254,31 @@ type ComplexityRoot struct {
 		For  func(childComplexity int) int
 		Repo func(childComplexity int) int
 		URL  func(childComplexity int) int
+	}
+
+	PlatformSummary struct {
+		ActiveUsers    func(childComplexity int) int
+		CourseCreated  func(childComplexity int) int
+		CourseDeleted  func(childComplexity int) int
+		From           func(childComplexity int) int
+		JobCancelled   func(childComplexity int) int
+		JobDone        func(childComplexity int) int
+		JobExpired     func(childComplexity int) int
+		JobFailed      func(childComplexity int) int
+		JobFailures    func(childComplexity int) int
+		JobsRun        func(childComplexity int) int
+		OpDone         func(childComplexity int) int
+		OpFailed       func(childComplexity int) int
+		OpFailures     func(childComplexity int) int
+		OpsByType      func(childComplexity int) int
+		Problems       func(childComplexity int) int
+		Quiet          func(childComplexity int) int
+		RejectedLogins func(childComplexity int) int
+		ScheduledJobs  func(childComplexity int) int
+		TokenDeleted   func(childComplexity int) int
+		TokenSaved     func(childComplexity int) int
+		TotalEvents    func(childComplexity int) int
+		Until          func(childComplexity int) int
 	}
 
 	ProjectMemberReport struct {
@@ -281,6 +322,8 @@ type ComplexityRoot struct {
 		Courses                 func(childComplexity int) int
 		GitlabToken             func(childComplexity int) int
 		Me                      func(childComplexity int) int
+		PlatformEvents          func(childComplexity int, since *time.Time) int
+		PlatformSummary         func(childComplexity int, since *time.Time, until *time.Time) int
 		ScheduledJob            func(childComplexity int, id string) int
 		ScheduledJobs           func(childComplexity int, status []model.JobStatus) int
 		ServerInfo              func(childComplexity int) int
@@ -359,9 +402,28 @@ type ComplexityRoot struct {
 		RunOp                      func(childComplexity int, token string, confirmPhrase *string) int
 	}
 
+	SummaryLabelCount struct {
+		Count func(childComplexity int) int
+		Label func(childComplexity int) int
+	}
+
+	SummaryRejectedLogin struct {
+		Count      func(childComplexity int) int
+		Department func(childComplexity int) int
+		Email      func(childComplexity int) int
+	}
+
+	SummaryUser struct {
+		Department func(childComplexity int) int
+		Email      func(childComplexity int) int
+		Logins     func(childComplexity int) int
+		Name       func(childComplexity int) int
+	}
+
 	User struct {
-		Email func(childComplexity int) int
-		Name  func(childComplexity int) int
+		Email   func(childComplexity int) int
+		IsAdmin func(childComplexity int) int
+		Name    func(childComplexity int) int
 	}
 
 	ValidationResult struct {
@@ -384,6 +446,7 @@ type MutationResolver interface {
 	SetCourseGroups(ctx context.Context, name string, groups []*model.GroupInput) (*model.Course, error)
 	RenameCourse(ctx context.Context, oldName string, newName string) (*model.Course, error)
 	DeleteCourse(ctx context.Context, name string) (bool, error)
+	SendSummaryNow(ctx context.Context) (bool, error)
 	SetAssignment(ctx context.Context, course string, name string, draft []*model.FieldValueInput) (*model.AssignmentView, error)
 	ImportAssignmentYaml(ctx context.Context, course string, yaml string) (*model.AssignmentView, error)
 	CopyAssignment(ctx context.Context, course string, from string, newName string) (*model.AssignmentView, error)
@@ -401,6 +464,8 @@ type QueryResolver interface {
 	AssignmentActivity(ctx context.Context, course string, name string) ([]*model.ActivityEntry, error)
 	CourseActivity(ctx context.Context, course string) ([]*model.ActivityEntry, error)
 	ActivityLog(ctx context.Context) ([]*model.ActivityEntry, error)
+	PlatformEvents(ctx context.Context, since *time.Time) ([]*model.Event, error)
+	PlatformSummary(ctx context.Context, since *time.Time, until *time.Time) (*model.PlatformSummary, error)
 	AssignmentSchema(ctx context.Context) ([]*model.FieldMeta, error)
 	BranchRuleSchema(ctx context.Context) ([]*model.FieldMeta, error)
 	ApprovalSettingsSchema(ctx context.Context) ([]*model.FieldMeta, error)
@@ -425,6 +490,9 @@ type SubscriptionResolver interface {
 	CourseCheckProgress(ctx context.Context, name string) (<-chan *model.CheckProgress, error)
 	RunOp(ctx context.Context, token string, confirmPhrase *string) (<-chan *model.LogLine, error)
 	CourseRepoOverviewProgress(ctx context.Context, course string) (<-chan *model.RepoOverviewEvent, error)
+}
+type UserResolver interface {
+	IsAdmin(ctx context.Context, obj *model.User) (bool, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -878,6 +946,73 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.DuplicateCheck.Student(childComplexity), true
 
+	case "Event.actor":
+		if e.ComplexityRoot.Event.Actor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Event.Actor(childComplexity), true
+	case "Event.actorName":
+		if e.ComplexityRoot.Event.ActorName == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Event.ActorName(childComplexity), true
+	case "Event.assignment":
+		if e.ComplexityRoot.Event.Assignment == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Event.Assignment(childComplexity), true
+	case "Event.at":
+		if e.ComplexityRoot.Event.At == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Event.At(childComplexity), true
+	case "Event.course":
+		if e.ComplexityRoot.Event.Course == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Event.Course(childComplexity), true
+	case "Event.department":
+		if e.ComplexityRoot.Event.Department == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Event.Department(childComplexity), true
+	case "Event.detail":
+		if e.ComplexityRoot.Event.Detail == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Event.Detail(childComplexity), true
+	case "Event.jobId":
+		if e.ComplexityRoot.Event.JobID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Event.JobID(childComplexity), true
+	case "Event.op":
+		if e.ComplexityRoot.Event.Op == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Event.Op(childComplexity), true
+	case "Event.severity":
+		if e.ComplexityRoot.Event.Severity == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Event.Severity(childComplexity), true
+	case "Event.type":
+		if e.ComplexityRoot.Event.Type == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Event.Type(childComplexity), true
+
 	case "FieldMeta.deprecated":
 		if e.ComplexityRoot.FieldMeta.Deprecated == nil {
 			break
@@ -1176,6 +1311,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ScheduleOp(childComplexity, args["token"].(string), args["runAt"].(time.Time), args["graceMinutes"].(*int), args["confirmPhrase"].(*string)), true
+	case "Mutation.sendSummaryNow":
+		if e.ComplexityRoot.Mutation.SendSummaryNow == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Mutation.SendSummaryNow(childComplexity), true
 	case "Mutation.setAssignment":
 		if e.ComplexityRoot.Mutation.SetAssignment == nil {
 			break
@@ -1311,6 +1452,139 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.PlannedTarget.URL(childComplexity), true
+
+	case "PlatformSummary.activeUsers":
+		if e.ComplexityRoot.PlatformSummary.ActiveUsers == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.ActiveUsers(childComplexity), true
+	case "PlatformSummary.courseCreated":
+		if e.ComplexityRoot.PlatformSummary.CourseCreated == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.CourseCreated(childComplexity), true
+	case "PlatformSummary.courseDeleted":
+		if e.ComplexityRoot.PlatformSummary.CourseDeleted == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.CourseDeleted(childComplexity), true
+	case "PlatformSummary.from":
+		if e.ComplexityRoot.PlatformSummary.From == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.From(childComplexity), true
+	case "PlatformSummary.jobCancelled":
+		if e.ComplexityRoot.PlatformSummary.JobCancelled == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.JobCancelled(childComplexity), true
+	case "PlatformSummary.jobDone":
+		if e.ComplexityRoot.PlatformSummary.JobDone == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.JobDone(childComplexity), true
+	case "PlatformSummary.jobExpired":
+		if e.ComplexityRoot.PlatformSummary.JobExpired == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.JobExpired(childComplexity), true
+	case "PlatformSummary.jobFailed":
+		if e.ComplexityRoot.PlatformSummary.JobFailed == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.JobFailed(childComplexity), true
+	case "PlatformSummary.jobFailures":
+		if e.ComplexityRoot.PlatformSummary.JobFailures == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.JobFailures(childComplexity), true
+	case "PlatformSummary.jobsRun":
+		if e.ComplexityRoot.PlatformSummary.JobsRun == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.JobsRun(childComplexity), true
+	case "PlatformSummary.opDone":
+		if e.ComplexityRoot.PlatformSummary.OpDone == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.OpDone(childComplexity), true
+	case "PlatformSummary.opFailed":
+		if e.ComplexityRoot.PlatformSummary.OpFailed == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.OpFailed(childComplexity), true
+	case "PlatformSummary.opFailures":
+		if e.ComplexityRoot.PlatformSummary.OpFailures == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.OpFailures(childComplexity), true
+	case "PlatformSummary.opsByType":
+		if e.ComplexityRoot.PlatformSummary.OpsByType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.OpsByType(childComplexity), true
+	case "PlatformSummary.problems":
+		if e.ComplexityRoot.PlatformSummary.Problems == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.Problems(childComplexity), true
+	case "PlatformSummary.quiet":
+		if e.ComplexityRoot.PlatformSummary.Quiet == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.Quiet(childComplexity), true
+	case "PlatformSummary.rejectedLogins":
+		if e.ComplexityRoot.PlatformSummary.RejectedLogins == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.RejectedLogins(childComplexity), true
+	case "PlatformSummary.scheduledJobs":
+		if e.ComplexityRoot.PlatformSummary.ScheduledJobs == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.ScheduledJobs(childComplexity), true
+	case "PlatformSummary.tokenDeleted":
+		if e.ComplexityRoot.PlatformSummary.TokenDeleted == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.TokenDeleted(childComplexity), true
+	case "PlatformSummary.tokenSaved":
+		if e.ComplexityRoot.PlatformSummary.TokenSaved == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.TokenSaved(childComplexity), true
+	case "PlatformSummary.totalEvents":
+		if e.ComplexityRoot.PlatformSummary.TotalEvents == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.TotalEvents(childComplexity), true
+	case "PlatformSummary.until":
+		if e.ComplexityRoot.PlatformSummary.Until == nil {
+			break
+		}
+
+		return e.ComplexityRoot.PlatformSummary.Until(childComplexity), true
 
 	case "ProjectMemberReport.name":
 		if e.ComplexityRoot.ProjectMemberReport.Name == nil {
@@ -1574,6 +1848,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Me(childComplexity), true
+	case "Query.platformEvents":
+		if e.ComplexityRoot.Query.PlatformEvents == nil {
+			break
+		}
+
+		args, err := ec.field_Query_platformEvents_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.PlatformEvents(childComplexity, args["since"].(*time.Time)), true
+	case "Query.platformSummary":
+		if e.ComplexityRoot.Query.PlatformSummary == nil {
+			break
+		}
+
+		args, err := ec.field_Query_platformSummary_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.PlatformSummary(childComplexity, args["since"].(*time.Time), args["until"].(*time.Time)), true
 	case "Query.scheduledJob":
 		if e.ComplexityRoot.Query.ScheduledJob == nil {
 			break
@@ -1896,12 +2192,75 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Subscription.RunOp(childComplexity, args["token"].(string), args["confirmPhrase"].(*string)), true
 
+	case "SummaryLabelCount.count":
+		if e.ComplexityRoot.SummaryLabelCount.Count == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SummaryLabelCount.Count(childComplexity), true
+	case "SummaryLabelCount.label":
+		if e.ComplexityRoot.SummaryLabelCount.Label == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SummaryLabelCount.Label(childComplexity), true
+
+	case "SummaryRejectedLogin.count":
+		if e.ComplexityRoot.SummaryRejectedLogin.Count == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SummaryRejectedLogin.Count(childComplexity), true
+	case "SummaryRejectedLogin.department":
+		if e.ComplexityRoot.SummaryRejectedLogin.Department == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SummaryRejectedLogin.Department(childComplexity), true
+	case "SummaryRejectedLogin.email":
+		if e.ComplexityRoot.SummaryRejectedLogin.Email == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SummaryRejectedLogin.Email(childComplexity), true
+
+	case "SummaryUser.department":
+		if e.ComplexityRoot.SummaryUser.Department == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SummaryUser.Department(childComplexity), true
+	case "SummaryUser.email":
+		if e.ComplexityRoot.SummaryUser.Email == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SummaryUser.Email(childComplexity), true
+	case "SummaryUser.logins":
+		if e.ComplexityRoot.SummaryUser.Logins == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SummaryUser.Logins(childComplexity), true
+	case "SummaryUser.name":
+		if e.ComplexityRoot.SummaryUser.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SummaryUser.Name(childComplexity), true
+
 	case "User.email":
 		if e.ComplexityRoot.User.Email == nil {
 			break
 		}
 
 		return e.ComplexityRoot.User.Email(childComplexity), true
+	case "User.isAdmin":
+		if e.ComplexityRoot.User.IsAdmin == nil {
+			break
+		}
+
+		return e.ComplexityRoot.User.IsAdmin(childComplexity), true
 	case "User.name":
 		if e.ComplexityRoot.User.Name == nil {
 			break
@@ -2065,6 +2424,99 @@ extend type Query {
   courseActivity(course: String!): [ActivityEntry!]!
   "The caller's complete activity log across ALL their courses, newest first — the audit-log dump (uncapped, for the activity page and its JSON download)."
   activityLog: [ActivityEntry!]!
+}
+`, BuiltIn: false},
+	{Name: "../admin.graphqls", Input: `# Platform-wide monitoring for admins. Unlike every other query these read ACROSS
+# all users, so each resolver is gated on the caller being a platform admin.
+
+"""
+One thing that happened on the platform, worth an operator's attention: a login,
+a scheduled or finished job, an interactive operation, a course/token change. Most
+fields are optional and depend on the type.
+"""
+type Event {
+  at: Time!
+  "login, login-rejected, job-scheduled, job-done, job-failed, job-expired, job-cancelled, op-done, op-failed, course-created, course-deleted, token-saved, token-deleted."
+  type: String!
+  "info | warning | error."
+  severity: String!
+  "Acting user's email; empty for an anonymous rejected login."
+  actor: String!
+  actorName: String!
+  "Faculty number (fhmDepartment), when the proxy forwards it."
+  department: String!
+  course: String!
+  assignment: String!
+  op: String!
+  detail: String!
+  jobId: String!
+}
+
+"One active user with how often they were seen in the period."
+type SummaryUser {
+  email: String!
+  name: String!
+  department: String!
+  logins: Int!
+}
+
+"One refused identity with its attempt count."
+type SummaryRejectedLogin {
+  email: String!
+  department: String!
+  count: Int!
+}
+
+"A labelled tally (interactive ops by kind)."
+type SummaryLabelCount {
+  label: String!
+  count: Int!
+}
+
+"""
+The aggregated digest of a period's events — the same view the nightly mail sends,
+pre-digested into counts and short lists (never raw log lines).
+"""
+type PlatformSummary {
+  from: Time!
+  until: Time!
+  totalEvents: Int!
+  quiet: Boolean!
+
+  activeUsers: [SummaryUser!]!
+  rejectedLogins: [SummaryRejectedLogin!]!
+
+  scheduledJobs: [Event!]!
+  jobsRun: Int!
+  jobDone: Int!
+  jobFailed: Int!
+  jobExpired: Int!
+  jobCancelled: Int!
+  jobFailures: [Event!]!
+
+  opDone: Int!
+  opFailed: Int!
+  opsByType: [SummaryLabelCount!]!
+  opFailures: [Event!]!
+
+  courseCreated: Int!
+  courseDeleted: Int!
+  tokenSaved: Int!
+  tokenDeleted: Int!
+
+  problems: [Event!]!
+}
+
+extend type Query {
+  "The platform event feed since ` + "`" + `since` + "`" + ` (default: last 48h), newest first. Admin-only."
+  platformEvents(since: Time): [Event!]!
+  "The aggregated digest for [since, until) (defaults: last 24h). Admin-only."
+  platformSummary(since: Time, until: Time): PlatformSummary!
+}
+
+extend type Mutation {
+  "Send the nightly summary now (last 24h) to the configured recipients. Admin-only."
+  sendSummaryNow: Boolean!
 }
 `, BuiltIn: false},
 	{Name: "../assignments.graphqls", Input: `"""
@@ -2731,12 +3183,16 @@ extend type Query {
 }
 `, BuiltIn: false},
 	{Name: "../schema.graphqls", Input: `"""
-An authenticated user of glabs-web. Identity comes from the auth proxy; there
-are no roles — each user manages only their own courses.
+An authenticated user of glabs-web. Identity comes from the auth proxy; ordinary
+users manage only their own courses. The one distinction is isAdmin: admins (the
+server's ` + "`" + `admins` + "`" + ` config list) additionally see the platform-wide monitoring view
+and receive the nightly summary.
 """
 type User {
   email: String!
   name: String!
+  "Whether this user is a platform admin (on the server's admins list)."
+  isAdmin: Boolean!
 }
 
 """Version and build metadata for the running server."""
@@ -3003,6 +3459,34 @@ func (ec *executionContext) childFields_DuplicateCheck(ctx context.Context, fiel
 	return nil, fmt.Errorf("no field named %q was found under type DuplicateCheck", field.Name)
 }
 
+func (ec *executionContext) childFields_Event(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "at":
+		return ec.fieldContext_Event_at(ctx, field)
+	case "type":
+		return ec.fieldContext_Event_type(ctx, field)
+	case "severity":
+		return ec.fieldContext_Event_severity(ctx, field)
+	case "actor":
+		return ec.fieldContext_Event_actor(ctx, field)
+	case "actorName":
+		return ec.fieldContext_Event_actorName(ctx, field)
+	case "department":
+		return ec.fieldContext_Event_department(ctx, field)
+	case "course":
+		return ec.fieldContext_Event_course(ctx, field)
+	case "assignment":
+		return ec.fieldContext_Event_assignment(ctx, field)
+	case "op":
+		return ec.fieldContext_Event_op(ctx, field)
+	case "detail":
+		return ec.fieldContext_Event_detail(ctx, field)
+	case "jobId":
+		return ec.fieldContext_Event_jobId(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type Event", field.Name)
+}
+
 func (ec *executionContext) childFields_FieldMeta(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "key":
@@ -3147,6 +3631,56 @@ func (ec *executionContext) childFields_PlannedTarget(ctx context.Context, field
 		return ec.fieldContext_PlannedTarget_url(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type PlannedTarget", field.Name)
+}
+
+func (ec *executionContext) childFields_PlatformSummary(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "from":
+		return ec.fieldContext_PlatformSummary_from(ctx, field)
+	case "until":
+		return ec.fieldContext_PlatformSummary_until(ctx, field)
+	case "totalEvents":
+		return ec.fieldContext_PlatformSummary_totalEvents(ctx, field)
+	case "quiet":
+		return ec.fieldContext_PlatformSummary_quiet(ctx, field)
+	case "activeUsers":
+		return ec.fieldContext_PlatformSummary_activeUsers(ctx, field)
+	case "rejectedLogins":
+		return ec.fieldContext_PlatformSummary_rejectedLogins(ctx, field)
+	case "scheduledJobs":
+		return ec.fieldContext_PlatformSummary_scheduledJobs(ctx, field)
+	case "jobsRun":
+		return ec.fieldContext_PlatformSummary_jobsRun(ctx, field)
+	case "jobDone":
+		return ec.fieldContext_PlatformSummary_jobDone(ctx, field)
+	case "jobFailed":
+		return ec.fieldContext_PlatformSummary_jobFailed(ctx, field)
+	case "jobExpired":
+		return ec.fieldContext_PlatformSummary_jobExpired(ctx, field)
+	case "jobCancelled":
+		return ec.fieldContext_PlatformSummary_jobCancelled(ctx, field)
+	case "jobFailures":
+		return ec.fieldContext_PlatformSummary_jobFailures(ctx, field)
+	case "opDone":
+		return ec.fieldContext_PlatformSummary_opDone(ctx, field)
+	case "opFailed":
+		return ec.fieldContext_PlatformSummary_opFailed(ctx, field)
+	case "opsByType":
+		return ec.fieldContext_PlatformSummary_opsByType(ctx, field)
+	case "opFailures":
+		return ec.fieldContext_PlatformSummary_opFailures(ctx, field)
+	case "courseCreated":
+		return ec.fieldContext_PlatformSummary_courseCreated(ctx, field)
+	case "courseDeleted":
+		return ec.fieldContext_PlatformSummary_courseDeleted(ctx, field)
+	case "tokenSaved":
+		return ec.fieldContext_PlatformSummary_tokenSaved(ctx, field)
+	case "tokenDeleted":
+		return ec.fieldContext_PlatformSummary_tokenDeleted(ctx, field)
+	case "problems":
+		return ec.fieldContext_PlatformSummary_problems(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type PlatformSummary", field.Name)
 }
 
 func (ec *executionContext) childFields_ProjectMemberReport(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -3321,12 +3855,50 @@ func (ec *executionContext) childFields_StudentCheck(ctx context.Context, field 
 	return nil, fmt.Errorf("no field named %q was found under type StudentCheck", field.Name)
 }
 
+func (ec *executionContext) childFields_SummaryLabelCount(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "label":
+		return ec.fieldContext_SummaryLabelCount_label(ctx, field)
+	case "count":
+		return ec.fieldContext_SummaryLabelCount_count(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type SummaryLabelCount", field.Name)
+}
+
+func (ec *executionContext) childFields_SummaryRejectedLogin(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "email":
+		return ec.fieldContext_SummaryRejectedLogin_email(ctx, field)
+	case "department":
+		return ec.fieldContext_SummaryRejectedLogin_department(ctx, field)
+	case "count":
+		return ec.fieldContext_SummaryRejectedLogin_count(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type SummaryRejectedLogin", field.Name)
+}
+
+func (ec *executionContext) childFields_SummaryUser(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "email":
+		return ec.fieldContext_SummaryUser_email(ctx, field)
+	case "name":
+		return ec.fieldContext_SummaryUser_name(ctx, field)
+	case "department":
+		return ec.fieldContext_SummaryUser_department(ctx, field)
+	case "logins":
+		return ec.fieldContext_SummaryUser_logins(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type SummaryUser", field.Name)
+}
+
 func (ec *executionContext) childFields_User(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "email":
 		return ec.fieldContext_User_email(ctx, field)
 	case "name":
 		return ec.fieldContext_User_name(ctx, field)
+	case "isAdmin":
+		return ec.fieldContext_User_isAdmin(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 }
@@ -4090,6 +4662,42 @@ func (ec *executionContext) field_Query_course_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_platformEvents_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "since",
+		func(ctx context.Context, v any) (*time.Time, error) {
+			return ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["since"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_platformSummary_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "since",
+		func(ctx context.Context, v any) (*time.Time, error) {
+			return ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["since"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "until",
+		func(ctx context.Context, v any) (*time.Time, error) {
+			return ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["until"] = arg1
 	return args, nil
 }
 
@@ -5983,6 +6591,259 @@ func (ec *executionContext) fieldContext_DuplicateCheck_groups(_ context.Context
 	return graphql.NewScalarFieldContext("DuplicateCheck", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _Event_at(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Event_at(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.At, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Event_at(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Event", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _Event_type(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Event_type(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Type, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Event_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Event", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Event_severity(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Event_severity(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Severity, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Event_severity(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Event", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Event_actor(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Event_actor(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Actor, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Event_actor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Event", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Event_actorName(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Event_actorName(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ActorName, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Event_actorName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Event", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Event_department(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Event_department(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Department, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Event_department(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Event", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Event_course(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Event_course(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Course, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Event_course(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Event", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Event_assignment(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Event_assignment(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Assignment, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Event_assignment(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Event", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Event_op(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Event_op(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Op, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Event_op(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Event", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Event_detail(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Event_detail(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Detail, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Event_detail(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Event", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Event_jobId(ctx context.Context, field graphql.CollectedField, obj *model.Event) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Event_jobId(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.JobID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Event_jobId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Event", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _FieldMeta_key(ctx context.Context, field graphql.CollectedField, obj *model.FieldMeta) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -6930,6 +7791,29 @@ func (ec *executionContext) fieldContext_Mutation_deleteCourse(ctx context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_sendSummaryNow(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_sendSummaryNow(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Mutation().SendSummaryNow(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_sendSummaryNow(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Mutation", field, true, true, errors.New("field of type Boolean does not have child fields"))
+}
+
 func (ec *executionContext) _Mutation_setAssignment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7666,6 +8550,575 @@ func (ec *executionContext) fieldContext_PlannedTarget_url(_ context.Context, fi
 	return graphql.NewScalarFieldContext("PlannedTarget", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _PlatformSummary_from(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_from(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.From, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_from(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PlatformSummary", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _PlatformSummary_until(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_until(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Until, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_until(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PlatformSummary", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _PlatformSummary_totalEvents(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_totalEvents(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TotalEvents, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_totalEvents(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PlatformSummary", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _PlatformSummary_quiet(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_quiet(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Quiet, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_quiet(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PlatformSummary", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _PlatformSummary_activeUsers(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_activeUsers(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ActiveUsers, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.SummaryUser) graphql.Marshaler {
+			return ec.marshalNSummaryUser2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐSummaryUserᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_activeUsers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlatformSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_SummaryUser(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PlatformSummary_rejectedLogins(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_rejectedLogins(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RejectedLogins, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.SummaryRejectedLogin) graphql.Marshaler {
+			return ec.marshalNSummaryRejectedLogin2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐSummaryRejectedLoginᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_rejectedLogins(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlatformSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_SummaryRejectedLogin(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PlatformSummary_scheduledJobs(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_scheduledJobs(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ScheduledJobs, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.Event) graphql.Marshaler {
+			return ec.marshalNEvent2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐEventᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_scheduledJobs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlatformSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Event(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PlatformSummary_jobsRun(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_jobsRun(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.JobsRun, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_jobsRun(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PlatformSummary", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _PlatformSummary_jobDone(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_jobDone(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.JobDone, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_jobDone(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PlatformSummary", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _PlatformSummary_jobFailed(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_jobFailed(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.JobFailed, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_jobFailed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PlatformSummary", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _PlatformSummary_jobExpired(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_jobExpired(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.JobExpired, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_jobExpired(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PlatformSummary", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _PlatformSummary_jobCancelled(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_jobCancelled(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.JobCancelled, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_jobCancelled(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PlatformSummary", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _PlatformSummary_jobFailures(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_jobFailures(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.JobFailures, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.Event) graphql.Marshaler {
+			return ec.marshalNEvent2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐEventᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_jobFailures(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlatformSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Event(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PlatformSummary_opDone(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_opDone(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OpDone, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_opDone(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PlatformSummary", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _PlatformSummary_opFailed(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_opFailed(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OpFailed, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_opFailed(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PlatformSummary", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _PlatformSummary_opsByType(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_opsByType(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OpsByType, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.SummaryLabelCount) graphql.Marshaler {
+			return ec.marshalNSummaryLabelCount2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐSummaryLabelCountᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_opsByType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlatformSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_SummaryLabelCount(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PlatformSummary_opFailures(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_opFailures(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OpFailures, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.Event) graphql.Marshaler {
+			return ec.marshalNEvent2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐEventᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_opFailures(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlatformSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Event(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PlatformSummary_courseCreated(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_courseCreated(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CourseCreated, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_courseCreated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PlatformSummary", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _PlatformSummary_courseDeleted(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_courseDeleted(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CourseDeleted, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_courseDeleted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PlatformSummary", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _PlatformSummary_tokenSaved(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_tokenSaved(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TokenSaved, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_tokenSaved(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PlatformSummary", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _PlatformSummary_tokenDeleted(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_tokenDeleted(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TokenDeleted, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_tokenDeleted(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("PlatformSummary", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _PlatformSummary_problems(ctx context.Context, field graphql.CollectedField, obj *model.PlatformSummary) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_PlatformSummary_problems(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Problems, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.Event) graphql.Marshaler {
+			return ec.marshalNEvent2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐEventᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_PlatformSummary_problems(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PlatformSummary",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Event(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ProjectMemberReport_name(ctx context.Context, field graphql.CollectedField, obj *model.ProjectMemberReport) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -8218,6 +9671,94 @@ func (ec *executionContext) fieldContext_Query_activityLog(_ context.Context, fi
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_ActivityEntry(ctx, field)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_platformEvents(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_platformEvents(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().PlatformEvents(ctx, fc.Args["since"].(*time.Time))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.Event) graphql.Marshaler {
+			return ec.marshalNEvent2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐEventᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_platformEvents(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Event(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_platformEvents_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_platformSummary(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_platformSummary(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().PlatformSummary(ctx, fc.Args["since"].(*time.Time), fc.Args["until"].(*time.Time))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.PlatformSummary) graphql.Marshaler {
+			return ec.marshalNPlatformSummary2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐPlatformSummary(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_platformSummary(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_PlatformSummary(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_platformSummary_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -10113,6 +11654,213 @@ func (ec *executionContext) fieldContext_Subscription_courseRepoOverviewProgress
 	return fc, nil
 }
 
+func (ec *executionContext) _SummaryLabelCount_label(ctx context.Context, field graphql.CollectedField, obj *model.SummaryLabelCount) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SummaryLabelCount_label(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Label, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_SummaryLabelCount_label(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("SummaryLabelCount", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _SummaryLabelCount_count(ctx context.Context, field graphql.CollectedField, obj *model.SummaryLabelCount) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SummaryLabelCount_count(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Count, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_SummaryLabelCount_count(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("SummaryLabelCount", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _SummaryRejectedLogin_email(ctx context.Context, field graphql.CollectedField, obj *model.SummaryRejectedLogin) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SummaryRejectedLogin_email(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Email, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_SummaryRejectedLogin_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("SummaryRejectedLogin", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _SummaryRejectedLogin_department(ctx context.Context, field graphql.CollectedField, obj *model.SummaryRejectedLogin) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SummaryRejectedLogin_department(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Department, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_SummaryRejectedLogin_department(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("SummaryRejectedLogin", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _SummaryRejectedLogin_count(ctx context.Context, field graphql.CollectedField, obj *model.SummaryRejectedLogin) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SummaryRejectedLogin_count(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Count, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_SummaryRejectedLogin_count(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("SummaryRejectedLogin", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _SummaryUser_email(ctx context.Context, field graphql.CollectedField, obj *model.SummaryUser) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SummaryUser_email(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Email, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_SummaryUser_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("SummaryUser", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _SummaryUser_name(ctx context.Context, field graphql.CollectedField, obj *model.SummaryUser) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SummaryUser_name(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_SummaryUser_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("SummaryUser", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _SummaryUser_department(ctx context.Context, field graphql.CollectedField, obj *model.SummaryUser) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SummaryUser_department(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Department, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_SummaryUser_department(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("SummaryUser", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _SummaryUser_logins(ctx context.Context, field graphql.CollectedField, obj *model.SummaryUser) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_SummaryUser_logins(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Logins, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_SummaryUser_logins(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("SummaryUser", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
 func (ec *executionContext) _User_email(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -10157,6 +11905,29 @@ func (ec *executionContext) _User_name(ctx context.Context, field graphql.Collec
 }
 func (ec *executionContext) fieldContext_User_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("User", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _User_isAdmin(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_User_isAdmin(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.User().IsAdmin(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_User_isAdmin(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("User", field, true, true, errors.New("field of type Boolean does not have child fields"))
 }
 
 func (ec *executionContext) _ValidationResult_ok(ctx context.Context, field graphql.CollectedField, obj *model.ValidationResult) (ret graphql.Marshaler) {
@@ -12222,6 +13993,94 @@ func (ec *executionContext) _DuplicateCheck(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var eventImplementors = []string{"Event"}
+
+func (ec *executionContext) _Event(ctx context.Context, sel ast.SelectionSet, obj *model.Event) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, eventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Event")
+		case "at":
+			out.Values[i] = ec._Event_at(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "type":
+			out.Values[i] = ec._Event_type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "severity":
+			out.Values[i] = ec._Event_severity(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "actor":
+			out.Values[i] = ec._Event_actor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "actorName":
+			out.Values[i] = ec._Event_actorName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "department":
+			out.Values[i] = ec._Event_department(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "course":
+			out.Values[i] = ec._Event_course(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "assignment":
+			out.Values[i] = ec._Event_assignment(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "op":
+			out.Values[i] = ec._Event_op(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "detail":
+			out.Values[i] = ec._Event_detail(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "jobId":
+			out.Values[i] = ec._Event_jobId(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var fieldMetaImplementors = []string{"FieldMeta"}
 
 func (ec *executionContext) _FieldMeta(ctx context.Context, sel ast.SelectionSet, obj *model.FieldMeta) graphql.Marshaler {
@@ -12723,6 +14582,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "sendSummaryNow":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_sendSummaryNow(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "setAssignment":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_setAssignment(ctx, field)
@@ -12921,6 +14787,149 @@ func (ec *executionContext) _PlannedTarget(ctx context.Context, sel ast.Selectio
 			}
 		case "url":
 			out.Values[i] = ec._PlannedTarget_url(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var platformSummaryImplementors = []string{"PlatformSummary"}
+
+func (ec *executionContext) _PlatformSummary(ctx context.Context, sel ast.SelectionSet, obj *model.PlatformSummary) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, platformSummaryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PlatformSummary")
+		case "from":
+			out.Values[i] = ec._PlatformSummary_from(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "until":
+			out.Values[i] = ec._PlatformSummary_until(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalEvents":
+			out.Values[i] = ec._PlatformSummary_totalEvents(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "quiet":
+			out.Values[i] = ec._PlatformSummary_quiet(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "activeUsers":
+			out.Values[i] = ec._PlatformSummary_activeUsers(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "rejectedLogins":
+			out.Values[i] = ec._PlatformSummary_rejectedLogins(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "scheduledJobs":
+			out.Values[i] = ec._PlatformSummary_scheduledJobs(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "jobsRun":
+			out.Values[i] = ec._PlatformSummary_jobsRun(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "jobDone":
+			out.Values[i] = ec._PlatformSummary_jobDone(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "jobFailed":
+			out.Values[i] = ec._PlatformSummary_jobFailed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "jobExpired":
+			out.Values[i] = ec._PlatformSummary_jobExpired(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "jobCancelled":
+			out.Values[i] = ec._PlatformSummary_jobCancelled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "jobFailures":
+			out.Values[i] = ec._PlatformSummary_jobFailures(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "opDone":
+			out.Values[i] = ec._PlatformSummary_opDone(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "opFailed":
+			out.Values[i] = ec._PlatformSummary_opFailed(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "opsByType":
+			out.Values[i] = ec._PlatformSummary_opsByType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "opFailures":
+			out.Values[i] = ec._PlatformSummary_opFailures(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "courseCreated":
+			out.Values[i] = ec._PlatformSummary_courseCreated(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "courseDeleted":
+			out.Values[i] = ec._PlatformSummary_courseDeleted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "tokenSaved":
+			out.Values[i] = ec._PlatformSummary_tokenSaved(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "tokenDeleted":
+			out.Values[i] = ec._PlatformSummary_tokenDeleted(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "problems":
+			out.Values[i] = ec._PlatformSummary_problems(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -13204,6 +15213,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_activityLog(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "platformEvents":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_platformEvents(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "platformSummary":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_platformSummary(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -14160,6 +16213,150 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 	}
 }
 
+var summaryLabelCountImplementors = []string{"SummaryLabelCount"}
+
+func (ec *executionContext) _SummaryLabelCount(ctx context.Context, sel ast.SelectionSet, obj *model.SummaryLabelCount) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, summaryLabelCountImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SummaryLabelCount")
+		case "label":
+			out.Values[i] = ec._SummaryLabelCount_label(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "count":
+			out.Values[i] = ec._SummaryLabelCount_count(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var summaryRejectedLoginImplementors = []string{"SummaryRejectedLogin"}
+
+func (ec *executionContext) _SummaryRejectedLogin(ctx context.Context, sel ast.SelectionSet, obj *model.SummaryRejectedLogin) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, summaryRejectedLoginImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SummaryRejectedLogin")
+		case "email":
+			out.Values[i] = ec._SummaryRejectedLogin_email(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "department":
+			out.Values[i] = ec._SummaryRejectedLogin_department(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "count":
+			out.Values[i] = ec._SummaryRejectedLogin_count(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
+var summaryUserImplementors = []string{"SummaryUser"}
+
+func (ec *executionContext) _SummaryUser(ctx context.Context, sel ast.SelectionSet, obj *model.SummaryUser) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, summaryUserImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SummaryUser")
+		case "email":
+			out.Values[i] = ec._SummaryUser_email(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._SummaryUser_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "department":
+			out.Values[i] = ec._SummaryUser_department(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "logins":
+			out.Values[i] = ec._SummaryUser_logins(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
+
 var userImplementors = []string{"User"}
 
 func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *model.User) graphql.Marshaler {
@@ -14175,13 +16372,51 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		case "email":
 			out.Values[i] = ec._User_email(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "name":
 			out.Values[i] = ec._User_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "isAdmin":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_isAdmin(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -14852,6 +17087,32 @@ func (ec *executionContext) marshalNDuplicateCheck2ᚖgithubᚗcomᚋobcodeᚋgl
 	return ec._DuplicateCheck(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNEvent2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐEventᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Event) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNEvent2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐEvent(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNEvent2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐEvent(ctx context.Context, sel ast.SelectionSet, v *model.Event) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Event(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNFieldKind2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFieldKind(ctx context.Context, v any) (model.FieldKind, error) {
 	var res model.FieldKind
 	err := res.UnmarshalGQL(v)
@@ -15222,6 +17483,20 @@ func (ec *executionContext) marshalNPlannedTarget2ᚖgithubᚗcomᚋobcodeᚋgla
 	return ec._PlannedTarget(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNPlatformSummary2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐPlatformSummary(ctx context.Context, sel ast.SelectionSet, v model.PlatformSummary) graphql.Marshaler {
+	return ec._PlatformSummary(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPlatformSummary2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐPlatformSummary(ctx context.Context, sel ast.SelectionSet, v *model.PlatformSummary) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PlatformSummary(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNProjectMemberReport2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐProjectMemberReportᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ProjectMemberReport) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
@@ -15477,6 +17752,84 @@ func (ec *executionContext) unmarshalNStudentCheckStatus2githubᚗcomᚋobcode�
 
 func (ec *executionContext) marshalNStudentCheckStatus2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐStudentCheckStatus(ctx context.Context, sel ast.SelectionSet, v model.StudentCheckStatus) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) marshalNSummaryLabelCount2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐSummaryLabelCountᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SummaryLabelCount) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSummaryLabelCount2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐSummaryLabelCount(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSummaryLabelCount2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐSummaryLabelCount(ctx context.Context, sel ast.SelectionSet, v *model.SummaryLabelCount) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SummaryLabelCount(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSummaryRejectedLogin2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐSummaryRejectedLoginᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SummaryRejectedLogin) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSummaryRejectedLogin2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐSummaryRejectedLogin(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSummaryRejectedLogin2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐSummaryRejectedLogin(ctx context.Context, sel ast.SelectionSet, v *model.SummaryRejectedLogin) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SummaryRejectedLogin(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSummaryUser2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐSummaryUserᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SummaryUser) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNSummaryUser2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐSummaryUser(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSummaryUser2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐSummaryUser(ctx context.Context, sel ast.SelectionSet, v *model.SummaryUser) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SummaryUser(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v any) (time.Time, error) {

@@ -8,6 +8,7 @@ import (
 	"github.com/obcode/glabs/v3/config"
 	"github.com/obcode/glabs/v3/gitlab"
 	"github.com/obcode/glabs/v3/reporter"
+	"github.com/obcode/glabs/v3/web/db"
 )
 
 // RunLine is one line of an operation's streamed output: a level (INFO, WARN,
@@ -100,6 +101,19 @@ func (a *App) RunOp(ctx context.Context, token, confirmPhrase string) (<-chan Ru
 		if recErr := a.recordOp(opCtx, o, tok, status, detail); recErr != nil {
 			rep.emit("WARN", "could not record activity: "+recErr.Error())
 		}
+		evType, sev := db.EventOpDone, db.SeverityInfo
+		if status == "failed" {
+			evType, sev = db.EventOpFailed, db.SeverityError
+		}
+		a.recordEvent(opCtx, &db.Event{
+			Type:       evType,
+			Actor:      o,
+			Course:     tok.Course,
+			Assignment: tok.Assignment,
+			Op:         tok.Op,
+			Severity:   sev,
+			Detail:     detail,
+		})
 		rep.emit("DONE", "done")
 	}()
 

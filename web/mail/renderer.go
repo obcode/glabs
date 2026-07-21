@@ -13,12 +13,13 @@ import (
 //go:embed tmpl/*.tmpl
 var templates embed.FS
 
-// Template file names for the four job-notification mails.
+// Template file names for the four job-notification mails and the admin summary.
 const (
-	TmplScheduled = "jobScheduled.md.tmpl"
-	TmplDone      = "jobDone.md.tmpl"
-	TmplFailed    = "jobFailed.md.tmpl"
-	TmplExpired   = "jobExpired.md.tmpl"
+	TmplScheduled    = "jobScheduled.md.tmpl"
+	TmplDone         = "jobDone.md.tmpl"
+	TmplFailed       = "jobFailed.md.tmpl"
+	TmplExpired      = "jobExpired.md.tmpl"
+	TmplAdminSummary = "adminSummary.md.tmpl"
 )
 
 // JobMail is the data a job-notification template renders. It is library-neutral,

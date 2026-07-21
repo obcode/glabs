@@ -1,10 +1,14 @@
 """
-An authenticated user of glabs-web. Identity comes from the auth proxy; there
-are no roles — each user manages only their own courses.
+An authenticated user of glabs-web. Identity comes from the auth proxy; ordinary
+users manage only their own courses. The one distinction is isAdmin: admins (the
+server's `admins` config list) additionally see the platform-wide monitoring view
+and receive the nightly summary.
 """
 type User {
   email: String!
   name: String!
+  "Whether this user is a platform admin (on the server's admins list)."
+  isAdmin: Boolean!
 }
 
 """Version and build metadata for the running server."""

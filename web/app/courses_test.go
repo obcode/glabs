@@ -24,6 +24,8 @@ type fakeStore struct {
 	activity   []*db.ActivityEntry
 	jobs       map[string]*db.ScheduledJob // keyed by id
 	jobSeq     int
+	events     []*db.Event
+	summarySt  *time.Time
 }
 
 func newFakeStore() *fakeStore {
@@ -225,6 +227,44 @@ func (f *fakeStore) DeleteUserGitLabToken(_ context.Context, owner string) error
 		s.GitLab = nil
 		s.GitLabUpdatedAt = nil
 	}
+	return nil
+}
+
+func (f *fakeStore) RecordEvent(_ context.Context, e *db.Event) error {
+	f.events = append(f.events, e)
+	return nil
+}
+
+func (f *fakeStore) EventsBetween(_ context.Context, since, until time.Time) ([]*db.Event, error) {
+	var out []*db.Event
+	for _, e := range f.events {
+		if !e.At.Before(since) && e.At.Before(until) {
+			out = append(out, e)
+		}
+	}
+	return out, nil
+}
+
+func (f *fakeStore) RecentEvents(_ context.Context, since time.Time, limit int64) ([]*db.Event, error) {
+	var out []*db.Event
+	for _, e := range f.events {
+		if !e.At.Before(since) {
+			out = append(out, e)
+		}
+	}
+	if limit > 0 && int64(len(out)) > limit {
+		out = out[:limit]
+	}
+	return out, nil
+}
+
+func (f *fakeStore) SystemState(_ context.Context) (*db.SystemState, error) {
+	return &db.SystemState{ID: "state", SummarySentAt: f.summarySt}, nil
+}
+
+func (f *fakeStore) SetSummarySentAt(_ context.Context, at time.Time) error {
+	t := at
+	f.summarySt = &t
 	return nil
 }
 

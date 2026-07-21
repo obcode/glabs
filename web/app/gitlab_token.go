@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/obcode/glabs/v3/web/db"
 )
 
 // GitLabTokenStatus reports whether the caller has stored a GitLab token and when
@@ -38,6 +40,7 @@ func (a *App) SetGitLabToken(ctx context.Context, token string) (*GitLabTokenSta
 	if err := a.db.SaveUserGitLabToken(ctx, o, sealed, now); err != nil {
 		return nil, err
 	}
+	a.recordEvent(ctx, &db.Event{Type: db.EventTokenSaved, Actor: o, Severity: db.SeverityInfo})
 	return &GitLabTokenStatus{Set: true, UpdatedAt: &now}, nil
 }
 
@@ -50,6 +53,7 @@ func (a *App) RemoveGitLabToken(ctx context.Context) (*GitLabTokenStatus, error)
 	if err := a.db.DeleteUserGitLabToken(ctx, o); err != nil {
 		return nil, err
 	}
+	a.recordEvent(ctx, &db.Event{Type: db.EventTokenDeleted, Actor: o, Severity: db.SeverityInfo})
 	return &GitLabTokenStatus{Set: false}, nil
 }
 

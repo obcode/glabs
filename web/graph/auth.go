@@ -21,6 +21,10 @@ func UserFromContext(ctx context.Context) *model.User {
 type authProvider interface {
 	LocalDevUser() *model.User
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
+	// NoteLogin records that a user was active (throttled); NoteRejectedLogin
+	// records a refused request. Both feed the platform monitoring log.
+	NoteLogin(ctx context.Context, email, name, department string)
+	NoteRejectedLogin(ctx context.Context, email, department, reason string)
 }
 
 // authMiddleware trusts the identity injected by the auth proxy (oauth2-proxy →
@@ -43,6 +47,12 @@ func authMiddleware(p authProvider) func(http.Handler) http.Handler {
 	if nameHeader == "" {
 		nameHeader = "X-Remote-Displayname"
 	}
+	// The department header is optional (the proxy forwards the fhmDepartment claim
+	// when configured). When absent the department on login events is simply empty.
+	deptHeader := strings.TrimSpace(viper.GetString("auth.departmentheader"))
+	if deptHeader == "" {
+		deptHeader = "X-Remote-Department"
+	}
 
 	if !enabled {
 		log.Warn().Msg("auth is DISABLED (auth.enabled=false) — every request runs as the local dev user")
@@ -50,12 +60,15 @@ func authMiddleware(p authProvider) func(http.Handler) http.Handler {
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			dept := strings.TrimSpace(r.Header.Get(deptHeader))
 			var user *model.User
 			if !enabled {
 				user = p.LocalDevUser()
+				p.NoteLogin(r.Context(), user.Email, user.Name, dept)
 			} else {
 				email := strings.ToLower(strings.TrimSpace(r.Header.Get(header)))
 				if email == "" {
+					p.NoteRejectedLogin(r.Context(), "", dept, "kein Identitäts-Header vom Auth-Proxy")
 					http.Error(w, "unauthenticated: no identity from the auth proxy", http.StatusUnauthorized)
 					return
 				}
@@ -67,6 +80,7 @@ func authMiddleware(p authProvider) func(http.Handler) http.Handler {
 				}
 				if u == nil {
 					log.Warn().Str("email", email).Msg("rejected login of user not on the allowlist")
+					p.NoteRejectedLogin(r.Context(), email, dept, "nicht auf der Allowlist")
 					http.Error(w, "forbidden: user not authorized", http.StatusForbidden)
 					return
 				}
@@ -74,6 +88,7 @@ func authMiddleware(p authProvider) func(http.Handler) http.Handler {
 					u.Name = strings.TrimSpace(r.Header.Get(nameHeader))
 				}
 				user = u
+				p.NoteLogin(r.Context(), user.Email, user.Name, dept)
 			}
 			ctx := principal.WithUser(r.Context(), user)
 			next.ServeHTTP(w, r.WithContext(ctx))

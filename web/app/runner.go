@@ -148,6 +148,39 @@ func (a *App) finishJob(ctx context.Context, job *db.ScheduledJob, status, logTe
 	if err := a.recordOp(ctx, job.Owner, tok, activityStatus, detail); err != nil {
 		log.Warn().Err(err).Str("job", job.ID).Msg("cannot record scheduled-job activity")
 	}
+	a.recordEvent(ctx, &db.Event{
+		Type:       jobEventType(status),
+		Actor:      job.Owner,
+		Course:     job.Course,
+		Assignment: job.Assignment,
+		Op:         job.Op,
+		Severity:   jobEventSeverity(status),
+		Detail:     detail,
+		JobID:      job.ID,
+	})
+}
+
+// jobEventType maps a terminal job status to its monitoring event type.
+func jobEventType(status string) string {
+	switch status {
+	case db.JobDone:
+		return db.EventJobDone
+	case db.JobExpired:
+		return db.EventJobExpired
+	case db.JobCancelled:
+		return db.EventJobCancelled
+	default:
+		return db.EventJobFailed
+	}
+}
+
+// jobEventSeverity flags failed/expired job outcomes so the digest and admin page
+// can surface them; a normal completion is info.
+func jobEventSeverity(status string) string {
+	if status == db.JobDone {
+		return db.SeverityInfo
+	}
+	return db.SeverityError
 }
 
 // captureReporter is a reporter.Reporter that accumulates the operation's output

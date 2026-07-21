@@ -133,6 +133,7 @@ func (a *App) CreateCourse(ctx context.Context, name, coursePath, semesterPath s
 	if err := a.db.SaveCourse(ctx, stored); err != nil {
 		return nil, err
 	}
+	a.recordEvent(ctx, &db.Event{Type: db.EventCourseCreated, Actor: o, Course: name, Severity: db.SeverityInfo})
 	return stored, nil
 }
 
@@ -300,7 +301,11 @@ func (a *App) DeleteCourse(ctx context.Context, name string) error {
 	if err != nil {
 		return err
 	}
-	return a.db.DeleteCourse(ctx, o, name)
+	if err := a.db.DeleteCourse(ctx, o, name); err != nil {
+		return err
+	}
+	a.recordEvent(ctx, &db.Event{Type: db.EventCourseDeleted, Actor: o, Course: name, Severity: db.SeverityInfo})
+	return nil
 }
 
 // CourseYAML returns the course as a downloadable YAML file: the original bytes

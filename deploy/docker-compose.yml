@@ -91,7 +91,13 @@ services:
       OAUTH2_PROXY_COOKIE_SECRET: ${OAUTH2_PROXY_COOKIE_SECRET}
       # MUST match the redirect URI registered with the HM IdP team.
       OAUTH2_PROXY_REDIRECT_URL: https://${SERVER_NAME}/oauth2/callback
-      OAUTH2_PROXY_SCOPE: "openid profile email"
+      # `department` releases the fhmDepartment claim (faculty number, e.g. "07") from the HM
+      # IdP's UserInfo endpoint. A scope change needs a fresh login to take effect.
+      OAUTH2_PROXY_SCOPE: "openid profile email department"
+      # oauth2-proxy's env config has no per-claim header, so repurpose the groups slot: the
+      # fhmDepartment claim lands in X-Auth-Request-Groups, which the Caddyfile renames to
+      # X-Remote-Department. Only used to enrich the monitoring log's login events.
+      OAUTH2_PROXY_OIDC_GROUPS_CLAIM: "fhmDepartment"
       # Extra layer on top of the DB allow-list (the backend is authoritative via auth.seedusers).
       OAUTH2_PROXY_EMAIL_DOMAINS: hm.edu
       OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180

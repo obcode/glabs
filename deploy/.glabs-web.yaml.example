@@ -25,11 +25,28 @@ auth:
   # Header carrying the identity (email). Default X-Remote-User — matches the Caddyfile.
   header: X-Remote-User
   displaynameheader: X-Remote-Displayname
+  # Optional: header carrying the faculty number (fhmDepartment). Default X-Remote-Department
+  # — matches the Caddyfile. Only used to enrich login events in the monitoring log; absent
+  # is fine (the department is then simply empty).
+  departmentheader: X-Remote-Department
   # Seeded ONLY when the users collection is empty (a fresh deployment). Later edits never
   # resurrect a removed user. Add the people allowed in; identity is the email.
   seedusers:
     - email: oliver.braun@hm.edu
       name: Oliver Braun
+
+# Platform admins: emails that additionally see the admin monitoring page and receive the
+# nightly summary mail. This is the ONLY privilege above ordinary owner-scoped access.
+admins:
+  - oliver.braun@hm.edu
+
+# --- Optional: nightly admin summary mail ---
+# A digest of the day's platform events (logins, jobs, operations, warnings/errors), sent
+# once a night. Needs SMTP (below) configured. Recipients default to the admins list.
+summary:
+  enabled: true
+  hour: 5                          # local (Europe/Berlin) hour to send at
+  # recipient: oliver.braun@hm.edu # optional single recipient; overrides the admins list
 
 # Key-encryption key for per-user GitLab PATs (AES-256-GCM at rest). base64 of 32 bytes:
 #   openssl rand -base64 32

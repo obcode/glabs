@@ -74,6 +74,16 @@ func (a *App) ScheduleOp(ctx context.Context, token string, runAt time.Time, gra
 	if err := a.db.SaveJob(ctx, job); err != nil {
 		return nil, err
 	}
+	a.recordEvent(ctx, &db.Event{
+		Type:       db.EventJobScheduled,
+		Actor:      o,
+		Course:     job.Course,
+		Assignment: job.Assignment,
+		Op:         job.Op,
+		Severity:   db.SeverityInfo,
+		Detail:     "geplant für " + job.RunAt.In(time.Local).Format("02.01.2006 15:04"),
+		JobID:      job.ID,
+	})
 	a.sendScheduledConfirmation(job)
 	return job, nil
 }

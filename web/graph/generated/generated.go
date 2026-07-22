@@ -123,16 +123,6 @@ type ComplexityRoot struct {
 		UseEmailDomainAsSuffix func(childComplexity int) int
 	}
 
-	CourseStudent struct {
-		Email     func(childComplexity int) int
-		FirstName func(childComplexity int) int
-		Found     func(childComplexity int) int
-		Gender    func(childComplexity int) int
-		Group     func(childComplexity int) int
-		LastName  func(childComplexity int) int
-		Mtknr     func(childComplexity int) int
-	}
-
 	DockerImageReport struct {
 		Image  func(childComplexity int) int
 		Wanted func(childComplexity int) int
@@ -317,7 +307,6 @@ type ComplexityRoot struct {
 		CourseCheck             func(childComplexity int, name string) int
 		CourseLint              func(childComplexity int, name string) int
 		CourseRepoOverview      func(childComplexity int, course string) int
-		CourseStudents          func(childComplexity int, course string) int
 		CourseYaml              func(childComplexity int, name string) int
 		Courses                 func(childComplexity int) int
 		GitlabToken             func(childComplexity int) int
@@ -483,7 +472,6 @@ type QueryResolver interface {
 	CourseRepoOverview(ctx context.Context, course string) ([]*model.AssignmentRepos, error)
 	ScheduledJobs(ctx context.Context, status []model.JobStatus) ([]*model.ScheduledJob, error)
 	ScheduledJob(ctx context.Context, id string) (*model.ScheduledJob, error)
-	CourseStudents(ctx context.Context, course string) ([]*model.CourseStudent, error)
 }
 type SubscriptionResolver interface {
 	AssignmentReportProgress(ctx context.Context, course string, name string) (<-chan *model.ReportProgress, error)
@@ -863,49 +851,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Course.UseEmailDomainAsSuffix(childComplexity), true
-
-	case "CourseStudent.email":
-		if e.ComplexityRoot.CourseStudent.Email == nil {
-			break
-		}
-
-		return e.ComplexityRoot.CourseStudent.Email(childComplexity), true
-	case "CourseStudent.firstName":
-		if e.ComplexityRoot.CourseStudent.FirstName == nil {
-			break
-		}
-
-		return e.ComplexityRoot.CourseStudent.FirstName(childComplexity), true
-	case "CourseStudent.found":
-		if e.ComplexityRoot.CourseStudent.Found == nil {
-			break
-		}
-
-		return e.ComplexityRoot.CourseStudent.Found(childComplexity), true
-	case "CourseStudent.gender":
-		if e.ComplexityRoot.CourseStudent.Gender == nil {
-			break
-		}
-
-		return e.ComplexityRoot.CourseStudent.Gender(childComplexity), true
-	case "CourseStudent.group":
-		if e.ComplexityRoot.CourseStudent.Group == nil {
-			break
-		}
-
-		return e.ComplexityRoot.CourseStudent.Group(childComplexity), true
-	case "CourseStudent.lastName":
-		if e.ComplexityRoot.CourseStudent.LastName == nil {
-			break
-		}
-
-		return e.ComplexityRoot.CourseStudent.LastName(childComplexity), true
-	case "CourseStudent.mtknr":
-		if e.ComplexityRoot.CourseStudent.Mtknr == nil {
-			break
-		}
-
-		return e.ComplexityRoot.CourseStudent.Mtknr(childComplexity), true
 
 	case "DockerImageReport.image":
 		if e.ComplexityRoot.DockerImageReport.Image == nil {
@@ -1807,17 +1752,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.CourseRepoOverview(childComplexity, args["course"].(string)), true
-	case "Query.courseStudents":
-		if e.ComplexityRoot.Query.CourseStudents == nil {
-			break
-		}
-
-		args, err := ec.field_Query_courseStudents_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.ComplexityRoot.Query.CourseStudents(childComplexity, args["course"].(string)), true
 	case "Query.courseYAML":
 		if e.ComplexityRoot.Query.CourseYaml == nil {
 			break
@@ -3209,31 +3143,6 @@ type Query {
   serverInfo: ServerInfo!
 }
 `, BuiltIn: false},
-	{Name: "../students.graphqls", Input: `"""
-One roster entry of a course, enriched with ZPA (Prüfungsamt) student details when
-they could be found. ` + "`" + `found` + "`" + ` is false and the detail fields are null when ZPA is
-not configured or has no unambiguous match — the GUI then shows just the email.
-"""
-type CourseStudent {
-  "The roster email (the identity glabs keys students on)."
-  email: String!
-  "Whether ZPA details were found for this email."
-  found: Boolean!
-  firstName: String
-  lastName: String
-  "The ZPA gender field (sensitive — shown only when the course owner opts in)."
-  gender: String
-  "The ZPA group/study programme."
-  group: String
-  "The Matrikelnummer."
-  mtknr: String
-}
-
-extend type Query {
-  "The course-level roster of one of the caller's courses, enriched with ZPA details, sorted by last name."
-  courseStudents(course: String!): [CourseStudent!]!
-}
-`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
@@ -3407,26 +3316,6 @@ func (ec *executionContext) childFields_Course(ctx context.Context, field graphq
 		return ec.fieldContext_Course_updatedAt(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Course", field.Name)
-}
-
-func (ec *executionContext) childFields_CourseStudent(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-	switch field.Name {
-	case "email":
-		return ec.fieldContext_CourseStudent_email(ctx, field)
-	case "found":
-		return ec.fieldContext_CourseStudent_found(ctx, field)
-	case "firstName":
-		return ec.fieldContext_CourseStudent_firstName(ctx, field)
-	case "lastName":
-		return ec.fieldContext_CourseStudent_lastName(ctx, field)
-	case "gender":
-		return ec.fieldContext_CourseStudent_gender(ctx, field)
-	case "group":
-		return ec.fieldContext_CourseStudent_group(ctx, field)
-	case "mtknr":
-		return ec.fieldContext_CourseStudent_mtknr(ctx, field)
-	}
-	return nil, fmt.Errorf("no field named %q was found under type CourseStudent", field.Name)
 }
 
 func (ec *executionContext) childFields_DockerImageReport(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
@@ -4610,20 +4499,6 @@ func (ec *executionContext) field_Query_courseLint_args(ctx context.Context, raw
 }
 
 func (ec *executionContext) field_Query_courseRepoOverview_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "course",
-		func(ctx context.Context, v any) (string, error) {
-			return ec.unmarshalNString2string(ctx, v)
-		})
-	if err != nil {
-		return nil, err
-	}
-	args["course"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_courseStudents_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "course",
@@ -6281,167 +6156,6 @@ func (ec *executionContext) _Course_updatedAt(ctx context.Context, field graphql
 }
 func (ec *executionContext) fieldContext_Course_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("Course", field, false, false, errors.New("field of type Time does not have child fields"))
-}
-
-func (ec *executionContext) _CourseStudent_email(ctx context.Context, field graphql.CollectedField, obj *model.CourseStudent) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_CourseStudent_email(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.Email, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
-			return ec.marshalNString2string(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_CourseStudent_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("CourseStudent", field, false, false, errors.New("field of type String does not have child fields"))
-}
-
-func (ec *executionContext) _CourseStudent_found(ctx context.Context, field graphql.CollectedField, obj *model.CourseStudent) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_CourseStudent_found(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.Found, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
-			return ec.marshalNBoolean2bool(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_CourseStudent_found(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("CourseStudent", field, false, false, errors.New("field of type Boolean does not have child fields"))
-}
-
-func (ec *executionContext) _CourseStudent_firstName(ctx context.Context, field graphql.CollectedField, obj *model.CourseStudent) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_CourseStudent_firstName(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.FirstName, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
-			return ec.marshalOString2ᚖstring(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_CourseStudent_firstName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("CourseStudent", field, false, false, errors.New("field of type String does not have child fields"))
-}
-
-func (ec *executionContext) _CourseStudent_lastName(ctx context.Context, field graphql.CollectedField, obj *model.CourseStudent) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_CourseStudent_lastName(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.LastName, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
-			return ec.marshalOString2ᚖstring(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_CourseStudent_lastName(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("CourseStudent", field, false, false, errors.New("field of type String does not have child fields"))
-}
-
-func (ec *executionContext) _CourseStudent_gender(ctx context.Context, field graphql.CollectedField, obj *model.CourseStudent) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_CourseStudent_gender(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.Gender, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
-			return ec.marshalOString2ᚖstring(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_CourseStudent_gender(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("CourseStudent", field, false, false, errors.New("field of type String does not have child fields"))
-}
-
-func (ec *executionContext) _CourseStudent_group(ctx context.Context, field graphql.CollectedField, obj *model.CourseStudent) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_CourseStudent_group(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.Group, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
-			return ec.marshalOString2ᚖstring(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_CourseStudent_group(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("CourseStudent", field, false, false, errors.New("field of type String does not have child fields"))
-}
-
-func (ec *executionContext) _CourseStudent_mtknr(ctx context.Context, field graphql.CollectedField, obj *model.CourseStudent) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_CourseStudent_mtknr(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			return obj.Mtknr, nil
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v *string) graphql.Marshaler {
-			return ec.marshalOString2ᚖstring(ctx, selections, v)
-		},
-		true,
-		false,
-	)
-}
-func (ec *executionContext) fieldContext_CourseStudent_mtknr(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	return graphql.NewScalarFieldContext("CourseStudent", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _DockerImageReport_wanted(ctx context.Context, field graphql.CollectedField, obj *model.DockerImageReport) (ret graphql.Marshaler) {
@@ -10439,50 +10153,6 @@ func (ec *executionContext) fieldContext_Query_scheduledJob(ctx context.Context,
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_courseStudents(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.fieldContext_Query_courseStudents(ctx, field)
-		},
-		func(ctx context.Context) (any, error) {
-			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Query().CourseStudents(ctx, fc.Args["course"].(string))
-		},
-		nil,
-		func(ctx context.Context, selections ast.SelectionSet, v []*model.CourseStudent) graphql.Marshaler {
-			return ec.marshalNCourseStudent2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCourseStudentᚄ(ctx, selections, v)
-		},
-		true,
-		true,
-	)
-}
-func (ec *executionContext) fieldContext_Query_courseStudents(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return ec.childFields_CourseStudent(ctx, field)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_courseStudents_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -13796,74 +13466,6 @@ func (ec *executionContext) _Course(ctx context.Context, sel ast.SelectionSet, o
 	return out
 }
 
-var courseStudentImplementors = []string{"CourseStudent"}
-
-func (ec *executionContext) _CourseStudent(ctx context.Context, sel ast.SelectionSet, obj *model.CourseStudent) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, courseStudentImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferredFieldSet := graphql.NewFieldSet(nil)
-	deferLabelToView := make(map[string]*graphql.FieldSetView)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("CourseStudent")
-		case "email":
-			out.Values[i] = ec._CourseStudent_email(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "found":
-			out.Values[i] = ec._CourseStudent_found(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "firstName":
-			out.Values[i] = ec._CourseStudent_firstName(ctx, field, obj)
-			if out.Values[i] == graphql.RequiredNull {
-				out.Invalids++
-			}
-		case "lastName":
-			out.Values[i] = ec._CourseStudent_lastName(ctx, field, obj)
-			if out.Values[i] == graphql.RequiredNull {
-				out.Invalids++
-			}
-		case "gender":
-			out.Values[i] = ec._CourseStudent_gender(ctx, field, obj)
-			if out.Values[i] == graphql.RequiredNull {
-				out.Invalids++
-			}
-		case "group":
-			out.Values[i] = ec._CourseStudent_group(ctx, field, obj)
-			if out.Values[i] == graphql.RequiredNull {
-				out.Invalids++
-			}
-		case "mtknr":
-			out.Values[i] = ec._CourseStudent_mtknr(ctx, field, obj)
-			if out.Values[i] == graphql.RequiredNull {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
-
-	ec.ProcessDeferredGroup(graphql.DeferredGroup{
-		Defers:   deferLabelToView,
-		Path:     graphql.GetPath(ctx),
-		FieldSet: deferredFieldSet,
-		Context:  ctx,
-	})
-
-	return out
-}
-
 var dockerImageReportImplementors = []string{"DockerImageReport"}
 
 func (ec *executionContext) _DockerImageReport(ctx context.Context, sel ast.SelectionSet, obj *model.DockerImageReport) graphql.Marshaler {
@@ -15643,28 +15245,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "courseStudents":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_courseStudents(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -17007,32 +16587,6 @@ func (ec *executionContext) marshalNCourse2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3
 		return graphql.Null
 	}
 	return ec._Course(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNCourseStudent2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCourseStudentᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.CourseStudent) graphql.Marshaler {
-	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
-		fc := graphql.GetFieldContext(ctx)
-		fc.Result = &v[i]
-		return ec.marshalNCourseStudent2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCourseStudent(ctx, sel, v[i])
-	})
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNCourseStudent2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCourseStudent(ctx context.Context, sel ast.SelectionSet, v *model.CourseStudent) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._CourseStudent(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNDockerImageReport2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐDockerImageReportᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.DockerImageReport) graphql.Marshaler {

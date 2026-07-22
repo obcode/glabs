@@ -13,7 +13,6 @@ import (
 	"github.com/obcode/glabs/v3/web/db"
 	"github.com/obcode/glabs/v3/web/graph/model"
 	"github.com/obcode/glabs/v3/web/secrets"
-	"github.com/obcode/glabs/v3/web/zpa"
 	"github.com/spf13/viper"
 )
 
@@ -22,7 +21,6 @@ import (
 // which owner each call was given, proving the owner comes from the authenticated
 // principal and never from a caller-supplied argument.
 type store interface {
-	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 	CoursesOf(ctx context.Context, owner string) ([]*db.StoredCourse, error)
 	CourseOf(ctx context.Context, owner, name string) (*db.StoredCourse, error)
 	SaveCourse(ctx context.Context, course *db.StoredCourse) error
@@ -71,9 +69,6 @@ type App struct {
 	// configured test recipient.
 	mailer     Mailer
 	mailDryRun bool
-	// zpa enriches the roster with student details; nil when ZPA is not configured
-	// (then the students page shows just the emails).
-	zpa *zpa.Client
 	// admins holds the lowercased emails allowed to see the platform-wide monitoring
 	// (the admin page and the nightly summary). Empty means no one is an admin.
 	admins map[string]bool
@@ -88,7 +83,7 @@ type App struct {
 	summaryRecipients []string
 }
 
-func New(database *db.DB, sealer *secrets.Sealer, gitlabHost string, mailer Mailer, mailDryRun bool, zpaClient *zpa.Client, admins []string) *App {
+func New(database *db.DB, sealer *secrets.Sealer, gitlabHost string, mailer Mailer, mailDryRun bool, admins []string) *App {
 	adminSet := make(map[string]bool, len(admins))
 	for _, e := range admins {
 		if e = strings.ToLower(strings.TrimSpace(e)); e != "" {
@@ -102,15 +97,9 @@ func New(database *db.DB, sealer *secrets.Sealer, gitlabHost string, mailer Mail
 		ops:        newOpGuard(),
 		mailer:     mailer,
 		mailDryRun: mailDryRun,
-		zpa:        zpaClient,
 		admins:     adminSet,
 		loginSeen:  map[string]time.Time{},
 	}
-}
-
-// GetUserByEmail looks up a user for the auth middleware's allowlist check.
-func (a *App) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	return a.db.GetUserByEmail(ctx, email)
 }
 
 // LocalDevUser is the identity used when auth is disabled (local development). It

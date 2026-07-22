@@ -1,5 +1,5 @@
 # glabs-web server config for the deployment. Copy to .glabs-web.yaml, fill in, and keep it
-# SECRET (it holds secrets.key and, optionally, SMTP/ZPA tokens). It is bind-mounted read-only
+# SECRET (it holds secrets.key and, optionally, SMTP credentials). It is bind-mounted read-only
 # into the glabs-web container at /app/.glabs-web.yaml. NEVER commit the real file.
 
 server:
@@ -29,11 +29,9 @@ auth:
   # — matches the Caddyfile. Only used to enrich login events in the monitoring log; absent
   # is fine (the department is then simply empty).
   departmentheader: X-Remote-Department
-  # Seeded ONLY when the users collection is empty (a fresh deployment). Later edits never
-  # resurrect a removed user. Add the people allowed in; identity is the email.
-  seedusers:
-    - email: oliver.braun@hm.edu
-      name: Oliver Braun
+  # There is no allowlist: anyone the auth proxy authenticates (see OAUTH2_PROXY_EMAIL_DOMAINS
+  # in docker-compose.yml, which restricts to hm.edu) is let in and acts strictly as their own
+  # user (per-user isolation). The proxy is the access boundary.
 
 # Platform admins: emails that additionally see the admin monitoring page and receive the
 # nightly summary mail. This is the ONLY privilege above ordinary owner-scoped access.
@@ -70,11 +68,3 @@ gitlab:
 #   tlsInsecureSkipVerify: false     # keep false (verify the cert) unless the relay needs otherwise
 #   testRecipient: you@hm.edu        # used by the dry-run smoke test
 #   dryRun: false                    # true renders but never sends
-
-# --- Optional: ZPA (Prüfungsamt) to enrich the students page ---
-# Without zpa.baseurl + zpa.token the students page shows only the roster emails.
-# NOTE: per-email lookup (ask=<email>) currently does NOT work at the HM ZPA endpoint —
-# the students page stays roster-only until that is resolved.
-# zpa:
-#   baseurl: https://zpa.example.hm.edu/api
-#   token: your-zpa-token

@@ -52,7 +52,7 @@ services:
       mongo:
         condition: service_healthy
     volumes:
-      # Carries secrets (secrets.key, SMTP/ZPA tokens, Mongo credentials in db.uri) — the
+      # Carries secrets (secrets.key, SMTP credentials, Mongo credentials in db.uri) — the
       # real file is gitignored; copy .glabs-web.yaml.example and fill it in.
       - ./.glabs-web.yaml:/app/.glabs-web.yaml:ro
     # No ports: — only Caddy reaches it (http://glabs-web:8080) over the internal network.
@@ -98,7 +98,8 @@ services:
       # fhmDepartment claim lands in X-Auth-Request-Groups, which the Caddyfile renames to
       # X-Remote-Department. Only used to enrich the monitoring log's login events.
       OAUTH2_PROXY_OIDC_GROUPS_CLAIM: "fhmDepartment"
-      # Extra layer on top of the DB allow-list (the backend is authoritative via auth.seedusers).
+      # The access boundary: only hm.edu accounts get past the proxy. The backend has no
+      # allowlist of its own — anyone the proxy authenticates is let in.
       OAUTH2_PROXY_EMAIL_DOMAINS: hm.edu
       OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
       OAUTH2_PROXY_REVERSE_PROXY: "true"

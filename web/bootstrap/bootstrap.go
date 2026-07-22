@@ -17,7 +17,6 @@ import (
 	"github.com/obcode/glabs/v3/web/graph"
 	"github.com/obcode/glabs/v3/web/mail"
 	"github.com/obcode/glabs/v3/web/secrets"
-	"github.com/obcode/glabs/v3/web/zpa"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -55,9 +54,6 @@ func Serve() error {
 
 	database_, err := db.Connect(ctx, uri, database)
 	if err != nil {
-		return err
-	}
-	if err := database_.EnsureUserIndexes(ctx); err != nil {
 		return err
 	}
 	if err := database_.EnsureCourseIndexes(ctx); err != nil {
@@ -104,24 +100,11 @@ func Serve() error {
 		log.Warn().Msg("no smtp.host configured; scheduled-job notifications are disabled")
 	}
 
-	// ZPA (student directory) is optional: without zpa.baseurl + zpa.token, the
-	// students page just shows the roster emails.
-	var zpaClient *zpa.Client
-	if base, tok := viper.GetString("zpa.baseurl"), viper.GetString("zpa.token"); base != "" && tok != "" {
-		zpaClient = zpa.New(zpa.Config{BaseURL: base, Token: tok})
-		log.Info().Str("baseurl", base).Msg("ZPA configured; the students page is enriched")
-	} else {
-		log.Warn().Msg("no zpa.baseurl/zpa.token configured; the students page shows only emails")
-	}
-
 	// admins may see the platform-wide monitoring page and receive the nightly
 	// summary. It is the ONLY privilege above ordinary owner-scoped access.
 	admins := viper.GetStringSlice("admins")
 
-	a := app.New(database_, sealer, viper.GetString("gitlab.host"), mailer, viper.GetBool("smtp.dryRun"), zpaClient, admins)
-	if err := seedUsers(ctx, database_); err != nil {
-		return err
-	}
+	a := app.New(database_, sealer, viper.GetString("gitlab.host"), mailer, viper.GetBool("smtp.dryRun"), admins)
 
 	// The scheduled-job runner polls in the background for the life of the process
 	// (a background context, since StartServer blocks and never returns here).

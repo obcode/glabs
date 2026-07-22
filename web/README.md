@@ -25,7 +25,9 @@ viper beyond the config keys below.
 
 Identity comes from an auth proxy (oauth2-proxy behind Caddy) that sets
 `X-Remote-User` to the verified OIDC email. The server trusts that header and is
-**fail-closed**: no header is 401, a user not on the allowlist is 403. The whole
+**fail-closed on it**: no header is 401. There is no allowlist — anyone the proxy
+authenticates is let in and acts strictly as their own user (per-user isolation),
+so the proxy (restricted to the hm.edu domain) is the access boundary. The whole
 model assumes the server is reachable *only* through the proxy — never publish its
 port directly, or the header can be forged.
 
@@ -112,7 +114,6 @@ go generate ./cmd/glabs-web
 | `auth.displaynameheader` | display-name header (default `X-Remote-Displayname`) |
 | `auth.departmentheader` | optional department header (default `X-Remote-Department`) |
 | `auth.devuser` | dev user email when auth is disabled |
-| `auth.seedusers` | allowlist seeded only when the users collection is empty |
 | `admins` | emails that see the admin monitoring page and get the nightly summary |
 | `summary.enabled` | send the nightly admin summary mail (needs SMTP) |
 | `summary.hour` | local hour to send the summary (default `5`) |

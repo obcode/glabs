@@ -38,9 +38,10 @@ Fill both in:
 1. **`.env`** — `SERVER_NAME`, Mongo credentials, the `ACME_*`/EAB values, the `OAUTH2_PROXY_*`
    client id/secret, and a cookie secret (`openssl rand -base64 24`). The two GUI URLs default
    correctly; only change them if you know why.
-2. **`.glabs-web.yaml`** — set `db.uri` to the SAME Mongo credentials as in `.env`, add the
-   allow-listed users under `auth.seedusers`, generate `secrets.key` (`openssl rand -base64 32`),
-   and set `gitlab.host`. SMTP and ZPA are optional (commented out).
+2. **`.glabs-web.yaml`** — set `db.uri` to the SAME Mongo credentials as in `.env`, list the
+   platform `admins`, generate `secrets.key` (`openssl rand -base64 32`), and set `gitlab.host`.
+   SMTP is optional (commented out). There is no allowlist — every hm.edu account the proxy
+   authenticates is let in.
 
 Then:
 

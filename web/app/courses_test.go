@@ -131,8 +131,6 @@ func (f *fakeStore) MarkNotified(_ context.Context, id string) error {
 	return nil
 }
 
-func (f *fakeStore) GetUserByEmail(context.Context, string) (*model.User, error) { return nil, nil }
-
 func (f *fakeStore) CoursesOf(_ context.Context, owner string) ([]*db.StoredCourse, error) {
 	f.seenOwners = append(f.seenOwners, owner)
 	var out []*db.StoredCourse

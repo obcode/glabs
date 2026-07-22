@@ -20,7 +20,6 @@ func UserFromContext(ctx context.Context) *model.User {
 // tested without a database.
 type authProvider interface {
 	LocalDevUser() *model.User
-	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 	// NoteLogin records that a user was active (throttled); NoteRejectedLogin
 	// records a refused request. Both feed the platform monitoring log.
 	NoteLogin(ctx context.Context, email, name, department string)
@@ -28,10 +27,11 @@ type authProvider interface {
 }
 
 // authMiddleware trusts the identity injected by the auth proxy (oauth2-proxy →
-// Caddy sets X-Remote-User to the verified OIDC email). It is fail-closed: no
-// header is 401, an unknown user is 403 — only allowlisted users get in. With
-// auth.enabled=false it injects a local dev user instead, so development needs no
-// proxy.
+// Caddy sets X-Remote-User to the verified OIDC email). It is fail-closed on the
+// header only: no header is 401. There is no allowlist — anyone the proxy
+// authenticates is let in and acts strictly as their own user (per-user
+// isolation). With auth.enabled=false it injects a local dev user instead, so
+// development needs no proxy.
 //
 // The whole model rests on the server being reachable only through the proxy. If
 // it is ever exposed directly, the header is trusted unconditionally and anyone
@@ -72,22 +72,9 @@ func authMiddleware(p authProvider) func(http.Handler) http.Handler {
 					http.Error(w, "unauthenticated: no identity from the auth proxy", http.StatusUnauthorized)
 					return
 				}
-				u, err := p.GetUserByEmail(r.Context(), email)
-				if err != nil {
-					log.Error().Err(err).Str("email", email).Msg("cannot verify user")
-					http.Error(w, "cannot verify user", http.StatusInternalServerError)
-					return
-				}
-				if u == nil {
-					log.Warn().Str("email", email).Msg("rejected login of user not on the allowlist")
-					p.NoteRejectedLogin(r.Context(), email, dept, "nicht auf der Allowlist")
-					http.Error(w, "forbidden: user not authorized", http.StatusForbidden)
-					return
-				}
-				if u.Name == "" {
-					u.Name = strings.TrimSpace(r.Header.Get(nameHeader))
-				}
-				user = u
+				// No allowlist: the proxy-verified identity is trusted directly. The
+				// display name comes from its header (empty is fine).
+				user = &model.User{Email: email, Name: strings.TrimSpace(r.Header.Get(nameHeader))}
 				p.NoteLogin(r.Context(), user.Email, user.Name, dept)
 			}
 			ctx := principal.WithUser(r.Context(), user)

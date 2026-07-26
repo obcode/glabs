@@ -1,0 +1,31 @@
+# Dependency-Updates aktuell halten (nativ in GitHub, kein App-Setup nötig).
+# Wöchentliche PRs, gruppiert, damit es nicht zerfasert.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: '/'
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    # Nur Versionen vorschlagen, die schon ein paar Tage alt sind — vermeidet
+    # frisch veröffentlichte, evtl. noch fehlerhafte Releases (analog zum
+    # cooldown in glabs.gui, wo pnpm ohnehin ein 24h-Gate erzwingt).
+    cooldown:
+      default-days: 3
+    groups:
+      # alles an Minor/Patch gebündelt; Majors kommen einzeln, da sie brechen können
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 3
+    groups:
+      actions:
+        patterns:
+          - '*'

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-`glabs` is a Cobra-based CLI (Go 1.24+) for managing GitLab repositories for student assignments at scale: generating per-student/per-group repos, seeding them from starter code, protecting branches, setting access, cloning, and reporting.
+`glabs` is a Cobra-based CLI (Go 1.26+) for managing GitLab repositories for student assignments at scale: generating per-student/per-group repos, seeding them from starter code, protecting branches, setting access, cloning, and reporting.
 
 ## Commands
 

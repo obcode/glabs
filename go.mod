@@ -8,7 +8,7 @@ require (
 	github.com/coder/websocket v1.8.15
 	github.com/go-chi/chi/v5 v5.3.1
 	github.com/go-git/go-billy/v5 v5.9.1
-	github.com/go-git/go-git/v5 v5.19.1
+	github.com/go-git/go-git/v5 v5.19.2
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/google/go-cmp v0.7.0
 	github.com/gookit/color v1.6.1
@@ -24,7 +24,7 @@ require (
 	github.com/theckman/yacspin v0.13.12
 	github.com/vektah/gqlparser/v2 v2.5.36
 	github.com/wneessen/go-mail v0.8.1
-	gitlab.com/gitlab-org/api/client-go/v2 v2.51.0
+	gitlab.com/gitlab-org/api/client-go/v2 v2.53.0
 	go.mongodb.org/mongo-driver/v2 v2.8.0
 	golang.org/x/term v0.45.0
 	golang.org/x/text v0.40.0

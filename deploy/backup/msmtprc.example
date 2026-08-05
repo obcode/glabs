@@ -1,0 +1,33 @@
+# msmtp relay config for cron mail (apk-report.sh, and any future alerts).
+#
+# WICHTIG: msmtp erlaubt Kommentare NUR als ganze Zeile (mit # am Anfang), NICHT
+# hinter einem Wert -- ein "tls_starttls on   # ..." bricht mit "invalid argument".
+#
+# Kopieren in das Home des DEPLOY-USERS als ~/.msmtprc und `chmod 600 ~/.msmtprc`
+# (msmtp verweigert eine Passwortdatei, die andere lesen koennen). Wird NICHT vom
+# Deploy synchronisiert -- Secret, bleibt auf dem Host wie .env / .glabs-web.yaml.
+#
+#   cp msmtprc.example ~/.msmtprc && chmod 600 ~/.msmtprc && $EDITOR ~/.msmtprc
+#
+# host/user/password eintragen. `from` sollte zum Auth-User passen (gleiche Domain,
+# ggf. Subadresse), sonst weisen strenge Gateways die Mail mit 554 5.7.1 ab. Fuer
+# SMTPS (Port 465) stattdessen: port 465 und tls_starttls off.
+#
+# Test nach dem Ausfuellen (Empfaenger anpassen):
+#   printf 'From: noreply@example.org\nTo: admin@example.org\nSubject: msmtp test\n\nok\n' \
+#     | msmtp -a hm -- admin@example.org
+
+defaults
+auth on
+tls on
+tls_starttls on
+logfile ~/.msmtp.log
+
+account hm
+host smtp.example.org
+port 587
+from noreply@example.org
+user noreply@example.org
+password DEIN_PASSWORT
+
+account default : hm

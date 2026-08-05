@@ -111,6 +111,11 @@ jobs:
             CADDY_CHANGED=1
           fi
 
+          # Host-OS-Update-Notifier mitziehen (wie compose/Caddyfile aus dem Tag-Checkout).
+          mkdir -p "$DEPLOY_DIR/backup"
+          cp deploy/backup/apk-report.sh "$DEPLOY_DIR/backup/"
+          chmod +x "$DEPLOY_DIR/backup/apk-report.sh"
+
           cd "$DEPLOY_DIR"
           # Pin the backend tag so the host reflects the running version
           # (manual rollback = edit .env + `docker compose up -d glabs-web`).

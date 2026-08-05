@@ -253,8 +253,8 @@ github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78/go.mod h1:aL8wCCfTfS
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo0=
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
-gitlab.com/gitlab-org/api/client-go/v2 v2.53.0 h1:/fN8STxkO8PTBD6IbOBIP7ruH6abdQjo78v+aMzCxR4=
-gitlab.com/gitlab-org/api/client-go/v2 v2.53.0/go.mod h1:P0sRPwCAGIek6HIU0JH5W9Ic5+z3eWvCWwXeg7Pwr7o=
+gitlab.com/gitlab-org/api/client-go/v2 v2.55.1 h1:eX0iBhJ9GWP2XqQOH/pkmSvPosFS3rcyFcup/3kHL2k=
+gitlab.com/gitlab-org/api/client-go/v2 v2.55.1/go.mod h1:6GcBiCVrZBtOvl6HiahZ3nq5eBs7JMUARJeLN4/RgZU=
 go.mongodb.org/mongo-driver/v2 v2.8.0 h1:CxWDGQYY8QQwNjAl/aq2sfWakdnWZynnqJ9F4DhHbP8=
 go.mongodb.org/mongo-driver/v2 v2.8.0/go.mod h1:yOI9kBsufol30iFsl1slpdq1I0eHPzybRWdyYUs8K/0=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=

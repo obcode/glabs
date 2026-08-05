@@ -81,7 +81,7 @@ services:
       - "3000"
 
   oauth2-proxy:
-    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.3
     restart: unless-stopped
     environment:
       OAUTH2_PROXY_PROVIDER: oidc

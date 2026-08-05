@@ -38,7 +38,11 @@ MSMTP_ACCOUNT="${MSMTP_ACCOUNT:-hm}"
 # The header From MUST match the authenticated envelope sender, or a strict gateway
 # rejects with 554 5.7.1. Take it from ~/.msmtprc (the `from` line) so header and
 # envelope always agree; fall back to a neutral noreply if unreadable.
-MAILFROM="${MAILFROM:-$(awk '$1=="from"{print $2; exit}' "$HOME/.msmtprc" 2>/dev/null)}"
+# `|| true` is load-bearing: without it, a missing ~/.msmtprc makes awk exit non-zero,
+# `set -e` kills the assignment, and the fallback on the next line is never reached --
+# the script dies before it can tell you what is wrong. Found on a host where msmtp was
+# not set up yet, which is exactly when the fallback was supposed to help.
+MAILFROM="${MAILFROM:-$(awk '$1=="from"{print $2; exit}' "$HOME/.msmtprc" 2>/dev/null || true)}"
 [ -n "$MAILFROM" ] || MAILFROM="noreply@$(hostname -d 2>/dev/null || hostname)"
 MIRROR="${ALPINE_MIRROR:-https://dl-cdn.alpinelinux.org/alpine}"
 host="$(hostname)"

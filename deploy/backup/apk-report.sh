@@ -12,9 +12,15 @@
 # It mails ONLY when there is something to report (no weekly "all clear" noise).
 #
 # Runs as the deploy user from cron. `apk update` needs root; it is the ONLY
-# privileged step and goes through the narrow doas rule
+# privileged step THIS SCRIPT takes, and it goes through the narrow doas rule
 #     permit nopass <user> cmd apk args update
 # Everything else (apk version, wget, msmtp) is unprivileged.
+#
+# A second rule, `cmd apk args upgrade`, exists for the human applying the update by
+# hand -- the script never calls it. Root login over ssh is off on all three hosts, and
+# `su -` for a routine package upgrade would mean keeping a root password alive next to
+# the key-only logins; a per-command doas rule keeps the blast radius at one command and
+# puts the exact invocation in the log. `reboot` is deliberately NOT covered.
 #
 # Mail goes out via msmtp reading ~/.msmtprc (account `hm`). See msmtprc.example.
 #
@@ -36,6 +42,12 @@ MAILFROM="${MAILFROM:-$(awk '$1=="from"{print $2; exit}' "$HOME/.msmtprc" 2>/dev
 [ -n "$MAILFROM" ] || MAILFROM="noreply@$(hostname -d 2>/dev/null || hostname)"
 MIRROR="${ALPINE_MIRROR:-https://dl-cdn.alpinelinux.org/alpine}"
 host="$(hostname)"
+# For the "how to apply this" hint in the mail. Root login over ssh is disabled, so the
+# hint has to name a path that works from the deploy user's own shell -- FQDN and user
+# taken from the host itself, since the three hosts use three different deploy users.
+host_fqdn="$(hostname -f 2>/dev/null || true)"
+[ -n "$host_fqdn" ] || host_fqdn="$host"
+deploy_user="$(id -un)"
 now="$(date '+%Y-%m-%d %H:%M')"
 
 # --- 1. refresh the package index (the one privileged step) --------------------------
@@ -113,8 +125,11 @@ msgid="<apk-report.$(date +%s).$$@${_dom}>"
         echo "$pending"
     fi
     echo
-    echo "Einspielen von Hand:  doas apk upgrade"
-    echo "Hinweis: linux-lts (Kernel) wird erst nach einem Reboot aktiv."
+    echo "Einspielen von Hand (Root-Login per ssh ist deaktiviert):"
+    echo "  ssh ${deploy_user}@${host_fqdn}"
+    echo "  doas apk update && doas apk upgrade"
+    echo "Fehlt die doas-Regel: 'su -', dann dieselben Befehle ohne 'doas'."
+    echo "Hinweis: linux-lts (Kernel) wird erst nach einem Reboot aktiv; 'reboot' braucht 'su -'."
 } | msmtp -a "$MSMTP_ACCOUNT" -- "$MAILTO"
 
 echo "$now $host: Report gemailt an ${MAILTO}."

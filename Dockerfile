@@ -26,7 +26,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
 	-o /out/glabs-web ./cmd/glabs-web
 
 # --- Runtime ---
-FROM alpine:3.21
+FROM alpine:3.24
 # ca-certificates: TLS to GitLab / ZPA / SMTP. tzdata: main() sets time.Local to
 # Europe/Berlin at startup and needs the zoneinfo database.
 RUN apk add --no-cache ca-certificates tzdata \

@@ -24,7 +24,7 @@ require (
 	github.com/theckman/yacspin v0.13.12
 	github.com/vektah/gqlparser/v2 v2.5.36
 	github.com/wneessen/go-mail v0.8.1
-	gitlab.com/gitlab-org/api/client-go/v2 v2.53.0
+	gitlab.com/gitlab-org/api/client-go/v2 v2.55.1
 	go.mongodb.org/mongo-driver/v2 v2.8.0
 	golang.org/x/term v0.45.0
 	golang.org/x/text v0.40.0

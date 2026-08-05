@@ -19,6 +19,26 @@ updates:
           - minor
           - patch
 
+  # Dockerfile-Base-Images (golang:1.26-alpine, alpine:3.21 -- beide gepinnt).
+  - package-ecosystem: docker
+    directory: '/'
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 3
+
+  # Gepinnte Fremd-Images in deploy/docker-compose.yml (caddy, mongo, oauth2-proxy, gui).
+  - package-ecosystem: docker-compose
+    directory: '/deploy'
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 3
+    groups:
+      images:
+        patterns:
+          - '*'
+
   - package-ecosystem: github-actions
     directory: '/'
     schedule:

@@ -131,3 +131,52 @@ jobs:
             docker compose up -d --force-recreate caddy
           fi
           docker image prune -f
+
+      - name: Verify the deployed backend answers
+        run: |
+          set -euo pipefail
+          # This job runs INSIDE the runner container, whose 127.0.0.1 is not the host's. A
+          # throwaway container with --network host shares the host's namespace and therefore
+          # reaches Caddy's published ports the way a real client does — through TLS and the
+          # Caddyfile routes, not around them.
+          host="$(grep -E '^SERVER_NAME=' "$DEPLOY_DIR/.env" | cut -d= -f2- | tr -d '[:space:]')"
+          host="${host:-glabs.cs.hm.edu}"
+
+          # Caddy may have just been recreated and the backend has certainly just restarted.
+          # Retry rather than fail a good deploy over a few seconds of startup.
+          code=000
+          body=
+          for attempt in 1 2 3 4 5; do
+            resp=$(docker run --rm --network host curlimages/curl:8.11.1 \
+                     -sS -o - -w '\n%{http_code}' --max-time 10 \
+                     "https://$host/healthz" || printf '\n000')
+            code="${resp##*$'\n'}"
+            body="${resp%$'\n'*}"
+            if [ "$code" = "200" ]; then
+              break
+            fi
+            echo "attempt $attempt: /healthz -> $code"
+            sleep 3
+          done
+
+          echo "/healthz -> $code"
+          echo "$body"
+
+          # A redirect means forward_auth swallowed the probe, i.e. the /healthz branch is no
+          # longer in front of it. That failure is worth shouting about: from then on every
+          # check would grade the sso.hm.edu login page as a healthy backend.
+          case "$code" in
+            3??) echo "FATAL: /healthz redirects ($code) — the Caddy branch is not terminal" >&2
+                 exit 1 ;;
+            200) ;;
+            *)   echo "ERROR: unexpected status $code" >&2; exit 1 ;;
+          esac
+
+          # And does the image you MEANT to deploy answer? A started container does not say so:
+          # a stale tag, a failed pull or a crash-restart loop all leave containers "up".
+          got=$(printf '%s' "$body" | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')
+          if [ "$got" != "$VERSION" ]; then
+            echo "ERROR: /healthz reports '$got', but '$VERSION' was deployed" >&2
+            exit 1
+          fi
+          echo "OK: /healthz reports $got"

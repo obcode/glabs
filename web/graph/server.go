@@ -2,6 +2,7 @@ package graph
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -18,6 +19,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/obcode/glabs/v3/web/app"
 	"github.com/obcode/glabs/v3/web/graph/generated"
+	"github.com/obcode/glabs/v3/web/graph/model"
 	"github.com/rs/cors"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -27,6 +29,70 @@ var defaultAllowedOrigins = []string{
 	"http://localhost:5173",
 	"http://localhost:8080",
 	"http://localhost:3000",
+}
+
+// serverInfoProvider is the sliver of app.App that the liveness probe needs. An interface,
+// not the struct, so the routing can be tested without a MongoDB behind it — and the routing
+// is what needs testing here: whether /healthz really sits OUTSIDE the auth group.
+type serverInfoProvider interface {
+	ServerInfo() *model.ServerInfo
+}
+
+// newRouter wires the routes. Separate from StartServer purely so it can be exercised in a
+// test: chi panics when Use() is called after a route is registered, and a panic here would
+// be an outage at startup rather than a red test.
+func newRouter(auth authProvider, info serverInfoProvider, srv http.Handler, production bool, origins []string) chi.Router {
+	router := chi.NewRouter()
+	router.Use(cors.New(cors.Options{
+		AllowedOrigins:   origins,
+		AllowCredentials: true,
+		AllowedHeaders:   []string{"*"},
+	}).Handler)
+
+	// Liveness probe, deliberately OUTSIDE the auth group below.
+	//
+	// Two reasons it cannot sit behind authMiddleware: a monitor has no OIDC session, and
+	// every identity-less request there is recorded as a REJECTED LOGIN — a check running
+	// every minute would fill the admin monitoring log with its own noise.
+	//
+	// It reports the running version, which is the half that matters. That a container
+	// started is not the same statement as the image you meant to deploy answering.
+	router.Get("/healthz", healthz(info))
+
+	// Everything else is auth-gated. A Group gets its own middleware stack, which is how chi
+	// allows one unauthenticated route beside the authenticated ones.
+	router.Group(func(r chi.Router) {
+		r.Use(authMiddleware(auth))
+
+		if !production {
+			r.Handle("/", playground.Handler("glabs-web GraphQL playground", "/query"))
+		}
+		r.Handle("/query", srv)
+	})
+
+	return router
+}
+
+// healthz answers the liveness probe on /healthz. Unauthenticated by design — see the route.
+//
+// Deliberately thin: it does NOT touch MongoDB. This answers "is this process alive and which
+// build is it", and it has to keep answering during a database outage, because "the database
+// is gone" is a thing the monitor must be able to REPORT rather than time out on. That outage
+// reaches us the other way, through the error reporting: a failing query logs at Error level
+// and lands in GlitchTip, which mails. Two channels, each for what it can actually tell.
+func healthz(p serverInfoProvider) http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
+		info := p.ServerInfo()
+		w.Header().Set("Content-Type", "application/json")
+		// A cached liveness answer is a lie waiting to happen.
+		w.Header().Set("Cache-Control", "no-store")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]string{
+			"status":  "ok",
+			"version": info.Version,
+			"commit":  info.Commit,
+		})
+	}
 }
 
 func allowedOrigins() []string {
@@ -87,18 +153,7 @@ func StartServer(a *app.App, port string) {
 		srv.Use(extension.Introspection{})
 	}
 
-	router := chi.NewRouter()
-	router.Use(cors.New(cors.Options{
-		AllowedOrigins:   origins,
-		AllowCredentials: true,
-		AllowedHeaders:   []string{"*"},
-	}).Handler)
-	router.Use(authMiddleware(a))
-
-	if !production {
-		router.Handle("/", playground.Handler("glabs-web GraphQL playground", "/query"))
-	}
-	router.Handle("/query", srv)
+	router := newRouter(a, a, srv, production, origins)
 
 	if port == "" {
 		port = "8080"

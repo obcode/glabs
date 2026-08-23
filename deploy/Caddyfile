@@ -46,6 +46,18 @@
 			header_up X-Real-IP {remote_host}
 		}
 
+		# Liveness probe — NOT auth-gated, and terminal like the /oauth2/* branch above.
+		#
+		# It has to answer WITHOUT an OIDC session, or neither the deploy check nor the uptime
+		# monitor could tell "the backend is down" apart from "you are not logged in": behind
+		# forward_auth both look like a 302 to sso.hm.edu. A monitor that reports the login
+		# page as healthy is worse than no monitor.
+		#
+		# Note this reaches glabs-web DIRECTLY, deliberately bypassing the GUI: it is the
+		# backend's liveness, not the SvelteKit server's. The X-Remote-* headers are already
+		# stripped above, and /healthz reads none of them.
+		reverse_proxy /healthz glabs-web:8080
+
 		# Authenticate every other request against oauth2-proxy (nginx auth_request equivalent).
 		forward_auth oauth2-proxy:4180 {
 			uri /oauth2/auth

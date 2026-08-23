@@ -62,7 +62,9 @@ func (a *App) resolveAssignmentConfig(ctx context.Context, course, name string, 
 	}
 	cfg, err := config.ResolveAssignmentFromBytes(bytes, course, name, config.Globals{GitlabHost: a.gitlabHost}, onlyFor...)
 	if err != nil {
-		// Not resolvable (abstract base, missing parent, cycle).
+		// Not resolvable (abstract base, missing parent, cycle) -- ein erwarteter Zustand
+		// und kein Fehler: "keine URLs fuer dieses Assignment" ist die Antwort.
+		//nolint:nilerr // nicht aufloesbar ist hier ein gueltiges Ergebnis
 		return nil, nil
 	}
 	return cfg, nil

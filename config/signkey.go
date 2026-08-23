@@ -41,6 +41,11 @@ func parseSignKey(assignmentKey, armored string) (*openpgp.Entity, error) {
 
 	if entities[0].PrivateKey.Encrypted {
 		fmt.Println(aurora.Blue("Passphrase for signing key is required. Please enter it now:"))
+		// Die Umwandlung sieht ueberfluessig aus und ist es nur auf Unix. Unter Windows ist
+		// syscall.Stdin ein Handle (uintptr) und kein int -- goreleaser baut glabs auch dafuer
+		// (.goreleaser.yml, goos: windows). Nachgemessen: ohne den Cast bricht
+		// `GOOS=windows go build ./config/` mit "cannot use syscall.Stdin ... as int value".
+		//nolint:unconvert // plattformabhaengig, siehe oben
 		passphrase, _ := term.ReadPassword(int(syscall.Stdin))
 		if err := entities[0].PrivateKey.Decrypt(passphrase); err != nil {
 			return nil, fmt.Errorf("%s: cannot decrypt seeder.signKey with the given passphrase: %w", assignmentKey, err)

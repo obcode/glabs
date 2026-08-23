@@ -242,6 +242,10 @@ func (a *App) Assignment(ctx context.Context, course, name string) (*AssignmentV
 	cfg, err := config.ResolveAssignmentFromBytes(bytes, course, name, config.Globals{GitlabHost: a.gitlabHost})
 	if err != nil {
 		view.ResolveError = err.Error()
+		// nilerr sieht hier ein verschlucktes err. Es ist keins: der Fehler reist im
+		// RUECKGABEWERT weiter, eine Zeile darueber in view.ResolveError. Die Ansicht IST
+		// die Fehlermeldung -- ein zusaetzliches error waere eine zweite Wahrheit.
+		//nolint:nilerr // der Fehler steht in view.ResolveError
 		return view, nil
 	}
 	view.Resolved = cfg.Show()

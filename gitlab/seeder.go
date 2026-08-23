@@ -60,13 +60,13 @@ func (c *Client) runSeeder(assignmentCfg *cfg.AssignmentConfig, project *gitlab.
 	log.Debug().Msg(fmt.Sprintf("seeder returned: %v ", string(out)))
 	if err != nil {
 		log.Debug().Err(err)
-		return fmt.Errorf("running seeding application %s failed: %v", assignmentCfg.Seeder.Command, err)
+		return fmt.Errorf("running seeding application %s failed: %w", assignmentCfg.Seeder.Command, err)
 	}
 
 	_, err = git.PlainInit(path, false)
 	if err != nil {
 		log.Debug().Err(err).
-			Msg("cannot initalize repository for seeding")
+			Msg("cannot initialize repository for seeding")
 		return err
 	}
 

@@ -1,6 +1,7 @@
 package git
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -141,7 +142,7 @@ func PrepareSourceRepo(rep reporter.Reporter, auth TokenAuth, committer Committe
 	if err := repo.CreateBranch(&gitconfig.Branch{
 		Name:  refName.Short(),
 		Merge: refName,
-	}); err != nil && err != git.ErrBranchExists {
+	}); err != nil && !errors.Is(err, git.ErrBranchExists) {
 		return fail(err)
 	}
 

@@ -139,6 +139,11 @@ func (a *App) StreamCourseRepoOverview(ctx context.Context, course string) (<-ch
 			defer close(events)
 			sendRepoEvent(ctx, events, RepoOverviewEvent{Done: true, Total: total, Error: err.Error()})
 		}()
+		// nilerr sieht hier ein verschlucktes err. Es ist keins: der Fehler geht als
+		// Ereignis ueber den zurueckgegebenen Kanal an den Aufrufer. Bei einer
+		// Stream-Schnittstelle ist das der Weg -- ein error daneben kaeme vor dem
+		// ersten Ereignis an und wuerde den Kanal ungelesen lassen.
+		//nolint:nilerr // der Fehler reist als Ereignis auf dem Kanal
 		return events, nil
 	}
 

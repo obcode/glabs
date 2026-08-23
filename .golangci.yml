@@ -10,12 +10,36 @@
 # 2025 while plexams.go and tallox.go had long moved to v2. Checks added since then, including
 # the SA1019 that broke plexams' pipeline that same day, simply never ran here.
 #
-# The enabled set is deliberately the v2 standard (errcheck, govet, ineffassign, staticcheck,
-# unused) -- the same thing v1 was effectively running, so the migration changed the tool and
-# not the rules. tallox.go enables a wider set (bodyclose, errorlint, gocritic, revive, ...);
-# adopting it here is a separate decision with its own findings, not something to smuggle in
-# under "update the linter".
 version: "2"
 
 run:
   timeout: 5m
+
+linters:
+  # The v2 standard set plus the ones tallox.go runs, with ONE deliberate omission: revive.
+  #
+  # tallox enables revive solely for its `exported` rule, which asks for a doc comment on every
+  # exported identifier. Here that is 50 findings, and fifty comments written to satisfy a
+  # linter would say fifty times what the name already says. The comments in this repository
+  # explain WHY things are the way they are; adding a layer of "// WithUser sets the user"
+  # underneath would make them harder to find, not easier. Worth doing as its own piece of
+  # work, by someone who knows what each of those fifty things is for.
+  default: standard
+  enable:
+    - bodyclose
+    - errorlint
+    - gocritic
+    - misspell
+    - nilerr
+    - unconvert
+    - wastedassign
+
+  exclusions:
+    generated: lax
+    rules:
+      # Generated code is not ours to lint.
+      - path: (web/graph/generated/|models_gen\.go)$
+        linters: [gocritic, unconvert, misspell, errorlint]
+      # Tests may ignore returns and shadow more freely; the surrounding lines already do.
+      - path: _test\.go$
+        linters: [errcheck, gocritic]

@@ -18,14 +18,14 @@ func makeDeleteHandler(groupID, projectID int64, projectName string) http.Handle
 		switch {
 		// getGroupIDByFullPath → SearchGroup
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/groups":
-			fmt.Fprintf(w, `[{"id":%d,"full_path":"mpd/ss26/blatt-01"}]`, groupID)
+			_, _ = fmt.Fprintf(w, `[{"id":%d,"full_path":"mpd/ss26/blatt-01"}]`, groupID)
 
 		// Search.ProjectsByGroup
 		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, fmt.Sprintf("/api/v4/groups/%d/search", groupID)):
 			if projectID == 0 {
 				_, _ = w.Write([]byte(`[]`))
 			} else {
-				fmt.Fprintf(w, `[{"id":%d,"name":%q}]`, projectID, projectName)
+				_, _ = fmt.Fprintf(w, `[{"id":%d,"name":%q}]`, projectID, projectName)
 			}
 
 		// DeleteProject

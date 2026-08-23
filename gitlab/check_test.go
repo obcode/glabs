@@ -44,7 +44,7 @@ func newTestClient(t *testing.T, idUsers map[int]string, searchUsers map[string]
 				_, _ = w.Write([]byte(`{"message":"404 User Not Found"}`))
 				return
 			}
-			_, _ = w.Write([]byte(fmt.Sprintf(`{"id":%d,"name":"%s","username":"%s"}`, id, username, username)))
+			_, _ = fmt.Fprintf(w, `{"id":%d,"name":"%s","username":"%s"}`, id, username, username)
 			return
 		}
 

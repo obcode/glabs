@@ -168,7 +168,7 @@ func setupLogging(reporter zerolog.LevelWriter) {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 
-	var out zerolog.LevelWriter = zerolog.MultiLevelWriter(output)
+	out := zerolog.MultiLevelWriter(output)
 	if reporter != nil {
 		out = zerolog.MultiLevelWriter(output, reporter)
 	}

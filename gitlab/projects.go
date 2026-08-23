@@ -53,23 +53,32 @@ func (c *Client) generateProject(assignmentCfg *config.AssignmentConfig, name st
 		gitlabSquashOption = gitlab.SquashOptionDefaultOff
 	}
 
+	// Convert the boolean from the assignment config to GitLab's access-level vocabulary.
+	// The old ContainerRegistryEnabled is deprecated in client-go v2 and will eventually be
+	// ignored by the API; "enabled"/"disabled" is exactly what the boolean meant.
+	containerRegistryAccess := gitlab.DisabledAccessControl
+	if assignmentCfg.ContainerRegistry {
+		containerRegistryAccess = gitlab.EnabledAccessControl
+	}
+
 	p := &gitlab.CreateProjectOptions{
 		Name: gitlab.Ptr(name),
 		// name is already a valid slug (see AssignmentConfig.RepoNameWithSuffix),
 		// so set Path explicitly to keep GitLab from deriving a different path
 		// from the name and to guarantee it matches the URLs and searches glabs
 		// computes elsewhere.
-		Path:                             gitlab.Ptr(name),
-		Description:                      gitlab.Ptr(assignmentCfg.Description),
-		NamespaceID:                      gitlab.Ptr(inID),
-		MergeRequestsAccessLevel:         gitlab.Ptr(gitlab.EnabledAccessControl),
-		IssuesAccessLevel:                gitlab.Ptr(gitlab.EnabledAccessControl),
-		BuildsAccessLevel:                gitlab.Ptr(gitlab.EnabledAccessControl),
-		JobsEnabled:                      gitlab.Ptr(true),
-		Visibility:                       gitlab.Ptr(gitlab.PrivateVisibility),
-		ContainerRegistryEnabled:         gitlab.Ptr(assignmentCfg.ContainerRegistry),
-		OnlyAllowMergeIfPipelineSucceeds: gitlab.Ptr(pipelineMustSucceed),
-		AllowMergeOnSkippedPipeline:      gitlab.Ptr(skippedPipelinesAreSuccessful),
+		Path:                     gitlab.Ptr(name),
+		Description:              gitlab.Ptr(assignmentCfg.Description),
+		NamespaceID:              gitlab.Ptr(inID),
+		MergeRequestsAccessLevel: gitlab.Ptr(gitlab.EnabledAccessControl),
+		IssuesAccessLevel:        gitlab.Ptr(gitlab.EnabledAccessControl),
+		// JobsEnabled stood here and said the same thing as BuildsAccessLevel one line up;
+		// it is deprecated and was pure duplication, so it is gone rather than replaced.
+		BuildsAccessLevel:                         gitlab.Ptr(gitlab.EnabledAccessControl),
+		Visibility:                                gitlab.Ptr(gitlab.PrivateVisibility),
+		ContainerRegistryAccessLevel:              gitlab.Ptr(containerRegistryAccess),
+		OnlyAllowMergeIfPipelineSucceeds:          gitlab.Ptr(pipelineMustSucceed),
+		AllowMergeOnSkippedPipeline:               gitlab.Ptr(skippedPipelinesAreSuccessful),
 		OnlyAllowMergeIfAllDiscussionsAreResolved: gitlab.Ptr(allThreadsMustBeResolved),
 		OnlyAllowMergeIfAllStatusChecksPassed:     gitlab.Ptr(statusChecksMustSucceed),
 		MergeMethod:                               gitlab.Ptr(gitlabMergeMethod),

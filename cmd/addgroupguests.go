@@ -27,7 +27,7 @@ Newly created memberships/invitations expire automatically after 1 year.
 
 Example:
 	glabs addgroupguests vss    # Adds all students from vss course to the vss/semester/ob-26ss subgroup`,
-	Args: cobra.ExactArgs(1), //nolint:gomnd
+	Args: cobra.ExactArgs(1), //nolint:mnd
 	Run: func(cmd *cobra.Command, args []string) {
 		courseName := args[0]
 		if !config.CourseExists(courseName) {

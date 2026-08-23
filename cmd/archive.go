@@ -19,7 +19,7 @@ var (
 		Use:   "archive course assignment [groups...|students...]",
 		Short: "Archive or unarchive repositories.",
 		Long:  `Archive or unarchive repositories.`,
-		Args:  cobra.MinimumNArgs(2), //nolint:gomnd
+		Args:  cobra.MinimumNArgs(2), //nolint:mnd
 		Run: func(cmd *cobra.Command, args []string) {
 			assignmentConfig, err := config.GetAssignmentConfig(args[0], args[1], args[2:]...)
 			if err != nil {

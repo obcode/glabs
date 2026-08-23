@@ -1,0 +1,21 @@
+# golangci-lint configuration.
+#
+# This file exists mainly to STATE the version. Until 2026-08-23 there was no config at all,
+# and the CI installed the linter with
+#
+#     go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+#
+# which is the v1 module path -- v2 lives under .../v2/... . `@latest` therefore resolved to
+# the last v1 release forever, and this repository was quietly linted by v1.64.8 from March
+# 2025 while plexams.go and tallox.go had long moved to v2. Checks added since then, including
+# the SA1019 that broke plexams' pipeline that same day, simply never ran here.
+#
+# The enabled set is deliberately the v2 standard (errcheck, govet, ineffassign, staticcheck,
+# unused) -- the same thing v1 was effectively running, so the migration changed the tool and
+# not the rules. tallox.go enables a wider set (bodyclose, errorlint, gocritic, revive, ...);
+# adopting it here is a separate decision with its own findings, not something to smuggle in
+# under "update the linter".
+version: "2"
+
+run:
+  timeout: 5m

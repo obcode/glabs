@@ -18,7 +18,7 @@ var deleteCmd = &cobra.Command{
 	Short: "Delete repositories.",
 	Long: `Delete repositories for each student or group in course for assignment.
 You can specify students or groups in order to delete only for these.`,
-	Args: cobra.MinimumNArgs(2), //nolint:gomnd
+	Args: cobra.MinimumNArgs(2), //nolint:mnd
 	Run: func(cmd *cobra.Command, args []string) {
 		assignmentConfig, err := config.GetAssignmentConfig(args[0], args[1], args[2:]...)
 		if err != nil {

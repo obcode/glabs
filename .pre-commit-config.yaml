@@ -33,9 +33,12 @@ repos:
             pass_filenames: false
             types: [go]
 
-          - id: golangci-lint
-            name: golangci-lint
-            entry: golangci-lint run
+          # golangci-lint-v2, not golangci-lint: the two live side by side under different
+          # names so a v1 install for another project cannot silently lint this one. Same
+          # hook name as in plexams.go and tallox.go.
+          - id: golangci-lint-v2
+            name: golangci-lint-v2
+            entry: golangci-lint-v2 run
             language: system
             pass_filenames: false
             types: [go]

@@ -19,7 +19,7 @@ var (
 		Use:   "setaccess course assignment [groups...|students...]",
 		Short: "Set access level for exisiting repositories.",
 		Long:  `Set access level for exisiting repositories.`,
-		Args:  cobra.MinimumNArgs(2), //nolint:gomnd
+		Args:  cobra.MinimumNArgs(2), //nolint:mnd
 		Run: func(cmd *cobra.Command, args []string) {
 			assignmentConfig, err := config.GetAssignmentConfig(args[0], args[1], args[2:]...)
 			if err != nil {

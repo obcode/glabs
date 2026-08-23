@@ -20,7 +20,7 @@ var updateCmd = &cobra.Command{
 	USE WITH CARE!
 	This can result in merge conflicts, which cannot be handled
 	Use only with fresh, i.e. untouched, repositories.`,
-	Args: cobra.MinimumNArgs(2), //nolint:gomnd
+	Args: cobra.MinimumNArgs(2), //nolint:mnd
 	Run: func(cmd *cobra.Command, args []string) {
 		assignmentConfig, err := config.GetAssignmentConfig(args[0], args[1], args[2:]...)
 		if err != nil {

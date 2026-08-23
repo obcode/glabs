@@ -27,12 +27,18 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-      - name: Install golangci-lint
-        run: |
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      # The action rather than `go install`, and a pinned version rather than `latest` --
+      # the same shape plexams.go and tallox.go use.
+      #
+      # `go install .../golangci-lint/cmd/golangci-lint@latest` was the v1 module path, so it
+      # resolved to the last v1 release and never advanced past it: this job ran v1.64.8 from
+      # March 2025 until 2026-08-23. Pinning is the other half of the lesson from that day --
+      # plexams' pipeline went red with no code change because `latest` had moved under it.
       - name: Run golangci-lint
-        run: golangci-lint run --timeout=10m
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.13.1
+          args: --timeout=10m
 
   test-fast:
     name: test (fast)

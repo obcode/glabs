@@ -11,7 +11,7 @@ var (
 		Short: "get urls for repositories",
 		Long: `get urls for repositories for each student or group in course for assignment.
 		You can specify students or groups in order to get an url only for these.`,
-		Args: cobra.MinimumNArgs(1), //nolint:gomnd
+		Args: cobra.MinimumNArgs(1), //nolint:mnd
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 1 {
 				config.GetCourseURL(args[0])

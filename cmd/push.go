@@ -15,7 +15,7 @@ var pushCmd = &cobra.Command{
 	Long: `Push one deferred branch to student/group repos.
 	You can specify students or groups in order to push only for these.
 	You cannot push all deferred branches at once.`,
-	Args: cobra.MinimumNArgs(3), //nolint:gomnd
+	Args: cobra.MinimumNArgs(3), //nolint:mnd
 	Run: func(cmd *cobra.Command, args []string) {
 		course := args[0]
 		assignment := args[1]

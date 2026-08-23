@@ -51,6 +51,18 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
+    environment:
+      # Error reporting to GlitchTip (project glabs-web). Listing the variables HERE is what
+      # passes them into the container — the .env file alone only feeds the ${...}
+      # substitution in this file, which is a trap that has cost a debugging session before.
+      #
+      # The DSN is a credential and lives only in .env on the host. Empty means: this half
+      # does not report, and the server starts exactly as before.
+      #
+      # Read web/obs/scrub.go before changing anything that reports: glabs-web logs through
+      # the SHARED gitlab package, whose lines name students.
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
     volumes:
       # Carries secrets (secrets.key, SMTP credentials, Mongo credentials in db.uri) — the
       # real file is gitignored; copy .glabs-web.yaml.example and fill it in.
@@ -77,6 +89,18 @@ services:
       # The GUI reads both via $env/dynamic/* at runtime, so setting them here is enough.
       PUBLIC_GLABS_SERVER: https://${SERVER_NAME}/query
       GLABS_SERVER: ${GLABS_SERVER:-http://glabs-web:8080/query}
+      # Error reporting, and here TWO variables for a different reason than the two above:
+      # the SSR process's DSN stays inside this container, while the browser's is compiled
+      # into the bundle everyone downloads — which is why SvelteKit refuses to expose it
+      # without the PUBLIC_ prefix. A Sentry DSN may only ever write, so a public one is
+      # intended and not a leak.
+      #
+      # Its OWN project (glabs-gui), not the backend's: a Go error and a browser error do
+      # not belong in the same list. Empty means this half does not report.
+      SENTRY_DSN: ${GUI_SENTRY_DSN:-}
+      PUBLIC_SENTRY_DSN: ${GUI_SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+      PUBLIC_SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
     expose:
       - "3000"
 

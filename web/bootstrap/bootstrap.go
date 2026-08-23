@@ -16,6 +16,7 @@ import (
 	"github.com/obcode/glabs/v3/web/db"
 	"github.com/obcode/glabs/v3/web/graph"
 	"github.com/obcode/glabs/v3/web/mail"
+	"github.com/obcode/glabs/v3/web/obs"
 	"github.com/obcode/glabs/v3/web/secrets"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -27,6 +28,15 @@ var (
 	verbose bool
 )
 
+// The error-reporting configuration comes from the environment, not from
+// .glabs-web.yaml: it has to be up before the config file is read, since a
+// config file that will not load is exactly the kind of startup failure worth
+// hearing about. The DSN is a credential and belongs in the host's .env.
+const (
+	EnvSentryDSN         = "SENTRY_DSN"
+	EnvSentryEnvironment = "SENTRY_ENVIRONMENT"
+)
+
 // Serve parses flags, loads config, connects to MongoDB and runs the server.
 func Serve() error {
 	flag.StringVar(&dbURI, "db-uri", "", "override db.uri from the config file")
@@ -34,7 +44,10 @@ func Serve() error {
 	flag.BoolVar(&verbose, "v", false, "verbose output (shorthand)")
 	flag.Parse()
 
-	setupLogging()
+	reporter, flushReports := setupReporting()
+	defer flushReports()
+
+	setupLogging(reporter)
 
 	if err := initConfig(); err != nil {
 		return err
@@ -133,8 +146,18 @@ func Serve() error {
 	return nil
 }
 
-func setupLogging() {
+// setupLogging configures the global logger, and hangs the error reporter into
+// it when there is one.
+//
+// The reporter has to be carried over from setupReporting: this replaces the
+// writer, and without it every error from here on would only be printed.
+func setupLogging(reporter zerolog.LevelWriter) {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	// Not cosmetic: the reporter groups issues by the caller field, and the
+	// compiler'"'"'s absolute path would make the same line read differently in the
+	// container than it does here. See web/obs/caller.go.
+	zerolog.CallerMarshalFunc = obs.RepoRelativeCaller
+
 	output := zerolog.ConsoleWriter{Out: os.Stdout}
 	if verbose {
 		output.FormatLevel = func(i interface{}) string {
@@ -144,7 +167,61 @@ func setupLogging() {
 	} else {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
-	log.Logger = zerolog.New(output).With().Caller().Timestamp().Logger()
+
+	var out zerolog.LevelWriter = zerolog.MultiLevelWriter(output)
+	if reporter != nil {
+		out = zerolog.MultiLevelWriter(output, reporter)
+	}
+	log.Logger = zerolog.New(out).With().Caller().Timestamp().Logger()
+}
+
+// setupReporting starts error reporting from the environment and returns the
+// writer for setupLogging to keep, plus a flush to defer.
+//
+// Everything that decides what may leave this host lives in web/obs — read
+// web/obs/scrub.go before adding anything that reports. Note that the writer
+// sits on the GLOBAL logger, so it also captures the shared gitlab, config and
+// reporter packages this server calls into; that is what the allow list there is
+// built around. Both returns are safe when reporting is off: the writer is nil
+// and the flush does nothing.
+//
+// A collector that will not start is a reason to run unmonitored, not a reason
+// to refuse to serve.
+func setupReporting() (zerolog.LevelWriter, func()) {
+	dsn := os.Getenv(EnvSentryDSN)
+	if dsn == "" {
+		return nil, func() {}
+	}
+
+	environment := os.Getenv(EnvSentryEnvironment)
+	if environment == "" {
+		environment = "production"
+	}
+
+	reporter, err := obs.Init(obs.Config{
+		DSN:         dsn,
+		Environment: environment,
+		// Set by cmd/glabs-web before Serve; viper.Set outranks the config file,
+		// which has not been read yet anyway.
+		Release: viper.GetString("Version"),
+		// Deliberately empty: filling the ignore list before a week of real
+		// traffic is guessing at which noise exists.
+		IgnoreErrors: nil,
+	})
+	if err != nil {
+		log.Warn().Err(err).Msg("error reporting is off")
+		return nil, func() {}
+	}
+	if reporter == nil {
+		return nil, func() {}
+	}
+
+	// Attach it straight away, before setupLogging runs: the one log.Fatal that
+	// can happen in between is a config file that will not load.
+	log.Logger = log.Output(zerolog.MultiLevelWriter(os.Stderr, reporter)).
+		With().Caller().Logger()
+
+	return reporter, obs.Flush
 }
 
 func initConfig() error {

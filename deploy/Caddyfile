@@ -58,6 +58,14 @@
 		# stripped above, and /healthz reads none of them.
 		reverse_proxy /healthz glabs-web:8080
 
+		# The GUI's own liveness, and it answers a question /healthz above cannot: that one is
+		# glabs-web. The SvelteKit process runs in its own container, and behind forward_auth a
+		# hung one is indistinguishable from a healthy one -- a request to `/` is answered by
+		# oauth2-proxy with a redirect to the login, without the container ever being asked.
+		#
+		# Path matching in Caddy is exact, so this and /healthz above do not collide.
+		reverse_proxy /healthz/gui gui:3000
+
 		# Authenticate every other request against oauth2-proxy (nginx auth_request equivalent).
 		forward_auth oauth2-proxy:4180 {
 			uri /oauth2/auth

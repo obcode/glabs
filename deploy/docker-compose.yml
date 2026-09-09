@@ -187,6 +187,21 @@ services:
       # renews registration tokens itself and survives restarts without a token swap.
       ACCESS_TOKEN: ${GH_RUNNER_PAT:-}
       RUNNER_WORKDIR: /tmp/runner/work
+      # Pin the runner to the version baked into the image, because this image cannot
+      # survive a self-update. Its Cmd starts ./bin/Runner.Listener directly instead of
+      # run.sh, and run.sh is precisely what handles exit code 3 -- the runner's "I staged
+      # an update, restart me". Without that wrapper the listener's exit ends PID 1, Docker
+      # tears the container down, and the detached update script dies mid-swap. That is not
+      # hypothetical: on 2026-09-01 the 2.336.0 → 2.337.0 update got as far as deleting
+      # /actions-runner/bin, and `restart: unless-stopped` then replayed the same broken
+      # writable layer about once a minute until the container was recreated.
+      #
+      # Careful: the image tests this with `[ -n "$DISABLE_AUTO_UPDATE" ]`, so ANY non-empty
+      # value disables updates -- "false" would too. To re-enable, remove the line.
+      #
+      # The price is that staying current is now a pull: `docker pull` the image every few
+      # months, or GitHub will eventually refuse a runner that is too old.
+      DISABLE_AUTO_UPDATE: "true"
     security_opt:
       - label:disable
     volumes:
@@ -214,6 +229,8 @@ services:
       LABELS: glabs-deploy
       ACCESS_TOKEN: ${GH_RUNNER_PAT:-}
       RUNNER_WORKDIR: /tmp/runner-gui/work
+      # Same reason as gh-runner above; this runner broke the same way on 2026-09-02.
+      DISABLE_AUTO_UPDATE: "true"
     security_opt:
       - label:disable
     volumes:

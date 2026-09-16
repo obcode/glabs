@@ -23,7 +23,7 @@ func (c *Client) Generate(assignmentCfg *config.AssignmentConfig, skipInvite boo
 				Str("course", assignmentCfg.Course).
 				Str("assignmentpath", assignmentCfg.Path).
 				Msg("error while creating group for assignment")
-			return fmt.Errorf("cannot create GitLab group for assignment, please create the group %s", assignmentCfg.URL)
+			return fmt.Errorf("cannot create GitLab group for assignment, please create the group %s: %w", assignmentCfg.URL, err)
 		}
 	}
 

@@ -111,6 +111,30 @@ glabs generate mpd blatt01
 
 **Tip:** Create groups manually in GitLab if they don't auto-create
 
+### Generate cannot create the assignment group
+
+**Symptoms:**
+```
+GitLab group for assignment does not exist, creating group moda at mgu_exercises/graphtheory/sose2026/moda
+ERR ... cannot create group error="POST .../groups: 400 {message: Failed to save group ...}"
+cannot create GitLab group for assignment, please create the group ...
+```
+
+`generate` creates the assignment subgroup when it does not exist yet. The
+subgroup inherits its visibility from the parent group — GitLab rejects a
+subgroup that is less restrictive than its parent, so under a private course
+group the new group is created private as well.
+
+**Checks:**
+- The parent group (`coursepath`/`semesterpath`) exists — only the *last* path
+  segment is created automatically
+- The token owns at least the Maintainer role on the parent group; creating
+  subgroups needs it
+- The group path is free: GitLab lowercases group paths, so `modA` and `moda`
+  are the same subgroup
+
+**Workaround:** create the subgroup manually in GitLab and run `generate` again.
+
 ### Generate fails with merge conflicts
 
 **Symptoms:**

@@ -81,11 +81,14 @@ func Init(cfg Config) (zerolog.LevelWriter, error) {
 		Transport:    cfg.transport,
 
 		// This server manages one faculty's lab assignments; there is no traffic
-		// volume to trace and no budget question to answer with metrics. Both
-		// off means less that can carry data out by accident.
-		EnableTracing:  false,
-		DisableLogs:    true,
-		DisableMetrics: true,
+		// volume to trace, so tracing stays off -- less that can carry data out
+		// by accident.
+		//
+		// Logs and metrics need no switch: sentry-go 0.49 removed DisableLogs
+		// and DisableMetrics because both are already gated by calling the
+		// respective APIs, and nothing here does. The zerolog writer below
+		// sends events, not log records.
+		EnableTracing: false,
 
 		// Events from the writer get their (useless) stack from sentryzerolog.
 		AttachStacktrace: false,

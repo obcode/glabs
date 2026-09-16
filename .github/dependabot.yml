@@ -19,7 +19,7 @@ updates:
           - minor
           - patch
 
-  # Dockerfile-Base-Images (golang:1.26-alpine, alpine:3.21 -- beide gepinnt).
+  # Dockerfile-Base-Images (golang und alpine, beide auf einen Minor gepinnt).
   - package-ecosystem: docker
     directory: '/'
     schedule:

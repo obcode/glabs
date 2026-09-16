@@ -120,10 +120,11 @@ ERR ... cannot create group error="POST .../groups: 400 {message: Failed to save
 cannot create GitLab group for assignment, please create the group ...
 ```
 
-`generate` creates the assignment subgroup when it does not exist yet. The
-subgroup inherits its visibility from the parent group — GitLab rejects a
+`generate` creates the assignment subgroup when it does not exist yet. It is
+created `internal`, capped at the parent group's visibility: GitLab rejects a
 subgroup that is less restrictive than its parent, so under a private course
-group the new group is created private as well.
+group the new group is created private as well. A public course group does not
+make the assignment group public — `internal` stays the ceiling.
 
 **Checks:**
 - The parent group (`coursepath`/`semesterpath`) exists — only the *last* path

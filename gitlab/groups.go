@@ -10,7 +10,10 @@ import (
 	gitlab "gitlab.com/gitlab-org/api/client-go/v2"
 )
 
-func (c *Client) getGroupIDByFullPath(fullPath string) (int64, error) {
+// getGroupByFullPath returns the GitLab group stored at the given full path.
+// The search endpoint only matches the last path segment, so the results are
+// filtered by full path here.
+func (c *Client) getGroupByFullPath(fullPath string) (*gitlab.Group, error) {
 	pathParts := strings.Split(fullPath, "/")
 	searchTerm := pathParts[len(pathParts)-1]
 
@@ -19,16 +22,24 @@ func (c *Client) getGroupIDByFullPath(fullPath string) (int64, error) {
 		log.Error().Err(err).
 			Str("grouppath", fullPath).
 			Msg("error while searching id of group path")
-		return 0, err
+		return nil, err
 	}
 
 	for _, group := range groups {
 		if group.FullPath == fullPath {
-			return group.ID, nil
+			return group, nil
 		}
 	}
 
-	return 0, fmt.Errorf("no gitlab group found for path %s", fullPath)
+	return nil, fmt.Errorf("no gitlab group found for path %s", fullPath)
+}
+
+func (c *Client) getGroupIDByFullPath(fullPath string) (int64, error) {
+	group, err := c.getGroupByFullPath(fullPath)
+	if err != nil {
+		return 0, err
+	}
+	return group.ID, nil
 }
 
 func (c *Client) getGroupID(assignmentCfg *config.AssignmentConfig) (int64, error) {
@@ -44,15 +55,39 @@ func (c *Client) getGroupID(assignmentCfg *config.AssignmentConfig) (int64, erro
 	return assignmentGroupID, nil
 }
 
+// subgroupVisibility returns the visibility a new group should be created with.
+// GitLab rejects a subgroup that is less restrictive than its parent ("internal
+// is not allowed since the parent group has a private visibility"), so the
+// preferred internal visibility is capped at the parent's. A parent whose
+// visibility the API did not report yields nil, which omits the field from the
+// request and lets GitLab pick a visibility that is valid for that parent.
+func subgroupVisibility(parent *gitlab.Group) *gitlab.VisibilityValue {
+	if parent == nil {
+		return gitlab.Ptr(gitlab.InternalVisibility)
+	}
+
+	switch parent.Visibility {
+	case gitlab.PrivateVisibility:
+		return gitlab.Ptr(gitlab.PrivateVisibility)
+	case gitlab.InternalVisibility, gitlab.PublicVisibility:
+		return gitlab.Ptr(gitlab.InternalVisibility)
+	default:
+		return nil
+	}
+}
+
 func (c *Client) createGroup(assignmentCfg *config.AssignmentConfig) (int64, error) {
 	pathParts := strings.Split(assignmentCfg.Path, "/")
 	path := pathParts[len(pathParts)-1]
 	name := pathParts[len(pathParts)-1]
 
-	var parentID *int64
+	var (
+		parentID    *int64
+		parentGroup *gitlab.Group
+	)
 	if len(pathParts) > 1 {
 		parentPath := strings.Join(pathParts[:len(pathParts)-1], "/")
-		resolvedParentID, err := c.getGroupIDByFullPath(parentPath)
+		parent, err := c.getGroupByFullPath(parentPath)
 		if err != nil {
 			log.Error().Err(err).
 				Str("course", assignmentCfg.Course).
@@ -60,16 +95,16 @@ func (c *Client) createGroup(assignmentCfg *config.AssignmentConfig) (int64, err
 				Msg("cannot resolve parent group for assignment")
 			return 0, err
 		}
-		parentID = &resolvedParentID
+		parentGroup = parent
+		parentID = &parent.ID
 	}
 
 	fmt.Printf("GitLab group for assignment does not exist, creating group %s at %s\n", name, assignmentCfg.Path)
 
-	visibility := gitlab.InternalVisibility
 	options := &gitlab.CreateGroupOptions{
 		Name:       &name,
 		Path:       &path,
-		Visibility: &visibility,
+		Visibility: subgroupVisibility(parentGroup),
 		ParentID:   parentID,
 	}
 
@@ -79,6 +114,7 @@ func (c *Client) createGroup(assignmentCfg *config.AssignmentConfig) (int64, err
 			Str("name", name).
 			Str("path", path).
 			Msg("cannot create group")
+		return 0, fmt.Errorf("cannot create group %s: %w", assignmentCfg.Path, err)
 	}
 	return g.ID, nil
 }

@@ -88,9 +88,8 @@ func TestCreateGroup_WithParentGroup(t *testing.T) {
 }
 
 // TestCreateGroup_InheritsPrivateVisibilityFromParent guards against the 400
-// GitLab answers with when a subgroup would be less restrictive than its
-// parent: "internal is not allowed since the parent group has a private
-// visibility".
+// GitLab returns when a subgroup would be less restrictive than its parent:
+// "internal is not allowed since the parent group has a private visibility".
 func TestCreateGroup_InheritsPrivateVisibilityFromParent(t *testing.T) {
 	var createBody string
 

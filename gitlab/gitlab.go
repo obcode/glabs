@@ -24,6 +24,12 @@ type Client struct {
 	token string
 	// committer authors starter-code commits; empty falls back to the glabs bot.
 	committer git.Committer
+	// Per-project lookups for issue replication, filled lazily. Generating a course
+	// replicates the same handful of issues into dozens of projects, so the answers are
+	// worth keeping. No lock, for the same reason `rep` needs none: a Client belongs to one
+	// CLI run or one web request and is never shared across goroutines.
+	memberIDs    map[int64]map[int64]struct{}
+	labelsByName map[int64]map[string]*gitlab.Label
 }
 
 // clientOptions holds what a Client needs to reach GitLab. They are injected

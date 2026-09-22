@@ -202,3 +202,151 @@ func TestResolveIssueNumbersForReplication_WithChildTasks(t *testing.T) {
 		t.Fatalf("resolved issue numbers = %#v, want [2 5 6]", numbers)
 	}
 }
+
+// Issue #151: labels, assignees and the closed state travel with a replicated issue.
+func TestReplicateIssue_CopiesLabelsAssigneesAndClosedState(t *testing.T) {
+	var (
+		createBody   map[string]any
+		updateBody   map[string]any
+		createdLabel map[string]any
+	)
+
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/issues/7":
+			_, _ = w.Write([]byte(`{"id":7001,"iid":7,"title":"Fix tests","description":"d",
+				"state":"closed","labels":["bug","docs"],
+				"assignees":[{"id":11,"username":"student"},{"id":22,"username":"lecturer"}]}`))
+		// The target knows "bug" already; "docs" has to be created.
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/2/labels":
+			_, _ = w.Write([]byte(`[{"id":501,"name":"bug","color":"#ff0000"}]`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/labels":
+			_, _ = w.Write([]byte(`[{"id":301,"name":"bug","color":"#ff0000"},
+				{"id":302,"name":"docs","color":"#00ff00","description":"documentation"}]`))
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v4/projects/2/labels":
+			if err := json.NewDecoder(r.Body).Decode(&createdLabel); err != nil {
+				t.Fatalf("json.Decode() error = %v", err)
+			}
+			_, _ = w.Write([]byte(`{"id":502,"name":"docs","color":"#00ff00"}`))
+		// Only the student is a member of the target project.
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/2/members/all":
+			_, _ = w.Write([]byte(`[{"id":11,"username":"student"}]`))
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v4/projects/2/issues":
+			if err := json.NewDecoder(r.Body).Decode(&createBody); err != nil {
+				t.Fatalf("json.Decode() error = %v", err)
+			}
+			_, _ = w.Write([]byte(`{"id":9901,"iid":99}`))
+		case r.Method == http.MethodPut && r.URL.Path == "/api/v4/projects/2/issues/99":
+			if err := json.NewDecoder(r.Body).Decode(&updateBody); err != nil {
+				t.Fatalf("json.Decode() error = %v", err)
+			}
+			_, _ = w.Write([]byte(`{"id":9901,"iid":99,"state":"closed"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	source := &gitlabapi.Project{ID: 1, PathWithNamespace: "mpd/startercode/blatt-01"}
+	target := &gitlabapi.Project{ID: 2, PathWithNamespace: "mpd/ss26/blatt-01/team1"}
+
+	if _, err := client.replicateIssue(source, target, 7, false); err != nil {
+		t.Fatalf("replicateIssue() error = %v", err)
+	}
+
+	// LabelOptions marshals as ONE comma-joined string, not a JSON array — that is the REST
+	// convention GitLab expects (see LabelOptions.MarshalJSON in the client library).
+	if createBody["labels"] != "bug,docs" {
+		t.Errorf("labels = %v, want \"bug,docs\"", createBody["labels"])
+	}
+
+	// The lecturer (22) is not a member of the target and must be dropped, otherwise GitLab
+	// rejects the whole create call.
+	assignees, _ := createBody["assignee_ids"].([]any)
+	if len(assignees) != 1 || assignees[0].(float64) != 11 {
+		t.Errorf("assignee_ids = %v, want [11]", createBody["assignee_ids"])
+	}
+
+	// The missing label is created with the SOURCE colour, so it does not look different in
+	// every student repository.
+	if createdLabel["color"] != "#00ff00" {
+		t.Errorf("created label colour = %v, want #00ff00", createdLabel["color"])
+	}
+	if createdLabel["description"] != "documentation" {
+		t.Errorf("created label description = %v, want documentation", createdLabel["description"])
+	}
+
+	if updateBody["state_event"] != "close" {
+		t.Errorf("state_event = %v, want close — a closed source issue must end up closed", updateBody["state_event"])
+	}
+}
+
+// An open source issue must not be closed, and must not trigger an update call at all.
+func TestReplicateIssue_OpenIssueIsNotClosed(t *testing.T) {
+	updateCalled := false
+
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/issues/7":
+			_, _ = w.Write([]byte(`{"id":7001,"iid":7,"title":"t","description":"d","state":"opened"}`))
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v4/projects/2/issues":
+			_, _ = w.Write([]byte(`{"id":9901,"iid":99}`))
+		case r.Method == http.MethodPut && r.URL.Path == "/api/v4/projects/2/issues/99":
+			updateCalled = true
+			_, _ = w.Write([]byte(`{"id":9901,"iid":99}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	source := &gitlabapi.Project{ID: 1, PathWithNamespace: "mpd/startercode/blatt-01"}
+	target := &gitlabapi.Project{ID: 2, PathWithNamespace: "mpd/ss26/blatt-01/team1"}
+
+	if _, err := client.replicateIssue(source, target, 7, false); err != nil {
+		t.Fatalf("replicateIssue() error = %v", err)
+	}
+	if updateCalled {
+		t.Error("an open issue must not be updated after creation")
+	}
+}
+
+// Metadata is best-effort: losing a label or the member lookup is not worth losing the issue.
+func TestReplicateIssue_MetadataFailuresDoNotFailReplication(t *testing.T) {
+	var createBody map[string]any
+
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/issues/7":
+			_, _ = w.Write([]byte(`{"id":7001,"iid":7,"title":"t","description":"d",
+				"state":"opened","labels":["bug"],"assignees":[{"id":11,"username":"student"}]}`))
+		case r.URL.Path == "/api/v4/projects/2/members/all":
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"message":"403 Forbidden"}`))
+		case r.URL.Path == "/api/v4/projects/2/labels":
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"message":"500"}`))
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v4/projects/2/issues":
+			if err := json.NewDecoder(r.Body).Decode(&createBody); err != nil {
+				t.Fatalf("json.Decode() error = %v", err)
+			}
+			_, _ = w.Write([]byte(`{"id":9901,"iid":99}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	source := &gitlabapi.Project{ID: 1, PathWithNamespace: "mpd/startercode/blatt-01"}
+	target := &gitlabapi.Project{ID: 2, PathWithNamespace: "mpd/ss26/blatt-01/team1"}
+
+	if _, err := client.replicateIssue(source, target, 7, false); err != nil {
+		t.Fatalf("replicateIssue() must survive metadata failures, got error = %v", err)
+	}
+
+	if _, ok := createBody["assignee_ids"]; ok {
+		t.Errorf("assignee_ids must be absent when the member lookup failed, got %v", createBody["assignee_ids"])
+	}
+	// The label name still goes along — GitLab binds an existing one and otherwise invents a
+	// colour, which is strictly better than dropping the label.
+	if createBody["labels"] != "bug" {
+		t.Errorf("labels = %v, want \"bug\"", createBody["labels"])
+	}
+}

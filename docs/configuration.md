@@ -351,6 +351,23 @@ issues:
 | `issueNumbers` | Which issue numbers to copy | `[1]` | Used only when replication is enabled |
 | `includeChildTasks` | Expand issueNumbers by linked child tasks (GraphQL) | `false` | Resolves nested child tasks recursively |
 
+### What is copied
+
+Besides title and description, a replicated issue keeps:
+
+- **Labels.** Missing labels are created in the target project first, with the colour and
+  description of the source label, so the same label looks the same in every generated
+  repository. A label that cannot be created is skipped — the issue is still replicated.
+- **Assignees**, but only those who are members of the target project (inherited group
+  memberships count). Everyone else is dropped: GitLab rejects the whole request for an
+  assignee who is not a member, and in practice the source assignee is whoever wrote the
+  starter code, who has no business being assigned in every student's repository.
+- **The open/closed state.** A closed source issue is created and then closed.
+
+Two things are **not** copied, because they cannot be: **iterations** and **milestones** belong
+to a group's own cadence, and a generated project lives under a different group, where the
+source id does not exist.
+
 **Example: Merge-only development branch**
 
 ```yaml

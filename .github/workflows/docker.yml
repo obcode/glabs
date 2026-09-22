@@ -74,6 +74,38 @@ jobs:
             COMMIT=${{ steps.build_meta.outputs.commit }}
             DATE=${{ steps.build_meta.outputs.date }}
 
+  # Trigger the deploy, which lives in the PRIVATE obcode/glabs.dev together with the compose
+  # file, the Caddyfile and deploy.sh. Rather than mirroring those here, a release dispatches a
+  # workflow over there. This job is an outbound API call, so it runs on a GitHub-hosted runner —
+  # no self-hosted runner is needed in this public repo any more, which is the point: a workflow
+  # change here can no longer reach the production host.
+  dispatch-deploy:
+    needs: build-and-push-image
+    # Feature gate, like AUTO_DEPLOY below: without DISPATCH_TOKEN, `gh api` aborts on an empty
+    # GH_TOKEN and turns the release run red although the image was pushed fine. Arm this
+    # together with AUTO_DEPLOY in glabs.dev — and only after AUTO_DEPLOY here is off, or both
+    # runners would roll the same release at once.
+    if: ${{ vars.DEPLOY_DISPATCH_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    env:
+      VERSION: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - name: Dispatch the deploy in glabs.dev
+        env:
+          # Fine-grained PAT with nothing but "Contents: Read and write" on obcode/glabs.dev.
+          # GITHUB_TOKEN cannot do this: it is scoped to THIS repository, so a
+          # repository_dispatch at another repo answers 404/403.
+          GH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "${GH_TOKEN:-}" || { echo "DISPATCH_TOKEN is empty although the gate is on" >&2; exit 1; }
+          test -n "${VERSION:-}"  || { echo "no tag resolved" >&2; exit 1; }
+          gh api repos/obcode/glabs.dev/dispatches \
+            -f event_type=deploy-web \
+            -F "client_payload[tag]=$VERSION"
+          echo "sent deploy-web $VERSION to obcode/glabs.dev"
+
   # Ship the freshly pushed image to the on-host compose stack. The runner lives ON the
   # deploy host (outbound-only long-poll to GitHub; the host is VPN-internal, so no inbound
   # is possible). It syncs only the NON-secret infra (compose file + Caddyfile) from the

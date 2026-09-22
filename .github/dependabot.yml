@@ -27,18 +27,12 @@ updates:
     cooldown:
       default-days: 3
 
-  # Gepinnte Fremd-Images in deploy/docker-compose.yml (caddy, mongo, oauth2-proxy, gui).
-  - package-ecosystem: docker-compose
-    directory: '/deploy'
-    schedule:
-      interval: weekly
-    cooldown:
-      default-days: 3
-    groups:
-      images:
-        patterns:
-          - '*'
-
+  # Die gepinnten Fremd-Images aus deploy/docker-compose.yml werden hier NICHT mehr
+  # beobachtet. Das Deployment liegt seit dem Split im privaten obcode/glabs.dev, und dort
+  # deckt die dependabot.yml dieselben Images ab. Ein zweiter Eintrag hier hätte eine Datei
+  # gebumpt, die nichts mehr ausrollt — die PRs sähen aber so aus, als kämen sie in
+  # Produktion an. deploy/ selbst bleibt vorerst liegen: der alte, abgeschaltete deploy-Job
+  # checkt es beim Rollback aus einem Release-Tag aus.
   - package-ecosystem: github-actions
     directory: '/'
     schedule:

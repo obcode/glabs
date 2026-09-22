@@ -198,6 +198,17 @@ func (c *Client) replicateIssue(sourceProject *gitlab.Project, targetProject *gi
 		defer cancel()
 
 		createdWI, _, createErr := c.WorkItems.CreateWorkItem(targetProjectPath, workItemTypeID, createWorkItemOpts, gitlab.WithContext(ctx))
+		if createErr != nil && (len(labelIDs) > 0 || len(assignees) > 0) {
+			// Same safety net as on the REST path below: metadata must never cost the task.
+			log.Warn().Err(createErr).
+				Str("issueTitle", issue.Title).
+				Str("targetProject", targetProject.PathWithNamespace).
+				Msg("creating the task with labels/assignees failed; retrying without them")
+
+			createWorkItemOpts.LabelIDs = nil
+			createWorkItemOpts.AssigneeIDs = nil
+			createdWI, _, createErr = c.WorkItems.CreateWorkItem(targetProjectPath, workItemTypeID, createWorkItemOpts, gitlab.WithContext(ctx))
+		}
 		if createErr == nil {
 			if issue.Closed {
 				closeEvent := gitlab.WorkItemStateEventClose
@@ -243,6 +254,22 @@ func (c *Client) replicateIssue(sourceProject *gitlab.Project, targetProject *gi
 	}
 
 	created, _, err := c.Issues.CreateIssue(targetProject.ID, createIssueOpts)
+	if err != nil && (len(issue.Labels) > 0 || len(assignees) > 0) {
+		// Retry bare. Replicating title and description is what this did before metadata was
+		// carried along, and the metadata must never cost more than it adds: no set of labels
+		// or assignees is worth failing a course generation over. The integration suite does
+		// not reach issue replication, so this path is the safety net for whatever GitLab
+		// rejects that the mocked contract tests happily accept.
+		log.Warn().Err(err).
+			Str("issueTitle", issue.Title).
+			Str("targetProject", targetProject.PathWithNamespace).
+			Msg("creating the issue with labels/assignees failed; retrying without them")
+
+		created, _, err = c.Issues.CreateIssue(targetProject.ID, &gitlab.CreateIssueOptions{
+			Title:       gitlab.Ptr(issue.Title),
+			Description: gitlab.Ptr(issue.Description),
+		})
+	}
 	if err != nil {
 		return 0, fmt.Errorf("could not create issue %q in target project %d: %w", issue.Title, targetProject.ID, err)
 	}

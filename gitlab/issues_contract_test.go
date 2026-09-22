@@ -350,3 +350,88 @@ func TestReplicateIssue_MetadataFailuresDoNotFailReplication(t *testing.T) {
 		t.Errorf("labels = %v, want \"bug\"", createBody["labels"])
 	}
 }
+
+// If GitLab refuses the metadata, the issue must still be replicated. The mocked contract
+// tests cannot prove GitLab accepts what we send, and the integration suite never reaches
+// issue replication — so this fallback is what keeps the feature from being a regression.
+func TestReplicateIssue_FallsBackToBareIssueWhenMetadataIsRejected(t *testing.T) {
+	var bodies []map[string]any
+
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/issues/7":
+			_, _ = w.Write([]byte(`{"id":7001,"iid":7,"title":"t","description":"d",
+				"state":"opened","labels":["bug"],"assignees":[{"id":11,"username":"student"}]}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/2/labels":
+			_, _ = w.Write([]byte(`[{"id":501,"name":"bug","color":"#ff0000"}]`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/2/members/all":
+			_, _ = w.Write([]byte(`[{"id":11,"username":"student"}]`))
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v4/projects/2/issues":
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("json.Decode() error = %v", err)
+			}
+			bodies = append(bodies, body)
+			// Reject anything carrying metadata, accept the bare retry.
+			if _, hasLabels := body["labels"]; hasLabels {
+				w.WriteHeader(http.StatusBadRequest)
+				_, _ = w.Write([]byte(`{"message":"400 Bad Request"}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"id":9901,"iid":99}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	source := &gitlabapi.Project{ID: 1, PathWithNamespace: "mpd/startercode/blatt-01"}
+	target := &gitlabapi.Project{ID: 2, PathWithNamespace: "mpd/ss26/blatt-01/team1"}
+
+	iid, err := client.replicateIssue(source, target, 7, false)
+	if err != nil {
+		t.Fatalf("replicateIssue() must fall back to a bare issue, got error = %v", err)
+	}
+	if iid != 99 {
+		t.Errorf("iid = %d, want 99", iid)
+	}
+	if len(bodies) != 2 {
+		t.Fatalf("expected two create attempts, got %d", len(bodies))
+	}
+	if _, hasLabels := bodies[1]["labels"]; hasLabels {
+		t.Error("the retry must not carry labels")
+	}
+	if _, hasAssignees := bodies[1]["assignee_ids"]; hasAssignees {
+		t.Error("the retry must not carry assignees")
+	}
+}
+
+// A failure that has nothing to do with metadata must still surface as an error.
+func TestReplicateIssue_BareCreateFailureStillFails(t *testing.T) {
+	attempts := 0
+
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/1/issues/7":
+			_, _ = w.Write([]byte(`{"id":7001,"iid":7,"title":"t","description":"d",
+				"state":"opened","labels":["bug"]}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/2/labels":
+			_, _ = w.Write([]byte(`[{"id":501,"name":"bug","color":"#ff0000"}]`))
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v4/projects/2/issues":
+			attempts++
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte(`{"message":"403 Forbidden"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	source := &gitlabapi.Project{ID: 1, PathWithNamespace: "mpd/startercode/blatt-01"}
+	target := &gitlabapi.Project{ID: 2, PathWithNamespace: "mpd/ss26/blatt-01/team1"}
+
+	if _, err := client.replicateIssue(source, target, 7, false); err == nil {
+		t.Fatal("expected an error when the bare retry fails too")
+	}
+	if attempts != 2 {
+		t.Errorf("attempts = %d, want 2 (metadata, then bare)", attempts)
+	}
+}

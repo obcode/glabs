@@ -47,6 +47,14 @@ var (
 // ends.
 func NewDB(t *testing.T) *db.PG {
 	t.Helper()
+	pg, _ := NewDBWithURI(t)
+	return pg
+}
+
+// NewDBWithURI is NewDB plus the connection string it used, for a test that has
+// to hand the URI to something instead of using the handle.
+func NewDBWithURI(t *testing.T) (*db.PG, string) {
+	t.Helper()
 
 	uri := os.Getenv(uriEnv)
 	if uri == "" {
@@ -84,13 +92,14 @@ func NewDB(t *testing.T) *db.PG {
 		}
 	})
 
-	pg, err := db.NewPG(ctx, replaceDatabase(uri, name))
+	dbURI := replaceDatabase(uri, name)
+	pg, err := db.NewPG(ctx, dbURI)
 	if err != nil {
 		t.Fatalf("cannot connect to test database: %v", err)
 	}
 	t.Cleanup(func() { _ = pg.Disconnect(context.Background()) })
 
-	return pg
+	return pg, dbURI
 }
 
 // ensureTemplate creates and migrates the template database once per schema. The

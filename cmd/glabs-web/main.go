@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/obcode/glabs/v3/web/bootstrap"
+	"github.com/obcode/glabs/v3/web/migrate"
 	"github.com/spf13/viper"
 )
 
@@ -64,6 +65,22 @@ func main() {
 	viper.Set("Commit", commit)
 	viper.Set("Date", date)
 	viper.Set("BuiltBy", builtBy)
+
+	// One subcommand, and a temporary one: the import from MongoDB. It is here
+	// rather than in a tool of its own because the production host has Docker and
+	// nothing else -- no Go toolchain, no psql -- so the image that is already
+	// there is the only thing that can be run on it. Both this branch and the
+	// package it calls go away with the MongoDB store.
+	//
+	// Hand-rolled rather than cobra: glabs-web has no other subcommand, and the
+	// server must keep parsing its flags exactly as before.
+	if len(os.Args) > 1 && os.Args[1] == "mongo2pg" {
+		if err := migrate.Run(os.Args[2:], bootstrap.InitConfig, os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, "Error:", err)
+			os.Exit(1)
+		}
+		return
+	}
 
 	if err := bootstrap.Serve(); err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)

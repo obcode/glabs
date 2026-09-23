@@ -36,11 +36,22 @@ const (
 )
 
 // NewDB returns a *db.DB on a fresh database, dropped when the test ends.
+func NewDB(t *testing.T) *db.DB {
+	t.Helper()
+	database, _, _ := NewDBWithURI(t)
+	return database
+}
+
+// NewDBWithURI is NewDB plus the connection string and database name it used.
+//
+// The import tool takes those two as configuration rather than as a handle --
+// it is a command, not a library -- so a test that drives it end to end needs
+// them.
 //
 // It creates the indexes the server creates at startup, because some of them
 // are not decoration: the unique (owner, name) on courses is what makes a
 // second save of the same course a replace rather than a second document.
-func NewDB(t *testing.T) *db.DB {
+func NewDBWithURI(t *testing.T) (*db.DB, string, string) {
 	t.Helper()
 
 	uri := os.Getenv(uriEnv)
@@ -85,7 +96,7 @@ func NewDB(t *testing.T) *db.DB {
 		}
 	}
 
-	return database
+	return database, uri, name
 }
 
 // drop removes the test database through a connection of its own. db.DB does not

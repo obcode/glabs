@@ -15,6 +15,10 @@ go test ./config/...         # tests for a single package
 go test ./config/ -run TestName   # a single test
 gofmt -w <file> && go vet ./... && golangci-lint run   # what pre-commit / CI enforce
 go vet -tags=integration ./...   # compile-check integration tests — plain go vet/test skip them
+
+# Store contract tests (web/db). They skip without a database; in the dev container
+# one is already running, so pointing the variable at it is all it takes:
+GLABS_TEST_MONGO_URI=mongodb://localhost:27017 go test ./web/db/... -count=1
 ```
 
 > The `integration` build tag hides those tests from `go test ./...` and `go vet ./...`, so a signature change can break them invisibly and only surface on `main` (where the integration job runs). Always `go vet -tags=integration ./...` after changing a signature the integration tests call. CI's fast-test job now does this too.
@@ -66,6 +70,7 @@ A `generate` (and most mutating commands) flow: command builds `AssignmentConfig
 ### Testing patterns
 
 - **Contract tests** (`*_contract_test.go` in `gitlab/`) run against an `httptest` mock server via `newContractClient` (in `contract_test_helpers_test.go`), which disables the retryable HTTP wrapper so 5xx mocks don't hang. These run in the default `go test ./...`.
+- **Store contract tests** (`web/db/storetest`) are one suite run against every store implementation, so "PostgreSQL behaves like MongoDB" is a test rather than a hope. They are **not** behind the `integration` tag: they skip unless `GLABS_TEST_MONGO_URI` (and later `GLABS_TEST_PG_URI`) is set, and CI additionally sets `..._REQUIRED=1` so a database that fails to come up breaks the build instead of silently skipping. `internal/mongotest` gives each test its own database and drops it afterwards. Deliberately no Testcontainers: the dev container mounts no Docker socket, and one mechanism has to work in both places.
 - **Integration tests** (`integration` build tag) exercise real GitLab CE in containers.
 
 ## Documentation

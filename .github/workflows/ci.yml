@@ -43,6 +43,29 @@ jobs:
   test-fast:
     name: test (fast)
     runs-on: ubuntu-latest
+    # A real MongoDB so the store contract tests actually run rather than skip:
+    # without GLABS_TEST_MONGO_URI they skip themselves, and "green" and "never
+    # ran" then look the same. GLABS_TEST_MONGO_REQUIRED turns a skip into a
+    # failure. internal/mongotest creates one database per test and drops it
+    # again, so no state crosses between them.
+    #
+    # This is a service container rather than Testcontainers on purpose: the dev
+    # container mounts no Docker socket, so the same tests have to be able to run
+    # against a database that already exists. One mechanism, both places.
+    #
+    # 8.2 rather than the 8.0 line production runs: mongod refuses to start on
+    # Linux 6.19+ (SERVER-121912), and a hosted runner's kernel is not ours to
+    # pin. Only the client protocol matters here.
+    services:
+      mongo:
+        image: mongo:8.2
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v7
@@ -54,6 +77,9 @@ jobs:
         run: go mod download
       - name: Run fast tests
         run: go test -v ./...
+        env:
+          GLABS_TEST_MONGO_URI: mongodb://127.0.0.1:27017
+          GLABS_TEST_MONGO_REQUIRED: "1"
       - name: Vet integration-tagged code (compile only, does not run)
         run: go vet -tags=integration ./...
 

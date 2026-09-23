@@ -20,6 +20,16 @@ import (
 // absolute wall-clock instants, so a coarse poll is fine.
 const jobPollInterval = 30 * time.Second
 
+// reapInterval is how often old jobs and events are deleted.
+//
+// This is the replacement for MongoDB's TTL indexes, which the database ran by
+// itself. PostgreSQL has none, and pg_cron would mean an extension with
+// shared_preload_libraries and therefore a custom image -- more machinery than a
+// delete on a loop that already exists. Hourly because the retentions are 30 and
+// 180 days: nothing depends on a row disappearing promptly, and once a tick
+// would mean 120 needless statements a day.
+const reapInterval = time.Hour
+
 // StartJobRunner runs the scheduled-job poll loop until ctx is cancelled. Each
 // tick it drains every due job, claiming them one at a time so exactly one runner
 // ever owns a given job. It is safe to run one per instance against a shared
@@ -30,15 +40,39 @@ func (a *App) StartJobRunner(ctx context.Context) {
 	ticker := time.NewTicker(jobPollInterval)
 	defer ticker.Stop()
 	log.Info().Str("worker", worker).Dur("interval", jobPollInterval).Msg("scheduled-job runner started")
+	// Straight away rather than an hour in: a server that is restarted more often
+	// than the interval would otherwise never reap at all.
+	lastReap := time.Time{}
 	for {
 		a.runDueJobs(ctx, worker)
 		a.notifyFinishedJobs(ctx)
+		if now := time.Now(); now.Sub(lastReap) >= reapInterval {
+			a.reapExpired(ctx, now)
+			lastReap = now
+		}
 		select {
 		case <-ctx.Done():
 			log.Info().Msg("scheduled-job runner stopped")
 			return
 		case <-ticker.C:
 		}
+	}
+}
+
+// reapExpired deletes what the retention periods say is past.
+//
+// Failing is logged and otherwise ignored: housekeeping must never stop the
+// runner from doing the work people are waiting for, and the next tick tries
+// again. Deleting nothing is the normal case and stays silent, so the line in the
+// log means something happened.
+func (a *App) reapExpired(ctx context.Context, now time.Time) {
+	jobs, events, err := a.db.ReapExpired(ctx, now)
+	if err != nil {
+		log.Error().Err(err).Msg("cannot reap expired jobs and events")
+		return
+	}
+	if jobs > 0 || events > 0 {
+		log.Info().Int64("jobs", jobs).Int64("events", events).Msg("reaped expired records")
 	}
 }
 

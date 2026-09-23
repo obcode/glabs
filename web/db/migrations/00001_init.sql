@@ -15,6 +15,13 @@
 -- exactly what SetBSONOptions(UseLocalTimeZone: true) did for the Mongo driver.
 -- A plain `timestamp` would drop the offset and show every time in the digest
 -- mail and the GUI one or two hours off, without anything failing.
+--
+-- timestamptz keeps MICROseconds, so a Go time.Time loses its last three digits
+-- on the way through. That is not a regression: MongoDB stored milliseconds, so
+-- this is three digits more than production has ever had. Nothing compares these
+-- values for exact equality -- the digest windows are hours wide -- but do not
+-- start: a timestamp that has been to the database and one that has not are not
+-- the same value.
 
 -- +goose Up
 

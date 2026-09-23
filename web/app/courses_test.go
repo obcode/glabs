@@ -26,6 +26,9 @@ type fakeStore struct {
 	jobSeq     int
 	events     []*db.Event
 	summarySt  *time.Time
+	// reapCalls counts ReapExpired, so a test can assert the runner calls it at
+	// all and does not call it on every tick.
+	reapCalls int
 }
 
 func newFakeStore() *fakeStore {
@@ -34,6 +37,34 @@ func newFakeStore() *fakeStore {
 		userSecret: map[string]*db.UserSecret{},
 		jobs:       map[string]*db.ScheduledJob{},
 	}
+}
+
+// ReapExpired mirrors the real retention sweep closely enough to be worth
+// testing against: it removes finished jobs and events past their retention, and
+// leaves everything unfinished alone whatever its age.
+func (f *fakeStore) ReapExpired(_ context.Context, now time.Time) (int64, int64, error) {
+	f.reapCalls++
+
+	var jobs int64
+	for id, j := range f.jobs {
+		if j.FinishedAt != nil && j.FinishedAt.Before(now.Add(-30*24*time.Hour)) {
+			delete(f.jobs, id)
+			jobs++
+		}
+	}
+
+	var events int64
+	kept := f.events[:0]
+	for _, e := range f.events {
+		if e.At.Before(now.Add(-180 * 24 * time.Hour)) {
+			events++
+			continue
+		}
+		kept = append(kept, e)
+	}
+	f.events = kept
+
+	return jobs, events, nil
 }
 
 func (f *fakeStore) SaveJob(_ context.Context, job *db.ScheduledJob) error {

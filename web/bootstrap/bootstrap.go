@@ -37,7 +37,7 @@ const (
 	EnvSentryEnvironment = "SENTRY_ENVIRONMENT"
 )
 
-// Serve parses flags, loads config, connects to MongoDB and runs the server.
+// Serve parses flags, loads config, connects to PostgreSQL and runs the server.
 func Serve() error {
 	flag.StringVar(&dbURI, "db-uri", "", "override db.uri from the config file")
 	flag.BoolVar(&verbose, "verbose", false, "verbose output")
@@ -57,33 +57,43 @@ func Serve() error {
 	if dbURI != "" {
 		uri = dbURI
 	}
-	database := viper.GetString("db.database")
-	if database == "" {
-		database = "glabs"
+
+	// The loudest possible failure for the likeliest mistake of the cut-over
+	// evening: a new image starting against an unchanged .glabs-web.yaml.
+	//
+	// Without this the server would come up, connect to nothing, and show every
+	// lecturer an account with no courses and no token -- which looks exactly like
+	// data loss and would send someone looking in the wrong place. A crash loop
+	// with this message sends them to the runbook instead.
+	if db.LooksLikeMongoURI(uri) {
+		// The scheme, never the URI: this message is printed on every restart of a
+		// crash loop, and a MongoDB connection string carries the root password.
+		// The scheme is the whole diagnosis anyway.
+		scheme, _, _ := strings.Cut(uri, "://")
+		return fmt.Errorf("db.uri is a %s:// connection string, but this build stores its data "+
+			"in PostgreSQL. See deploy/README.md, \"Umstellung auf PostgreSQL\" — the backup of "+
+			"the previous config is .glabs-web.yaml.mongo.bak", scheme)
+	}
+	if viper.IsSet("db.database") {
+		log.Warn().Msg("db.database is set but no longer used — the database name is part of db.uri now; remove the key")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	database_, err := db.Connect(ctx, uri, database)
+	database_, err := db.NewPG(ctx, uri)
 	if err != nil {
 		return err
 	}
-	if err := database_.EnsureCourseIndexes(ctx); err != nil {
+	// The schema comes with the binary, so whoever deploys a tag applies its
+	// schema by starting it. This replaces the five EnsureXIndexes calls that
+	// stood here, and unlike them it is fatal: a half-migrated schema means the
+	// queries compiled into this binary do not match the database, and every later
+	// error would be a confusing symptom of that one cause.
+	if err := database_.MigrateSchema(ctx); err != nil {
 		return err
 	}
-	if err := database_.EnsureUserSecretIndexes(ctx); err != nil {
-		return err
-	}
-	if err := database_.EnsureActivityIndexes(ctx); err != nil {
-		return err
-	}
-	if err := database_.EnsureJobIndexes(ctx); err != nil {
-		return err
-	}
-	if err := database_.EnsureEventIndexes(ctx); err != nil {
-		return err
-	}
+	log.Info().Str("host", database_.DBHost()).Msg("connected to postgres")
 
 	// The KEK for per-user secrets (GitLab PATs). It lives only in the config, never
 	// in the database. A malformed key disables token storage (fail-closed); an

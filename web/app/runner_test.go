@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -106,4 +107,79 @@ func TestRunDueJobs_skipsFutureJobs(t *testing.T) {
 	if fs.jobs["future"].Status != db.JobPending {
 		t.Errorf("a future job was claimed (status %q), want it left pending", fs.jobs["future"].Status)
 	}
+}
+
+// TestRunnerReapsOnceAnHour covers what replaced MongoDB's TTL indexes.
+//
+// Retention used to be the database's business: an index option, invisible in
+// the log and impossible to test. Now it is a call on the runner's tick, which
+// makes two things worth pinning -- that it happens at all, and that it does not
+// happen on every one of the 120 ticks an hour.
+func TestRunnerReapsOnceAnHour(t *testing.T) {
+	fs := newFakeStore()
+	a := &App{db: fs, ops: newOpGuard()}
+
+	now := time.Now()
+	// One finished job well past the 30-day retention, and one finished
+	// yesterday. And an event past the 180-day one.
+	old := now.Add(-40 * 24 * time.Hour)
+	recent := now.Add(-24 * time.Hour)
+	fs.jobs["old"] = &db.ScheduledJob{
+		ID: "old", Owner: "a@hm.edu", Status: db.JobDone, FinishedAt: &old,
+	}
+	fs.jobs["recent"] = &db.ScheduledJob{
+		ID: "recent", Owner: "a@hm.edu", Status: db.JobDone, FinishedAt: &recent,
+	}
+	// A job scheduled long ago that never ran. Reaping it would silently cancel
+	// work somebody is still waiting for.
+	fs.jobs["pending"] = &db.ScheduledJob{
+		ID: "pending", Owner: "a@hm.edu", Status: db.JobPending,
+		RunAt: now.Add(-400 * 24 * time.Hour),
+	}
+	fs.events = []*db.Event{
+		{At: now.Add(-200 * 24 * time.Hour), Type: db.EventLogin},
+		{At: now.Add(-time.Hour), Type: db.EventLogin},
+	}
+
+	a.reapExpired(t.Context(), now)
+
+	if fs.reapCalls != 1 {
+		t.Errorf("ReapExpired was called %d times, want 1", fs.reapCalls)
+	}
+	if _, ok := fs.jobs["old"]; ok {
+		t.Error("a job finished 40 days ago survived the sweep")
+	}
+	if _, ok := fs.jobs["recent"]; !ok {
+		t.Error("a job finished yesterday was reaped, want it kept for 30 days")
+	}
+	if _, ok := fs.jobs["pending"]; !ok {
+		t.Error("a PENDING job was reaped — the sweep must only ever touch finished ones")
+	}
+	if len(fs.events) != 1 {
+		t.Errorf("%d events left, want 1", len(fs.events))
+	}
+}
+
+// TestRunnerSurvivesAFailingReap pins that housekeeping cannot stop the work
+// people are waiting for: a database error while reaping is logged and the tick
+// carries on.
+func TestRunnerSurvivesAFailingReap(t *testing.T) {
+	fs := &failingReapStore{fakeStore: newFakeStore()}
+	a := &App{db: fs, ops: newOpGuard()}
+
+	// The bar is simply that this returns rather than panicking or propagating.
+	a.reapExpired(t.Context(), time.Now())
+
+	if fs.reapCalls != 1 {
+		t.Errorf("ReapExpired was called %d times, want 1", fs.reapCalls)
+	}
+}
+
+type failingReapStore struct {
+	*fakeStore
+}
+
+func (f *failingReapStore) ReapExpired(_ context.Context, _ time.Time) (int64, int64, error) {
+	f.reapCalls++
+	return 0, 0, errors.New("the database went away")
 }

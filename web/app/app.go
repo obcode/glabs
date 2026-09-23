@@ -45,7 +45,15 @@ type store interface {
 	RecentEvents(ctx context.Context, since time.Time, limit int64) ([]*db.Event, error)
 	SystemState(ctx context.Context) (*db.SystemState, error)
 	SetSummarySentAt(ctx context.Context, at time.Time) error
+	// ReapExpired enforces the retention periods. MongoDB did this with TTL
+	// indexes, i.e. inside the database; PostgreSQL has no TTL, so it became a
+	// method -- and thereby something that can be tested and logged.
+	ReapExpired(ctx context.Context, now time.Time) (jobs, events int64, err error)
 }
+
+// The store the server actually uses. A compile-time assertion, so a signature
+// that drifts is a build failure rather than a runtime surprise.
+var _ store = (*db.PG)(nil)
 
 // Mailer sends a rendered notification. *mail.Sender implements it; the App holds
 // one only when SMTP is configured (nil otherwise, so notifications are skipped).
@@ -83,7 +91,11 @@ type App struct {
 	summaryRecipients []string
 }
 
-func New(database *db.DB, sealer *secrets.Sealer, gitlabHost string, mailer Mailer, mailDryRun bool, admins []string) *App {
+// New takes the store as the interface rather than as a concrete type. The type
+// is unexported, which costs a caller nothing -- it passes a *db.PG and Go
+// satisfies the interface implicitly -- and it means this package states what it
+// needs instead of naming one implementation of it.
+func New(database store, sealer *secrets.Sealer, gitlabHost string, mailer Mailer, mailDryRun bool, admins []string) *App {
 	adminSet := make(map[string]bool, len(admins))
 	for _, e := range admins {
 		if e = strings.ToLower(strings.TrimSpace(e)); e != "" {

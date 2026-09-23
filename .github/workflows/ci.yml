@@ -66,6 +66,22 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
+      # The same reasoning for PostgreSQL. internal/pgtest creates one database
+      # per test from a template, so the user needs CREATEDB -- the superuser the
+      # image sets up has it. 18 matches deploy/ and the dev container.
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: glabs
+          POSTGRES_PASSWORD: glabs
+          POSTGRES_DB: glabs
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U glabs -d glabs"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v7
@@ -80,8 +96,30 @@ jobs:
         env:
           GLABS_TEST_MONGO_URI: mongodb://127.0.0.1:27017
           GLABS_TEST_MONGO_REQUIRED: "1"
+          GLABS_TEST_PG_URI: postgres://glabs:glabs@127.0.0.1:5432/glabs?sslmode=disable
+          GLABS_TEST_PG_REQUIRED: "1"
       - name: Vet integration-tagged code (compile only, does not run)
         run: go vet -tags=integration ./...
+
+  sqlc:
+    name: sqlc
+    runs-on: ubuntu-latest
+    # The generated query code is committed, so it can drift from the .sql files
+    # without anything noticing. `sqlc diff` fails when regenerating would change
+    # something -- the same guarantee `go generate` plus a dirty check gives for
+    # gqlgen.
+    #
+    # `sqlc vet` is deliberately NOT run here: its db-prepare rule needs a live
+    # database with the schema applied, which is a second setup for a check that
+    # belongs next to development. Run it locally instead:
+    #   GLABS_VET_DB_URL=postgres://glabs@localhost:5432/glabs?sslmode=disable sqlc vet
+    steps:
+      - uses: actions/checkout@v7
+      - uses: sqlc-dev/setup-sqlc@v4
+        with:
+          sqlc-version: "1.31.1"
+      - name: Check the generated query code is up to date
+        run: sqlc diff
 
   test-integration:
     name: test (integration)

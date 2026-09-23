@@ -1,0 +1,71 @@
+version: "2"
+
+sql:
+  - engine: postgresql
+    # The schema comes from the goose migrations: one source of truth, rather
+    # than an additionally maintained schema.sql that can drift away from them.
+    schema: web/db/migrations
+    queries: web/db/queries
+
+    # For `sqlc vet`, not for `generate`: db-prepare hands every query to a real
+    # PostgreSQL, which finds what the built-in parser lets through -- a column
+    # that does not exist, a placeholder count that does not line up.
+    #
+    # `analyzer.database: false` keeps `sqlc generate` working without a running
+    # database, so a fresh clone can build. Vet needs one and therefore runs
+    # locally rather than in CI:
+    #   GLABS_VET_DB_URL=postgres://glabs@localhost:5432/glabs?sslmode=disable sqlc vet
+    database:
+      uri: "${GLABS_VET_DB_URL}"
+    analyzer:
+      database: false
+    rules:
+      - sqlc/db-prepare
+
+    gen:
+      go:
+        package: sqlc
+        out: web/db/sqlc
+        sql_package: pgx/v5
+
+        # No json tags: these types never leave web/db. The DTOs in web/db are
+        # what the app speaks, and the mapping between them is written by hand.
+        # (config.CourseSource's own json tags are a different thing entirely --
+        # they are the format of the jsonb column.)
+        emit_json_tags: false
+
+        # A nullable column becomes a pointer rather than a pgtype.X, which is
+        # what the DTOs in web/db already use for every optional timestamp.
+        emit_pointers_for_null_types: true
+
+        emit_empty_slices: true
+        emit_interface: true
+        emit_prepared_queries: false
+
+        overrides:
+          # Without this a timestamptz arrives as pgtype.Timestamptz regardless
+          # of nullability -- emit_pointers_for_null_types does NOT reach it.
+          # Every DTO in web/db uses time.Time / *time.Time, and the whole point
+          # of the Europe/Berlin session zone is that a scanned time.Time carries
+          # time.Local. Going through pgtype would mean unwrapping in every
+          # mapper, i.e. as many places to get the location wrong.
+          #
+          # NOTE the db_type is "timestamptz", not "pg_catalog.timestamptz" --
+          # the qualified spelling matches nothing and fails silently.
+          - db_type: "timestamptz"
+            go_type: "time.Time"
+          - db_type: "timestamptz"
+            nullable: true
+            go_type:
+              type: "time.Time"
+              pointer: true
+
+          # int4 becomes int rather than int32, so ScheduledJob.GraceMin and
+          # SealedValue.KeyVersion map across without a conversion each way.
+          - db_type: "pg_catalog.int4"
+            go_type: "int"
+          - db_type: "pg_catalog.int4"
+            nullable: true
+            go_type:
+              type: "int"
+              pointer: true

@@ -17,8 +17,14 @@ gofmt -w <file> && go vet ./... && golangci-lint run   # what pre-commit / CI en
 go vet -tags=integration ./...   # compile-check integration tests — plain go vet/test skip them
 
 # Store contract tests (web/db). They skip without a database; in the dev container
-# one is already running, so pointing the variable at it is all it takes:
-GLABS_TEST_MONGO_URI=mongodb://localhost:27017 go test ./web/db/... -count=1
+# both are already running, so pointing the variables at them is all it takes:
+GLABS_TEST_MONGO_URI=mongodb://localhost:27017 \
+GLABS_TEST_PG_URI=postgres://glabs@localhost:5432/glabs?sslmode=disable \
+  go test ./web/db/... -count=1
+
+# After editing web/db/queries/*.sql or web/db/migrations/*.sql:
+sqlc generate && sqlc diff        # diff is what CI checks
+GLABS_VET_DB_URL=postgres://glabs@localhost:5432/glabs?sslmode=disable sqlc vet
 ```
 
 > The `integration` build tag hides those tests from `go test ./...` and `go vet ./...`, so a signature change can break them invisibly and only surface on `main` (where the integration job runs). Always `go vet -tags=integration ./...` after changing a signature the integration tests call. CI's fast-test job now does this too.
@@ -53,7 +59,7 @@ Three layers, separated by package:
 - `web/bootstrap` — flags, config, Mongo, then starts the server
 - `web/graph` — gqlgen schema, resolvers, HTTP server, auth middleware
 - `web/app` — the core the resolvers delegate to; holds the database
-- `web/db` — MongoDB (mongo-driver **v2**, unlike the deprecated v1 plexams uses)
+- `web/db` — persistence. **Two implementations during the migration to PostgreSQL**: `db.DB` (MongoDB, mongo-driver v2) is what production uses today; `db.PG` (pgx/v5 + sqlc + goose) is the replacement, already complete but not yet wired into `bootstrap`. Both satisfy the `store` interface in `web/app`, and `web/db/storetest` runs one suite against both — that equivalence is what makes the switch a config change rather than a leap of faith. Schema lives in `web/db/migrations/` (goose, embedded in the binary and applied at startup), queries in `web/db/queries/`, generated code in `web/db/sqlc/` (committed; `sqlc diff` in CI). `sqlc.yaml` is at the repo root. Same stack and conventions as plexams.go and tallox.go.
 - `web/principal` — the authenticated user in the request context
 
 Import rule: `web/` may import the core packages, never the reverse, and `web/` never imports `cmd/`. Resolvers stay thin (auth gate + delegate to `web/app`). Regenerate GraphQL code with `go generate ./cmd/glabs-web` after editing `web/graph/*.graphqls`; `gqlgen.yml` is at the repo root. Auth is fail-closed on a proxy-injected `X-Remote-User` header; `auth.enabled: false` uses a local dev user.

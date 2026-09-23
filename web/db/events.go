@@ -40,9 +40,12 @@ const (
 	SeverityError   = "error"
 )
 
-// eventTTLSeconds keeps events for 180 days, then lets MongoDB reap them. The
-// monitoring trail is a rolling window, not a permanent archive.
-const eventTTLSeconds = 180 * 24 * 60 * 60
+// eventRetention keeps events for 180 days: the monitoring trail is a rolling
+// window, not a permanent archive. Enforced by a TTL index in MongoDB and by
+// PG.ReapExpired in PostgreSQL.
+const eventRetention = 180 * 24 * time.Hour
+
+const eventTTLSeconds = int(eventRetention / time.Second)
 
 // Event is one thing that happened on the platform, worth an operator's
 // attention. Most fields are optional and depend on the type: a login carries an

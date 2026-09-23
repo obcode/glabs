@@ -22,10 +22,16 @@ const (
 	JobCancelled = "cancelled"
 )
 
-// jobTTLSeconds keeps finished jobs around for 30 days, then lets MongoDB reap
-// them. The TTL index acts only on documents whose finishedAt is a date, so
-// pending and running jobs (no finishedAt) are never removed.
-const jobTTLSeconds = 30 * 24 * 60 * 60
+// jobRetention keeps finished jobs around for 30 days.
+//
+// MongoDB enforces it with a TTL index, which acts only on documents whose
+// finishedAt is a date, so pending and running jobs are never removed.
+// PostgreSQL has no TTL and deletes on the runner's tick instead (PG.ReapExpired)
+// -- where `finished_at < cutoff` excludes the unfinished ones by itself. One
+// number, here, next to the reason for it.
+const jobRetention = 30 * 24 * time.Hour
+
+const jobTTLSeconds = int(jobRetention / time.Second)
 
 // ErrNoDueJob is returned by ClaimDueJob when there is nothing to run.
 var ErrNoDueJob = errors.New("no due job")

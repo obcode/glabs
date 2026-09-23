@@ -45,7 +45,7 @@ func runUserSecrets(t *testing.T, newStore NewStore) {
 		ctx := t.Context()
 
 		want := sealed(0x11)
-		if err := s.SaveUserGitLabToken(ctx, "a@hm.edu", want, SummerInstant); err != nil {
+		if err := s.SaveUserGitLabToken(ctx, "a@hm.edu", want, SummerInstant()); err != nil {
 			t.Fatalf("SaveUserGitLabToken: %v", err)
 		}
 
@@ -62,8 +62,8 @@ func runUserSecrets(t *testing.T, newStore NewStore) {
 		if got.Owner != "a@hm.edu" {
 			t.Errorf("Owner = %q, want a@hm.edu", got.Owner)
 		}
-		if got.GitLabUpdatedAt == nil || !got.GitLabUpdatedAt.Equal(SummerInstant) {
-			t.Errorf("GitLabUpdatedAt = %v, want %v", got.GitLabUpdatedAt, SummerInstant)
+		if got.GitLabUpdatedAt == nil || !got.GitLabUpdatedAt.Equal(SummerInstant()) {
+			t.Errorf("GitLabUpdatedAt = %v, want %v", got.GitLabUpdatedAt, SummerInstant())
 		}
 	})
 
@@ -71,11 +71,11 @@ func runUserSecrets(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		if err := s.SaveUserGitLabToken(ctx, "a@hm.edu", sealed(0x11), SummerInstant); err != nil {
+		if err := s.SaveUserGitLabToken(ctx, "a@hm.edu", sealed(0x11), SummerInstant()); err != nil {
 			t.Fatalf("SaveUserGitLabToken: %v", err)
 		}
 		second := sealed(0x22)
-		if err := s.SaveUserGitLabToken(ctx, "a@hm.edu", second, WinterInstant); err != nil {
+		if err := s.SaveUserGitLabToken(ctx, "a@hm.edu", second, WinterInstant()); err != nil {
 			t.Fatalf("SaveUserGitLabToken (second): %v", err)
 		}
 
@@ -86,8 +86,8 @@ func runUserSecrets(t *testing.T, newStore NewStore) {
 		if diff := cmp.Diff(second, *got.GitLab); diff != "" {
 			t.Errorf("token is not the second one (-want +got):\n%s", diff)
 		}
-		if !got.GitLabUpdatedAt.Equal(WinterInstant) {
-			t.Errorf("GitLabUpdatedAt = %v, want %v", got.GitLabUpdatedAt, WinterInstant)
+		if !got.GitLabUpdatedAt.Equal(WinterInstant()) {
+			t.Errorf("GitLabUpdatedAt = %v, want %v", got.GitLabUpdatedAt, WinterInstant())
 		}
 	})
 
@@ -99,7 +99,7 @@ func runUserSecrets(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		if err := s.SaveUserGitLabToken(ctx, "a@hm.edu", sealed(0x11), SummerInstant); err != nil {
+		if err := s.SaveUserGitLabToken(ctx, "a@hm.edu", sealed(0x11), SummerInstant()); err != nil {
 			t.Fatalf("SaveUserGitLabToken: %v", err)
 		}
 		if err := s.DeleteUserGitLabToken(ctx, "a@hm.edu"); err != nil {
@@ -136,10 +136,10 @@ func runUserSecrets(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		if err := s.SaveUserGitLabToken(ctx, "a@hm.edu", sealed(0x11), SummerInstant); err != nil {
+		if err := s.SaveUserGitLabToken(ctx, "a@hm.edu", sealed(0x11), SummerInstant()); err != nil {
 			t.Fatalf("SaveUserGitLabToken a: %v", err)
 		}
-		if err := s.SaveUserGitLabToken(ctx, "b@hm.edu", sealed(0x22), SummerInstant); err != nil {
+		if err := s.SaveUserGitLabToken(ctx, "b@hm.edu", sealed(0x22), SummerInstant()); err != nil {
 			t.Fatalf("SaveUserGitLabToken b: %v", err)
 		}
 		if err := s.DeleteUserGitLabToken(ctx, "a@hm.edu"); err != nil {

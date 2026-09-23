@@ -27,8 +27,8 @@ func runTimezone(t *testing.T, newStore NewStore) {
 	}
 
 	instants := map[string]time.Time{
-		"summer (+02:00)": SummerInstant,
-		"winter (+01:00)": WinterInstant,
+		"summer (+02:00)": SummerInstant(),
+		"winter (+01:00)": WinterInstant(),
 	}
 
 	check := func(t *testing.T, field string, want, got time.Time) {

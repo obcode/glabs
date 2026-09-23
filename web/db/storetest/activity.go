@@ -29,7 +29,7 @@ func runActivity(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		want := entry("a@hm.edu", "fopra", "blatt01", "setaccess", SummerInstant)
+		want := entry("a@hm.edu", "fopra", "blatt01", "setaccess", SummerInstant())
 		if err := s.RecordActivity(ctx, want); err != nil {
 			t.Fatalf("RecordActivity: %v", err)
 		}
@@ -54,7 +54,7 @@ func runActivity(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		e := entry("a@hm.edu", "fopra", "blatt01", "archive", SummerInstant)
+		e := entry("a@hm.edu", "fopra", "blatt01", "archive", SummerInstant())
 		e.Params = nil
 		if err := s.RecordActivity(ctx, e); err != nil {
 			t.Fatalf("RecordActivity: %v", err)
@@ -73,7 +73,7 @@ func runActivity(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		base := SummerInstant
+		base := SummerInstant()
 		for i, e := range []*db.ActivityEntry{
 			entry("a@hm.edu", "fopra", "blatt01", "setaccess", base),
 			entry("a@hm.edu", "fopra", "blatt02", "protect", base.Add(time.Minute)),
@@ -114,7 +114,7 @@ func runActivity(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		base := SummerInstant
+		base := SummerInstant()
 		for i, op := range []string{"aeltester", "mittlerer", "neuester"} {
 			if err := s.RecordActivity(ctx,
 				entry("a@hm.edu", "fopra", "blatt01", op, base.Add(time.Duration(i)*time.Minute))); err != nil {
@@ -146,7 +146,7 @@ func runActivity(t *testing.T, newStore NewStore) {
 		ctx := t.Context()
 
 		const extra = 5
-		base := SummerInstant
+		base := SummerInstant()
 		for i := range ActivityLimit + extra {
 			e := entry("a@hm.edu", "fopra", "blatt01", fmt.Sprintf("op-%03d", i),
 				base.Add(time.Duration(i)*time.Second))
@@ -190,7 +190,7 @@ func runActivity(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		if err := s.RecordActivity(ctx, entry("a@hm.edu", "fopra", "blatt01", "setaccess", SummerInstant)); err != nil {
+		if err := s.RecordActivity(ctx, entry("a@hm.edu", "fopra", "blatt01", "setaccess", SummerInstant())); err != nil {
 			t.Fatalf("RecordActivity: %v", err)
 		}
 

@@ -8,17 +8,20 @@ import (
 
 func ptr[T any](v T) *T { return &v }
 
-// Berlin is the zone the server runs in (main.go sets time.Local to it), and the
-// zone every timestamp in the database is expected to come back in.
+// SummerInstant and WinterInstant are the two timestamps the suite writes: one
+// on each side of the DST boundary, +02:00 in summer and +01:00 in winter. A
+// store that hands back UTC passes a test that only uses one of them, because
+// the two are indistinguishable when the offset is never compared.
 //
-// Two instants, deliberately one on each side of the DST boundary: +02:00 in
-// summer, +01:00 in winter. A store that hands back UTC passes a test that only
-// uses one of them, because the two are indistinguishable when the offset is
-// never compared.
-var (
-	SummerInstant = time.Date(2026, 7, 15, 14, 30, 0, 0, time.Local)
-	WinterInstant = time.Date(2026, 1, 15, 14, 30, 0, 0, time.Local)
-)
+// FUNCTIONS, not variables, and that is the whole point. A package-level
+// variable is initialised before TestMain runs, so it would capture whatever
+// time.Local happened to be at process start -- Europe/Berlin in the dev
+// container, which has TZ set, and UTC on a GitHub runner, which does not. The
+// suite then compared a UTC instant against a correctly Berlin-zoned result and
+// failed on the runner only. Reading time.Local at call time makes the fixtures
+// agree with TestMain wherever they run.
+func SummerInstant() time.Time { return time.Date(2026, 7, 15, 14, 30, 0, 0, time.Local) }
+func WinterInstant() time.Time { return time.Date(2026, 1, 15, 14, 30, 0, 0, time.Local) }
 
 // FullCourseSource is a course source with EVERY field of config.CourseSource
 // and its sub-structs set to a non-zero value, including both states of each

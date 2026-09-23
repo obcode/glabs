@@ -29,20 +29,20 @@ func runSystem(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		if err := s.SetSummarySentAt(ctx, SummerInstant); err != nil {
+		if err := s.SetSummarySentAt(ctx, SummerInstant()); err != nil {
 			t.Fatalf("SetSummarySentAt: %v", err)
 		}
 		got, err := s.SystemState(ctx)
 		if err != nil {
 			t.Fatalf("SystemState: %v", err)
 		}
-		if got.SummarySentAt == nil || !got.SummarySentAt.Equal(SummerInstant) {
-			t.Fatalf("SummarySentAt = %v, want %v", got.SummarySentAt, SummerInstant)
+		if got.SummarySentAt == nil || !got.SummarySentAt.Equal(SummerInstant()) {
+			t.Fatalf("SummarySentAt = %v, want %v", got.SummarySentAt, SummerInstant())
 		}
 
 		// Writing again moves it rather than adding a second record — the whole
 		// point is that the digest window cannot be sent twice for one period.
-		later := SummerInstant.Add(24 * time.Hour)
+		later := SummerInstant().Add(24 * time.Hour)
 		if err := s.SetSummarySentAt(ctx, later); err != nil {
 			t.Fatalf("SetSummarySentAt (second): %v", err)
 		}

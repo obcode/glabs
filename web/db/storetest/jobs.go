@@ -22,7 +22,7 @@ func runJobs(t *testing.T, newStore NewStore) {
 			ConfigHash: "sha256:cafe",
 			Status:     db.JobPending,
 			GraceMin:   30,
-			CreatedAt:  SummerInstant,
+			CreatedAt:  SummerInstant(),
 		}
 	}
 
@@ -30,7 +30,7 @@ func runJobs(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		want := job("a@hm.edu", SummerInstant)
+		want := job("a@hm.edu", SummerInstant())
 		if err := s.SaveJob(ctx, want); err != nil {
 			t.Fatalf("SaveJob: %v", err)
 		}
@@ -49,7 +49,7 @@ func runJobs(t *testing.T, newStore NewStore) {
 
 	t.Run("a supplied id is kept", func(t *testing.T) {
 		s := newStore(t)
-		j := job("a@hm.edu", SummerInstant)
+		j := job("a@hm.edu", SummerInstant())
 		j.ID = "507f1f77bcf86cd799439011" // the 24-hex shape production is full of
 		if err := s.SaveJob(t.Context(), j); err != nil {
 			t.Fatalf("SaveJob: %v", err)
@@ -68,7 +68,7 @@ func runJobs(t *testing.T, newStore NewStore) {
 
 		seen := map[string]bool{}
 		for range 50 {
-			j := job("a@hm.edu", SummerInstant)
+			j := job("a@hm.edu", SummerInstant())
 			if err := s.SaveJob(ctx, j); err != nil {
 				t.Fatalf("SaveJob: %v", err)
 			}
@@ -86,7 +86,7 @@ func runJobs(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		j := job("a@hm.edu", SummerInstant)
+		j := job("a@hm.edu", SummerInstant())
 		j.OnlyFor, j.Params = nil, nil
 		if err := s.SaveJob(ctx, j); err != nil {
 			t.Fatalf("SaveJob: %v", err)
@@ -108,7 +108,7 @@ func runJobs(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		now := SummerInstant
+		now := SummerInstant()
 		older := job("a@hm.edu", now.Add(-2*time.Hour))
 		newer := job("a@hm.edu", now.Add(-1*time.Hour))
 		for _, j := range []*db.ScheduledJob{newer, older} { // saved out of order on purpose
@@ -148,7 +148,7 @@ func runJobs(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		now := SummerInstant
+		now := SummerInstant()
 		if err := s.SaveJob(ctx, job("a@hm.edu", now.Add(time.Hour))); err != nil {
 			t.Fatalf("SaveJob: %v", err)
 		}
@@ -159,7 +159,7 @@ func runJobs(t *testing.T, newStore NewStore) {
 
 	t.Run("nothing to claim is ErrNoDueJob, not an empty job", func(t *testing.T) {
 		s := newStore(t)
-		got, err := s.ClaimDueJob(t.Context(), "worker-1", SummerInstant)
+		got, err := s.ClaimDueJob(t.Context(), "worker-1", SummerInstant())
 		if !errors.Is(err, db.ErrNoDueJob) {
 			t.Errorf("err = %v, want ErrNoDueJob", err)
 		}
@@ -172,7 +172,7 @@ func runJobs(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		now := SummerInstant
+		now := SummerInstant()
 		for _, status := range []string{db.JobRunning, db.JobDone, db.JobFailed, db.JobExpired, db.JobCancelled} {
 			j := job("a@hm.edu", now.Add(-time.Hour))
 			j.Status = status
@@ -197,7 +197,7 @@ func runJobs(t *testing.T, newStore NewStore) {
 			dueJobs = 3
 			workers = 10
 		)
-		now := SummerInstant
+		now := SummerInstant()
 		for range dueJobs {
 			if err := s.SaveJob(ctx, job("a@hm.edu", now.Add(-time.Hour))); err != nil {
 				t.Fatalf("SaveJob: %v", err)
@@ -254,7 +254,7 @@ func runJobs(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		j := job("a@hm.edu", SummerInstant)
+		j := job("a@hm.edu", SummerInstant())
 		if err := s.SaveJob(ctx, j); err != nil {
 			t.Fatalf("SaveJob: %v", err)
 		}
@@ -303,7 +303,7 @@ func runJobs(t *testing.T, newStore NewStore) {
 		// cross-owner by design, it feeds one mail per job.
 		ids := map[string]string{}
 		for _, status := range []string{db.JobDone, db.JobFailed, db.JobExpired, db.JobCancelled, db.JobPending, db.JobRunning} {
-			j := job("a@hm.edu", SummerInstant)
+			j := job("a@hm.edu", SummerInstant())
 			j.Status = status
 			if err := s.SaveJob(ctx, j); err != nil {
 				t.Fatalf("SaveJob %s: %v", status, err)
@@ -353,8 +353,8 @@ func runJobs(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		pending := job("a@hm.edu", SummerInstant)
-		running := job("a@hm.edu", SummerInstant)
+		pending := job("a@hm.edu", SummerInstant())
+		running := job("a@hm.edu", SummerInstant())
 		running.Status = db.JobRunning
 		for _, j := range []*db.ScheduledJob{pending, running} {
 			if err := s.SaveJob(ctx, j); err != nil {
@@ -388,7 +388,7 @@ func runJobs(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		j := job("a@hm.edu", SummerInstant)
+		j := job("a@hm.edu", SummerInstant())
 		if err := s.SaveJob(ctx, j); err != nil {
 			t.Fatalf("SaveJob: %v", err)
 		}
@@ -412,7 +412,7 @@ func runJobs(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		base := SummerInstant
+		base := SummerInstant()
 		early := job("a@hm.edu", base)
 		late := job("a@hm.edu", base.Add(time.Hour))
 		late.Status = db.JobDone

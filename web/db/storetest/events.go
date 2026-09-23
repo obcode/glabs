@@ -16,7 +16,7 @@ func runEvents(t *testing.T, newStore NewStore) {
 		ctx := t.Context()
 
 		want := &db.Event{
-			At: SummerInstant, Type: db.EventJobFailed,
+			At: SummerInstant(), Type: db.EventJobFailed,
 			Actor: "a@hm.edu", ActorName: "A. Beispiel", Department: "FK07",
 			Course: "fopra", Assignment: "blatt01", Op: "setaccess",
 			Severity: db.SeverityError, Detail: "es ging schief", JobID: "507f1f77bcf86cd799439011",
@@ -25,7 +25,7 @@ func runEvents(t *testing.T, newStore NewStore) {
 			t.Fatalf("RecordEvent: %v", err)
 		}
 
-		got, err := s.RecentEvents(ctx, SummerInstant.Add(-time.Hour), 10)
+		got, err := s.RecentEvents(ctx, SummerInstant().Add(-time.Hour), 10)
 		if err != nil {
 			t.Fatalf("RecentEvents: %v", err)
 		}
@@ -44,7 +44,7 @@ func runEvents(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		e := &db.Event{At: SummerInstant, Type: db.EventLogin, Actor: "a@hm.edu"}
+		e := &db.Event{At: SummerInstant(), Type: db.EventLogin, Actor: "a@hm.edu"}
 		if err := s.RecordEvent(ctx, e); err != nil {
 			t.Fatalf("RecordEvent: %v", err)
 		}
@@ -52,7 +52,7 @@ func runEvents(t *testing.T, newStore NewStore) {
 			t.Errorf("the caller's struct has Severity %q, want %q", e.Severity, db.SeverityInfo)
 		}
 
-		got, err := s.RecentEvents(ctx, SummerInstant.Add(-time.Hour), 10)
+		got, err := s.RecentEvents(ctx, SummerInstant().Add(-time.Hour), 10)
 		if err != nil {
 			t.Fatalf("RecentEvents: %v", err)
 		}
@@ -67,7 +67,7 @@ func runEvents(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		base := SummerInstant
+		base := SummerInstant()
 		for _, at := range []time.Time{
 			base.Add(-time.Second),  // before the window
 			base,                    // the lower bound is included
@@ -103,7 +103,7 @@ func runEvents(t *testing.T, newStore NewStore) {
 		s := newStore(t)
 		ctx := t.Context()
 
-		base := SummerInstant
+		base := SummerInstant()
 		for i := range 5 {
 			if err := s.RecordEvent(ctx, &db.Event{
 				At: base.Add(time.Duration(i) * time.Minute), Type: db.EventLogin,
@@ -149,13 +149,13 @@ func runEvents(t *testing.T, newStore NewStore) {
 
 		for _, actor := range []string{"a@hm.edu", "b@hm.edu", ""} {
 			if err := s.RecordEvent(ctx, &db.Event{
-				At: SummerInstant, Type: db.EventLogin, Actor: actor, Severity: db.SeverityInfo,
+				At: SummerInstant(), Type: db.EventLogin, Actor: actor, Severity: db.SeverityInfo,
 			}); err != nil {
 				t.Fatalf("RecordEvent %q: %v", actor, err)
 			}
 		}
 
-		got, err := s.RecentEvents(ctx, SummerInstant.Add(-time.Hour), 0)
+		got, err := s.RecentEvents(ctx, SummerInstant().Add(-time.Hour), 0)
 		if err != nil {
 			t.Fatalf("RecentEvents: %v", err)
 		}

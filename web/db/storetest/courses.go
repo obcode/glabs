@@ -21,8 +21,8 @@ func runCourses(t *testing.T, newStore NewStore) {
 			Name:       "fopra",
 			Source:     FullCourseSource(),
 			RawYAML:    []byte("fopra:\n  coursepath: fk07/fopra # comment kept verbatim\n"),
-			ImportedAt: SummerInstant,
-			UpdatedAt:  WinterInstant,
+			ImportedAt: SummerInstant(),
+			UpdatedAt:  WinterInstant(),
 		}
 		if err := s.SaveCourse(ctx, want); err != nil {
 			t.Fatalf("SaveCourse: %v", err)
@@ -49,7 +49,7 @@ func runCourses(t *testing.T, newStore NewStore) {
 
 		if err := s.SaveCourse(ctx, &db.StoredCourse{
 			Owner: "a@hm.edu", Name: "ohne-yaml", Source: FullCourseSource(),
-			ImportedAt: SummerInstant, UpdatedAt: SummerInstant,
+			ImportedAt: SummerInstant(), UpdatedAt: SummerInstant(),
 		}); err != nil {
 			t.Fatalf("SaveCourse: %v", err)
 		}
@@ -69,7 +69,7 @@ func runCourses(t *testing.T, newStore NewStore) {
 
 		first := &db.StoredCourse{
 			Owner: "a@hm.edu", Name: "fopra", Source: FullCourseSource(),
-			RawYAML: []byte("alt"), ImportedAt: SummerInstant, UpdatedAt: SummerInstant,
+			RawYAML: []byte("alt"), ImportedAt: SummerInstant(), UpdatedAt: SummerInstant(),
 		}
 		if err := s.SaveCourse(ctx, first); err != nil {
 			t.Fatalf("SaveCourse: %v", err)
@@ -77,7 +77,7 @@ func runCourses(t *testing.T, newStore NewStore) {
 
 		second := &db.StoredCourse{
 			Owner: "a@hm.edu", Name: "fopra", Source: FullCourseSource(),
-			RawYAML: []byte("neu"), ImportedAt: SummerInstant, UpdatedAt: WinterInstant,
+			RawYAML: []byte("neu"), ImportedAt: SummerInstant(), UpdatedAt: WinterInstant(),
 		}
 		if err := s.SaveCourse(ctx, second); err != nil {
 			t.Fatalf("SaveCourse (second): %v", err)
@@ -102,7 +102,7 @@ func runCourses(t *testing.T, newStore NewStore) {
 		for _, name := range []string{"zzz", "aaa", "mmm"} {
 			if err := s.SaveCourse(ctx, &db.StoredCourse{
 				Owner: "a@hm.edu", Name: name, Source: FullCourseSource(),
-				ImportedAt: SummerInstant, UpdatedAt: SummerInstant,
+				ImportedAt: SummerInstant(), UpdatedAt: SummerInstant(),
 			}); err != nil {
 				t.Fatalf("SaveCourse %s: %v", name, err)
 			}
@@ -130,7 +130,7 @@ func runCourses(t *testing.T, newStore NewStore) {
 
 		if err := s.SaveCourse(ctx, &db.StoredCourse{
 			Owner: "a@hm.edu", Name: "fopra", Source: FullCourseSource(),
-			ImportedAt: SummerInstant, UpdatedAt: SummerInstant,
+			ImportedAt: SummerInstant(), UpdatedAt: SummerInstant(),
 		}); err != nil {
 			t.Fatalf("SaveCourse: %v", err)
 		}
@@ -170,7 +170,7 @@ func runCourses(t *testing.T, newStore NewStore) {
 		for _, name := range []string{"fopra", "sysprog"} {
 			if err := s.SaveCourse(ctx, &db.StoredCourse{
 				Owner: "a@hm.edu", Name: name, Source: FullCourseSource(),
-				ImportedAt: SummerInstant, UpdatedAt: SummerInstant,
+				ImportedAt: SummerInstant(), UpdatedAt: SummerInstant(),
 			}); err != nil {
 				t.Fatalf("SaveCourse %s: %v", name, err)
 			}

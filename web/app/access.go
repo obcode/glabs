@@ -265,10 +265,10 @@ func (a *App) decide(ctx context.Context, email, status string) (*db.UserAccess,
 	switch status {
 	case db.AccessApproved:
 		eventType, detail = db.EventAccessGranted, "freigeschaltet: "+email
-		tmpl, subject, link = mail.TmplAccessGranted, "glabs: Du bist freigeschaltet", a.publicURL
+		tmpl, subject, link = mail.TmplAccessGranted, "glabs: Sie sind freigeschaltet", a.publicURL
 	case db.AccessRejected:
 		eventType, detail = db.EventAccessRejected, "abgelehnt: "+email
-		tmpl, subject = mail.TmplAccessRejected, "glabs: Deine Anfrage auf Freischaltung"
+		tmpl, subject = mail.TmplAccessRejected, "glabs: Ihre Anfrage auf Freischaltung"
 	case db.AccessRevoked:
 		eventType, detail, severity = db.EventAccessRevoked, "entzogen: "+email, db.SeverityWarning
 	}

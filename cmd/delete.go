@@ -17,7 +17,8 @@ var deleteCmd = &cobra.Command{
 	Use:   "delete course assignment [groups...|students...]",
 	Short: "Delete repositories.",
 	Long: `Delete repositories for each student or group in course for assignment.
-You can specify students or groups in order to delete only for these.`,
+You can specify students or groups in order to delete only for these.
+Container registry tags are deleted first, GitLab refuses to delete a project that has any.`,
 	Args: cobra.MinimumNArgs(2), //nolint:mnd
 	Run: func(cmd *cobra.Command, args []string) {
 		assignmentConfig, err := config.GetAssignmentConfig(args[0], args[1], args[2:]...)

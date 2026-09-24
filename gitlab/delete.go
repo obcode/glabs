@@ -59,13 +59,74 @@ func (c *Client) delete(gid int64, name string) {
 	for _, project := range projects {
 		if project.Name == name {
 			task := c.rep.Task(fmt.Sprintf(" deleting project %s", project.Name))
+			removedTags, err := c.deleteRegistryTags(project.ID)
+			if err != nil {
+				task.Fail(fmt.Sprintf("deleting container registry tags of project %s failed: %v", name, err))
+				return
+			}
 			_, err = c.Projects.DeleteProject(project.ID, &gitlab.DeleteProjectOptions{})
 			if err != nil {
 				task.Fail(fmt.Sprintf("deleting project %s failed: %v", name, err))
 				return
 			}
-			task.Done("")
+			if removedTags > 0 {
+				task.Done(fmt.Sprintf("%d container registry tag(s) removed", removedTags))
+			} else {
+				task.Done("")
+			}
 			break
 		}
 	}
+}
+
+// deleteRegistryTags removes every container registry tag of a project and
+// returns how many it removed. GitLab refuses to delete a project that still
+// has tags ("Cannot rename or delete project because it contains container
+// registry tags"). Tags are deleted one by one because that endpoint works
+// synchronously; the bulk and repository endpoints only schedule a background
+// job, so the project delete right after would still be refused.
+//
+// If the registry repositories cannot be listed (registry disabled for the
+// project or on the instance), there is nothing we can clean up; the project
+// delete is attempted anyway and reports its own error if tags remain.
+func (c *Client) deleteRegistryTags(pid int64) (int, error) {
+	var repos []*gitlab.RegistryRepository
+	repoOpts := &gitlab.ListProjectRegistryRepositoriesOptions{ListOptions: gitlab.ListOptions{PerPage: 100}}
+	for {
+		page, resp, err := c.ContainerRegistry.ListProjectRegistryRepositories(pid, repoOpts)
+		if err != nil {
+			return 0, nil //nolint:nilerr // no registry to clean up, see above
+		}
+		repos = append(repos, page...)
+		if resp == nil || resp.NextPage == 0 {
+			break
+		}
+		repoOpts.Page = resp.NextPage
+	}
+
+	removed := 0
+	for _, repo := range repos {
+		// Collect all tags before deleting any, so deletions don't shift the pages.
+		var tags []*gitlab.RegistryRepositoryTag
+		tagOpts := &gitlab.ListRegistryRepositoryTagsOptions{ListOptions: gitlab.ListOptions{PerPage: 100}}
+		for {
+			page, resp, err := c.ContainerRegistry.ListRegistryRepositoryTags(pid, repo.ID, tagOpts)
+			if err != nil {
+				return removed, fmt.Errorf("listing tags of registry repository %s: %w", repo.Path, err)
+			}
+			tags = append(tags, page...)
+			if resp == nil || resp.NextPage == 0 {
+				break
+			}
+			tagOpts.Page = resp.NextPage
+		}
+
+		for _, tag := range tags {
+			if _, err := c.ContainerRegistry.DeleteRegistryRepositoryTag(pid, repo.ID, tag.Name); err != nil {
+				return removed, fmt.Errorf("deleting tag %s:%s: %w", repo.Path, tag.Name, err)
+			}
+			removed++
+		}
+	}
+	return removed, nil
 }

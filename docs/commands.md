@@ -81,6 +81,8 @@ glabs delete <course> <assignment> [groups...|students...]
 
 ⚠️ **Warning**: Asks for confirmation before deleting. Repositories are deleted permanently and cannot be recovered.
 
+Container registry tags of a repository are deleted first, since GitLab refuses to delete a project that still has any.
+
 ### update
 
 Update repositories with new code from startercode source.
@@ -149,7 +151,7 @@ Add all students as guests to the course subgroup for Dependency-Proxy access.
 glabs addgroupguests <course>
 ```
 
-Adds all students (from both individual `students` and `groups` sections) as guests to the course subgroup 
+Adds all students (from both individual `students` and `groups` sections) as guests to the course subgroup
 (`coursepath/semesterpath`). This enables students to access and use the GitLab Dependency-Proxy feature.
 
 Newly created memberships or invitations get an expiration date of 1 year.
@@ -160,7 +162,7 @@ Newly created memberships or invitations get an expiration date of 1 year.
 glabs addgroupguests vss    # Adds all VSS students to vss/semester/ob-26ss subgroup
 ```
 
-**Access level**: Students are added with **guest** permissions, which is sufficient for Dependency-Proxy access 
+**Access level**: Students are added with **guest** permissions, which is sufficient for Dependency-Proxy access
 and follows the principle of least privilege.
 
 ### show

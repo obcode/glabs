@@ -213,3 +213,90 @@ func TestDelete_LowLevel_DeleteFails(t *testing.T) {
 	// delete fails → logs error, no panic
 	client.delete(1, "myrepo")
 }
+
+// ---- container registry tags --------------------------------------------------
+
+// registryDeleteHandler mocks project search, a registry repository (id 7) with
+// the given tags, and the delete endpoints. It records the DELETE requests in
+// order; tagDeleteStatus is the status code returned for every tag delete.
+func registryDeleteHandler(tags []string, tagDeleteStatus int, deletes *[]string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/search"):
+			_, _ = w.Write([]byte(`[{"id":99,"name":"myrepo"}]`))
+
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/99/registry/repositories":
+			_, _ = w.Write([]byte(`[{"id":7,"path":"mpd/myrepo/app"}]`))
+
+		// Tags are served one per page so the pagination loop is exercised.
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v4/projects/99/registry/repositories/7/tags":
+			page := 1
+			_, _ = fmt.Sscan(r.URL.Query().Get("page"), &page)
+			if page < len(tags) {
+				w.Header().Set("X-Next-Page", fmt.Sprint(page+1))
+			}
+			if page <= len(tags) {
+				_, _ = fmt.Fprintf(w, `[{"name":%q}]`, tags[page-1])
+			} else {
+				_, _ = w.Write([]byte(`[]`))
+			}
+
+		case r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, "/api/v4/projects/99/registry/repositories/7/tags/"):
+			*deletes = append(*deletes, "tag "+strings.TrimPrefix(r.URL.Path, "/api/v4/projects/99/registry/repositories/7/tags/"))
+			w.WriteHeader(tagDeleteStatus)
+
+		case r.Method == http.MethodDelete && r.URL.Path == "/api/v4/projects/99":
+			*deletes = append(*deletes, "project")
+			w.WriteHeader(http.StatusAccepted)
+
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}
+}
+
+func TestDelete_LowLevel_RegistryTagsDeletedFirst(t *testing.T) {
+	var deletes []string
+	client := newContractClient(t, registryDeleteHandler([]string{"latest", "v1.0"}, http.StatusOK, &deletes))
+
+	client.delete(1, "myrepo")
+
+	want := []string{"tag latest", "tag v1.0", "project"}
+	if strings.Join(deletes, ",") != strings.Join(want, ",") {
+		t.Fatalf("deletes = %v, want %v", deletes, want)
+	}
+}
+
+func TestDelete_LowLevel_RegistryTagDeleteFails_ProjectKept(t *testing.T) {
+	var deletes []string
+	client := newContractClient(t, registryDeleteHandler([]string{"latest", "v1.0"}, http.StatusForbidden, &deletes))
+
+	client.delete(1, "myrepo")
+
+	want := []string{"tag latest"}
+	if strings.Join(deletes, ",") != strings.Join(want, ",") {
+		t.Fatalf("deletes = %v, want %v", deletes, want)
+	}
+}
+
+func TestDelete_LowLevel_RegistryUnavailable_ProjectStillDeleted(t *testing.T) {
+	var deletes []string
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "/search"):
+			_, _ = w.Write([]byte(`[{"id":99,"name":"myrepo"}]`))
+		case r.Method == http.MethodDelete && r.URL.Path == "/api/v4/projects/99":
+			deletes = append(deletes, "project")
+			w.WriteHeader(http.StatusAccepted)
+		default:
+			// Registry listing → 404, as for a project with the registry disabled.
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	client.delete(1, "myrepo")
+
+	if strings.Join(deletes, ",") != "project" {
+		t.Fatalf("deletes = %v, want [project]", deletes)
+	}
+}

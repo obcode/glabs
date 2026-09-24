@@ -42,6 +42,7 @@ type Querier interface {
 	// delete". Deleting another user's course must report not-found rather than
 	// pretending it worked.
 	DeleteCourse(ctx context.Context, arg DeleteCourseParams) (int64, error)
+	DeleteUser(ctx context.Context, email string) (int64, error)
 	// An update to null, not a delete of the row: the row is the anchor for the
 	// other per-user secrets this table is meant to grow, and removing a GitLab
 	// token must not take them with it. Exactly the $unset semantics.
@@ -58,12 +59,20 @@ type Querier interface {
 	// Matching nothing is success, as before: the runner logs an error here, and a
 	// job the retention sweep has already removed should not produce noise.
 	FinishJob(ctx context.Context, arg FinishJobParams) error
+	GetUser(ctx context.Context, email string) (User, error)
 	GetUserSecret(ctx context.Context, owner string) (UserSecret, error)
+	// `do nothing` on a conflict, so a double click or a second tab cannot turn one
+	// request into two admin mails: only the insert that actually created the row
+	// gets a row back, the other gets pgx.ErrNoRows.
+	InsertAccessRequest(ctx context.Context, arg InsertAccessRequestParams) (User, error)
 	JobOf(ctx context.Context, arg JobOfParams) (ScheduledJob, error)
 	// The status list is optional: empty or null means no filter, which is what the
 	// GUI's unfiltered view passes. Spelled with cardinality rather than a second
 	// query so there is one ordering to keep correct.
 	JobsOf(ctx context.Context, arg JobsOfParams) ([]ScheduledJob, error)
+	// Open requests first (they are what an admin comes here for), then everyone
+	// else; newest request first within each group.
+	ListUsers(ctx context.Context) ([]User, error)
 	MarkNotified(ctx context.Context, id string) error
 	// The replacement for Mongo's TTL index on at: the monitoring trail is a rolling
 	// window, not a permanent archive.
@@ -89,6 +98,7 @@ type Querier interface {
 	// Self-healing: the row is seeded by the migration, but an upsert means a
 	// vanished row does not turn the nightly digest into a permanent failure.
 	SetSummarySentAt(ctx context.Context, summarySentAt *time.Time) error
+	SetUserStatus(ctx context.Context, arg SetUserStatusParams) (User, error)
 	SystemState(ctx context.Context) (SystemState, error)
 	// The runner's notify sweep, across all owners: one mail per finished job.
 	// Cancelled is excluded -- the user did that on purpose and there is no mail for

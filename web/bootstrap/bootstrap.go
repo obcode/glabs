@@ -129,6 +129,15 @@ func Serve() error {
 
 	a := app.New(database_, sealer, viper.GetString("gitlab.host"), mailer, viper.GetBool("smtp.dryRun"), admins)
 
+	// Only admins and users an admin approved get past the access gate. Without
+	// auth there is only the dev user, and no one to ask. server.publicurl is the
+	// GUI's address, for the links in the access mails.
+	a.SetAuthDisabled(!viper.GetBool("auth.enabled"))
+	a.SetPublicURL(viper.GetString("server.publicurl"))
+	if len(admins) == 0 && viper.GetBool("auth.enabled") {
+		log.Warn().Msg("no admins configured: no one can approve access requests, so no one can use glabs")
+	}
+
 	// The scheduled-job runner polls in the background for the life of the process
 	// (a background context, since StartServer blocks and never returns here).
 	go a.StartJobRunner(context.Background())

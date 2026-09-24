@@ -122,8 +122,8 @@ services:
       # fhmDepartment claim lands in X-Auth-Request-Groups, which the Caddyfile renames to
       # X-Remote-Department. Only used to enrich the monitoring log's login events.
       OAUTH2_PROXY_OIDC_GROUPS_CLAIM: "fhmDepartment"
-      # The access boundary: only hm.edu accounts get past the proxy. The backend has no
-      # allowlist of its own — anyone the proxy authenticates is let in.
+      # Only hm.edu accounts get past the proxy. Past it, the backend lets in only its admins
+      # and users they approved; everyone else can just ask for access.
       OAUTH2_PROXY_EMAIL_DOMAINS: hm.edu
       OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
       OAUTH2_PROXY_REVERSE_PROXY: "true"

@@ -28,10 +28,11 @@ type authProvider interface {
 
 // authMiddleware trusts the identity injected by the auth proxy (oauth2-proxy →
 // Caddy sets X-Remote-User to the verified OIDC email). It is fail-closed on the
-// header only: no header is 401. There is no allowlist — anyone the proxy
-// authenticates is let in and acts strictly as their own user (per-user
-// isolation). With auth.enabled=false it injects a local dev user instead, so
-// development needs no proxy.
+// header: no header is 401. It answers only "who is this"; whether that person
+// may use glabs is the access gate's question (access_gate.go), which lets an
+// unapproved user through to `me` and `requestAccess` and nothing else. With
+// auth.enabled=false it injects a local dev user instead, so development needs
+// no proxy.
 //
 // The whole model rests on the server being reachable only through the proxy. If
 // it is ever exposed directly, the header is trusted unconditionally and anyone
@@ -72,9 +73,10 @@ func authMiddleware(p authProvider) func(http.Handler) http.Handler {
 					http.Error(w, "unauthenticated: no identity from the auth proxy", http.StatusUnauthorized)
 					return
 				}
-				// No allowlist: the proxy-verified identity is trusted directly. The
-				// display name comes from its header (empty is fine).
-				user = &model.User{Email: email, Name: strings.TrimSpace(r.Header.Get(nameHeader))}
+				// The proxy-verified identity is trusted directly; approval is checked
+				// later, per field. The display name comes from its header (empty is
+				// fine).
+				user = &model.User{Email: email, Name: strings.TrimSpace(r.Header.Get(nameHeader)), Department: dept}
 				p.NoteLogin(r.Context(), user.Email, user.Name, dept)
 			}
 			ctx := principal.WithUser(r.Context(), user)

@@ -29,6 +29,8 @@ type fakeStore struct {
 	// reapCalls counts ReapExpired, so a test can assert the runner calls it at
 	// all and does not call it on every tick.
 	reapCalls int
+	users     map[string]*db.UserAccess // keyed by email; lazily created
+	userReads int                       // GetUserAccess calls, to see the access cache work
 }
 
 func newFakeStore() *fakeStore {

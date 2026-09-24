@@ -40,8 +40,9 @@ Fill both in:
    correctly; only change them if you know why.
 2. **`.glabs-web.yaml`** — set `db.uri` to the SAME Mongo credentials as in `.env`, list the
    platform `admins`, generate `secrets.key` (`openssl rand -base64 32`), and set `gitlab.host`.
-   SMTP is optional (commented out). There is no allowlist — every hm.edu account the proxy
-   authenticates is let in.
+   Set `server.publicurl` for the links in access mails. SMTP is optional (commented out), but
+   without it nobody learns of access requests except on the admin page. Only the `admins`
+   and users they approve can use glabs; everyone else sees a request-access page.
 
 Then:
 

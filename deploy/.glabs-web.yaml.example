@@ -10,6 +10,8 @@ server:
   # Must be the public browser origin.
   allowedorigins:
     - https://glabs.cs.hm.edu
+  # Public base URL of the GUI, used for the links in access mails.
+  publicurl: https://glabs.cs.hm.edu
 
 db:
   # Mongo is reachable as `mongo` on the compose network. Credentials MUST match MONGO_USER /
@@ -29,12 +31,11 @@ auth:
   # — matches the Caddyfile. Only used to enrich login events in the monitoring log; absent
   # is fine (the department is then simply empty).
   departmentheader: X-Remote-Department
-  # There is no allowlist: anyone the auth proxy authenticates (see OAUTH2_PROXY_EMAIL_DOMAINS
-  # in docker-compose.yml, which restricts to hm.edu) is let in and acts strictly as their own
-  # user (per-user isolation). The proxy is the access boundary.
+  # Authenticated is not approved: only the admins below and users they approve may use
+  # glabs. Everyone else can only ask for access (admins get a mail, see smtp below).
 
-# Platform admins: emails that additionally see the admin monitoring page and receive the
-# nightly summary mail. This is the ONLY privilege above ordinary owner-scoped access.
+# Platform admins: always approved; they approve access requests, see the admin monitoring
+# page and receive the nightly summary mail. Ordinary data access stays owner-scoped.
 admins:
   - oliver.braun@hm.edu
 
@@ -56,8 +57,9 @@ secrets:
 gitlab:
   host: gitlab.lrz.de
 
-# --- Optional: SMTP for scheduled-job notifications ---
-# Without smtp.host, scheduling and running still work; only the emails are skipped.
+# --- Optional: SMTP for scheduled-job notifications and access mails ---
+# Without smtp.host, scheduling and running still work; only the emails are skipped. Access
+# requests then show up only on the admin page, and approved users are not told.
 # smtp:
 #   host: postout.lrz.de
 #   port: 587

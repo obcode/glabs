@@ -49,6 +49,13 @@ type store interface {
 	// indexes, i.e. inside the database; PostgreSQL has no TTL, so it became a
 	// method -- and thereby something that can be tested and logged.
 	ReapExpired(ctx context.Context, now time.Time) (jobs, events int64, err error)
+	// Access requests and decisions (the users table). PostgreSQL only, like
+	// ReapExpired: they arrived after the Mongo store was frozen.
+	GetUserAccess(ctx context.Context, email string) (*db.UserAccess, error)
+	ListUserAccess(ctx context.Context) ([]*db.UserAccess, error)
+	InsertAccessRequest(ctx context.Context, u *db.UserAccess) (created bool, err error)
+	SetUserAccessStatus(ctx context.Context, email, status, decidedBy string, decidedAt time.Time) (*db.UserAccess, error)
+	DeleteUserAccess(ctx context.Context, email string) (bool, error)
 }
 
 // The store the server actually uses. A compile-time assertion, so a signature
@@ -89,6 +96,13 @@ type App struct {
 	// them.
 	summaryHour       int
 	summaryRecipients []string
+	// authDisabled is set when the auth middleware runs as the local dev user;
+	// then there is no one to approve and everyone is. The zero value keeps the
+	// access gate closed. publicURL is the GUI's base URL for links in access
+	// mails. accessCache holds looked-up access states (see access.go).
+	authDisabled bool
+	publicURL    string
+	accessCache  accessCache
 }
 
 // New takes the store as the interface rather than as a concrete type. The type

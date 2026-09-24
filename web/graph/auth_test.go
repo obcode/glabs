@@ -148,3 +148,24 @@ func TestAuthMiddlewareDisabledUsesDevUser(t *testing.T) {
 		t.Errorf("disabled: context user = %+v, want the dev user", user)
 	}
 }
+
+// The preview header is read into the principal, and only the exact value counts.
+func TestAuthMiddlewarePreviewHeader(t *testing.T) {
+	viper.Reset()
+	t.Cleanup(viper.Reset)
+	viper.Set("auth.enabled", true)
+
+	for value, want := range map[string]bool{"unapproved": true, "": false, "yes": false} {
+		var seen *model.User
+		h := authMiddleware(&fakeAuthProvider{})(capture(&seen))
+		req := httptest.NewRequest(http.MethodPost, "/query", nil)
+		req.Header.Set("X-Remote-User", "admin@hm.edu")
+		if value != "" {
+			req.Header.Set("X-Glabs-Preview", value)
+		}
+		h.ServeHTTP(httptest.NewRecorder(), req)
+		if seen == nil || seen.Preview != want {
+			t.Errorf("header %q: principal = %+v, want Preview=%v", value, seen, want)
+		}
+	}
+}

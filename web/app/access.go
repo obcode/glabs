@@ -84,9 +84,13 @@ func (a *App) SetPublicURL(u string) { a.publicURL = strings.TrimRight(strings.T
 // AccessStatus reports whether email may use glabs: AccessNone or one of the
 // db.Access* states. Admins from the config are always approved and need no row,
 // which is also what keeps an empty table from locking everyone out.
+//
+// Except in preview mode: an admin who asked to see glabs as an unapproved user
+// gets the status of their own row, like anyone else. That is how an admin can
+// walk through the request flow with the one identity the proxy gives them.
 func (a *App) AccessStatus(ctx context.Context, email string) (string, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
-	if a.authDisabled || a.IsAdminEmail(email) {
+	if a.authDisabled || (a.IsAdminEmail(email) && !previewing(ctx, email)) {
 		return db.AccessApproved, nil
 	}
 	if email == "" {
@@ -106,6 +110,14 @@ func (a *App) AccessStatus(ctx context.Context, email string) (string, error) {
 	}
 	a.accessCache.put(email, status, now)
 	return status, nil
+}
+
+// previewing reports whether the request's own user is email and asked for
+// preview mode. Tied to the email so a preview can never affect how anyone else
+// is judged.
+func previewing(ctx context.Context, email string) bool {
+	u := principal.UserFromContext(ctx)
+	return u != nil && u.Preview && u.Email == email
 }
 
 // IsApproved is AccessStatus reduced to the gate's question, for the request's

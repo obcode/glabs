@@ -50,7 +50,13 @@ default.
    user can ask again; a rejected or revoked user cannot ask on their own.
 3. Every step is written to the event log (`access-*`).
 
-Admins never need a row. Mails need SMTP; without it the request is stored and
+Admins never need a row — except in **preview mode**: a request carrying
+`X-Glabs-Preview: unapproved` treats an admin like anyone else, judged by their own
+row and without admin rights. That lets an admin walk the request flow with their
+single SSO identity. The header can only lower the caller's own rights, so it needs
+no protection by the proxy; the GUI sets it from a cookie.
+
+Admins never need a row otherwise. Mails need SMTP; without it the request is stored and
 shown on the admin page anyway. The status is cached for 30 s per process, and
 every decision drops the cache entry at once.
 

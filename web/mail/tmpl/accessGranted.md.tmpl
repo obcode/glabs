@@ -1,0 +1,8 @@
+## Du bist für glabs freigeschaltet
+
+Hallo{{ if .Name }} {{ .Name }}{{ end }},
+
+deine Anfrage wurde angenommen: Du kannst glabs ab sofort nutzen.
+{{ if .Link }}
+[glabs öffnen]({{ .Link }})
+{{ end }}

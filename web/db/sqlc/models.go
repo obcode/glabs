@@ -71,6 +71,17 @@ type SystemState struct {
 	SummarySentAt *time.Time
 }
 
+type User struct {
+	Email       string
+	Name        string
+	Department  string
+	Status      string
+	Reason      string
+	RequestedAt time.Time
+	DecidedAt   *time.Time
+	DecidedBy   string
+}
+
 type UserSecret struct {
 	Owner            string
 	GitlabKeyVersion *int

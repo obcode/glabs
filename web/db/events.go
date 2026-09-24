@@ -17,7 +17,7 @@ import (
 // owner-scoped — an admin reads across all users.
 const (
 	EventLogin         = "login"          // a user was active (throttled: at most once per window)
-	EventLoginRejected = "login-rejected" // an unauthenticated/not-allowlisted request was refused
+	EventLoginRejected = "login-rejected" // a request without an identity was refused
 	EventJobScheduled  = "job-scheduled"  // an operation was queued to run later
 	EventJobDone       = "job-done"
 	EventJobFailed     = "job-failed"
@@ -29,6 +29,12 @@ const (
 	EventCourseDeleted = "course-deleted"
 	EventTokenSaved    = "token-saved"
 	EventTokenDeleted  = "token-deleted"
+
+	EventAccessRequested = "access-requested" // someone asked to be let in
+	EventAccessGranted   = "access-granted"   // an admin approved a request
+	EventAccessRejected  = "access-rejected"  // an admin turned a request down
+	EventAccessRevoked   = "access-revoked"   // an admin withdrew an approval
+	EventAccessReset     = "access-reset"     // an admin cleared a decision; the person may ask again
 )
 
 // Event severities, used to highlight what matters in the digest and the admin

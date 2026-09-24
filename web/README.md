@@ -25,14 +25,34 @@ viper beyond the config keys below.
 
 Identity comes from an auth proxy (oauth2-proxy behind Caddy) that sets
 `X-Remote-User` to the verified OIDC email. The server trusts that header and is
-**fail-closed on it**: no header is 401. There is no allowlist — anyone the proxy
-authenticates is let in and acts strictly as their own user (per-user isolation),
-so the proxy (restricted to the hm.edu domain) is the access boundary. The whole
-model assumes the server is reachable *only* through the proxy — never publish its
-port directly, or the header can be forged.
+**fail-closed on it**: no header is 401. The whole model assumes the server is
+reachable *only* through the proxy — never publish its port directly, or the
+header can be forged.
 
 With `auth.enabled: false` the server injects a local dev user, so development
 needs no proxy.
+
+## Access approval
+
+Authenticated is not approved. Only the `admins` and users an admin approved may
+use glabs; everyone acts strictly as their own user (per-user isolation). The
+access gate (`web/graph/access_gate.go`) is a gqlgen field middleware that refuses
+every root field to an unapproved user except `me`, `serverInfo` and
+`requestAccess` — an allowlist of open fields, so a field added later is closed by
+default.
+
+1. An unapproved user sees `me.access` = `NONE` and calls
+   `requestAccess(reason)`. The request is stored as `PENDING` in the `users`
+   table and every admin gets a mail with a link to
+   `<server.publicurl>/admin/access?user=<email>`.
+2. An admin calls `approveUser` (the user gets a mail), `rejectUser` (the user
+   gets a mail) or `revokeUser` (no mail). `resetUser` deletes the row, so the
+   user can ask again; a rejected or revoked user cannot ask on their own.
+3. Every step is written to the event log (`access-*`).
+
+Admins never need a row. Mails need SMTP; without it the request is stored and
+shown on the admin page anyway. The status is cached for 30 s per process, and
+every decision drops the cache entry at once.
 
 ## Monitoring & nightly summary
 
@@ -109,12 +129,13 @@ go generate ./cmd/glabs-web
 | `server.port` | listen port (default `8080`) |
 | `server.production` | `true` disables the playground and introspection |
 | `server.allowedorigins` | CORS origins (default: localhost 5173/8080/3000) |
+| `server.publicurl` | base URL of the GUI, for links in the access mails (empty: no link) |
 | `auth.enabled` | `false` uses the local dev user; `true` requires the proxy header |
 | `auth.header` | identity header (default `X-Remote-User`) |
 | `auth.displaynameheader` | display-name header (default `X-Remote-Displayname`) |
 | `auth.departmentheader` | optional department header (default `X-Remote-Department`) |
 | `auth.devuser` | dev user email when auth is disabled |
-| `admins` | emails that see the admin monitoring page and get the nightly summary |
+| `admins` | emails that are always approved, approve access requests, see the admin monitoring page and get the nightly summary |
 | `summary.enabled` | send the nightly admin summary mail (needs SMTP) |
 | `summary.hour` | local hour to send the summary (default `5`) |
 | `summary.recipient` | optional single recipient; overrides the admins list |

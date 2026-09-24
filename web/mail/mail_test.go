@@ -3,6 +3,7 @@ package mail
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 // allTemplates is the catalogue of job-notification templates; every one must
@@ -80,5 +81,54 @@ func TestSend_dryRunRequiresTestRecipient(t *testing.T) {
 	s := NewSender(Config{From: "glabs@cs.hm.edu", Host: "smtp.invalid"})
 	if err := s.Send(true, "prof@hm.edu", "s", []byte("t"), []byte("h")); err == nil {
 		t.Error("dry-run without a test recipient should fail")
+	}
+}
+
+// accessTemplates render AccessMail rather than JobMail, so they get their own
+// catalogue.
+var accessTemplates = []string{TmplAccessRequested, TmplAccessGranted, TmplAccessRejected}
+
+func TestAccessTemplatesRender(t *testing.T) {
+	full := AccessMail{
+		Email: "neu@hm.edu", Name: "Neue Person", Department: "07",
+		Reason: "Softwareentwicklung 2", RequestedAt: time.Now(),
+		Link: "https://glabs.example/admin/access?user=neu%40hm.edu",
+	}
+	bare := AccessMail{Email: "neu@hm.edu", RequestedAt: time.Now()}
+	for _, name := range accessTemplates {
+		for _, data := range []AccessMail{full, bare} {
+			text, html, err := Render(name, data)
+			if err != nil {
+				t.Fatalf("%s: render error: %v", name, err)
+			}
+			if strings.Contains(string(text), "<no value>") || !strings.Contains(string(html), "<!DOCTYPE html>") {
+				t.Errorf("%s: bad output:\n%s", name, text)
+			}
+		}
+	}
+
+	text, _, _ := Render(TmplAccessRequested, full)
+	for _, want := range []string{"neu@hm.edu", "Neue Person", "Softwareentwicklung 2", full.Link} {
+		if !strings.Contains(string(text), want) {
+			t.Errorf("request mail missing %q:\n%s", want, text)
+		}
+	}
+	text, _, _ = Render(TmplAccessRequested, bare)
+	if !strings.Contains(string(text), "/admin/access") {
+		t.Errorf("without a link the request mail must still say where to go:\n%s", text)
+	}
+}
+
+// The reason is the requester's free text and lands in an HTML mail; inside its
+// code block the renderer must escape it.
+func TestAccessRequested_escapesReasonInHTML(t *testing.T) {
+	_, html, err := Render(TmplAccessRequested, AccessMail{
+		Email: "neu@hm.edu", Reason: `<img src=x onerror=alert(1)>`, RequestedAt: time.Now(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(html), "<img") {
+		t.Errorf("reason reached the HTML unescaped:\n%s", html)
 	}
 }

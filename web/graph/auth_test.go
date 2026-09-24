@@ -93,7 +93,8 @@ func TestAuthMiddlewareNotesLoginWithNameAndDepartment(t *testing.T) {
 	viper.Set("auth.enabled", true)
 
 	p := &fakeAuthProvider{}
-	h := authMiddleware(p)(capture(new(*model.User)))
+	var seen *model.User
+	h := authMiddleware(p)(capture(&seen))
 	req := httptest.NewRequest(http.MethodPost, "/query", nil)
 	req.Header.Set("X-Remote-User", "prof@hm.edu")
 	req.Header.Set("X-Remote-Displayname", "Prof Example")
@@ -108,6 +109,10 @@ func TestAuthMiddlewareNotesLoginWithNameAndDepartment(t *testing.T) {
 	}
 	if p.lastDept != "07" {
 		t.Errorf("department = %q, want %q", p.lastDept, "07")
+	}
+	// The principal carries it too, for the access request.
+	if seen == nil || seen.Department != "07" {
+		t.Errorf("principal = %+v, want department 07", seen)
 	}
 }
 

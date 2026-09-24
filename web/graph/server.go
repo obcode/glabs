@@ -153,6 +153,10 @@ func StartServer(a *app.App, port string) {
 		srv.Use(extension.Introspection{})
 	}
 
+	// Authenticated is not approved: every root field outside a short list is
+	// refused until an admin lets the user in. See access_gate.go.
+	srv.AroundFields(accessGate(a))
+
 	router := newRouter(a, a, srv, production, origins)
 
 	if port == "" {

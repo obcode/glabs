@@ -39,6 +39,17 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	AccessEntry struct {
+		DecidedAt   func(childComplexity int) int
+		DecidedBy   func(childComplexity int) int
+		Department  func(childComplexity int) int
+		Email       func(childComplexity int) int
+		Name        func(childComplexity int) int
+		Reason      func(childComplexity int) int
+		RequestedAt func(childComplexity int) int
+		Status      func(childComplexity int) int
+	}
+
 	ActivityEntry struct {
 		Assignment func(childComplexity int) int
 		At         func(childComplexity int) int
@@ -207,6 +218,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
+		ApproveUser          func(childComplexity int, email string) int
 		CancelScheduledJob   func(childComplexity int, id string) int
 		CopyAssignment       func(childComplexity int, course string, from string, newName string) int
 		CreateCourse         func(childComplexity int, name string, coursePath string, semesterPath string, useCoursenameAsPrefix bool, useEmailDomainAsSuffix bool) int
@@ -215,9 +227,13 @@ type ComplexityRoot struct {
 		ImportAssignmentYaml func(childComplexity int, course string, yaml string) int
 		ImportCourseYaml     func(childComplexity int, yaml string) int
 		PlanOp               func(childComplexity int, op model.Op, course string, assignment string, params *model.OpParams, onlyFor []string) int
+		RejectUser           func(childComplexity int, email string) int
 		RemoveGitlabToken    func(childComplexity int) int
 		RenameAssignment     func(childComplexity int, course string, oldName string, newName string) int
 		RenameCourse         func(childComplexity int, oldName string, newName string) int
+		RequestAccess        func(childComplexity int, reason *string) int
+		ResetUser            func(childComplexity int, email string) int
+		RevokeUser           func(childComplexity int, email string) int
 		ScheduleOp           func(childComplexity int, token string, runAt time.Time, graceMinutes *int, confirmPhrase *string) int
 		SendSummaryNow       func(childComplexity int) int
 		SetAssignment        func(childComplexity int, course string, name string, draft []*model.FieldValueInput) int
@@ -293,6 +309,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		AccessEntries           func(childComplexity int) int
 		ActivityLog             func(childComplexity int) int
 		ApprovalRuleSchema      func(childComplexity int) int
 		ApprovalSettingsSchema  func(childComplexity int) int
@@ -410,6 +427,7 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
+		Access  func(childComplexity int) int
 		Email   func(childComplexity int) int
 		IsAdmin func(childComplexity int) int
 		Name    func(childComplexity int) int
@@ -435,6 +453,11 @@ type MutationResolver interface {
 	SetCourseGroups(ctx context.Context, name string, groups []*model.GroupInput) (*model.Course, error)
 	RenameCourse(ctx context.Context, oldName string, newName string) (*model.Course, error)
 	DeleteCourse(ctx context.Context, name string) (bool, error)
+	RequestAccess(ctx context.Context, reason *string) (*model.User, error)
+	ApproveUser(ctx context.Context, email string) (*model.AccessEntry, error)
+	RejectUser(ctx context.Context, email string) (*model.AccessEntry, error)
+	RevokeUser(ctx context.Context, email string) (*model.AccessEntry, error)
+	ResetUser(ctx context.Context, email string) (bool, error)
 	SendSummaryNow(ctx context.Context) (bool, error)
 	SetAssignment(ctx context.Context, course string, name string, draft []*model.FieldValueInput) (*model.AssignmentView, error)
 	ImportAssignmentYaml(ctx context.Context, course string, yaml string) (*model.AssignmentView, error)
@@ -450,6 +473,7 @@ type MutationResolver interface {
 type QueryResolver interface {
 	Me(ctx context.Context) (*model.User, error)
 	ServerInfo(ctx context.Context) (*model.ServerInfo, error)
+	AccessEntries(ctx context.Context) ([]*model.AccessEntry, error)
 	AssignmentActivity(ctx context.Context, course string, name string) ([]*model.ActivityEntry, error)
 	CourseActivity(ctx context.Context, course string) ([]*model.ActivityEntry, error)
 	ActivityLog(ctx context.Context) ([]*model.ActivityEntry, error)
@@ -481,6 +505,7 @@ type SubscriptionResolver interface {
 }
 type UserResolver interface {
 	IsAdmin(ctx context.Context, obj *model.User) (bool, error)
+	Access(ctx context.Context, obj *model.User) (model.AccessStatus, error)
 }
 
 // endregion ************************** generated!.gotpl **************************
@@ -500,6 +525,55 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := newExecutionContext(nil, e, nil)
 	_ = ec
 	switch typeName + "." + field {
+
+	case "AccessEntry.decidedAt":
+		if e.ComplexityRoot.AccessEntry.DecidedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AccessEntry.DecidedAt(childComplexity), true
+	case "AccessEntry.decidedBy":
+		if e.ComplexityRoot.AccessEntry.DecidedBy == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AccessEntry.DecidedBy(childComplexity), true
+	case "AccessEntry.department":
+		if e.ComplexityRoot.AccessEntry.Department == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AccessEntry.Department(childComplexity), true
+	case "AccessEntry.email":
+		if e.ComplexityRoot.AccessEntry.Email == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AccessEntry.Email(childComplexity), true
+	case "AccessEntry.name":
+		if e.ComplexityRoot.AccessEntry.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AccessEntry.Name(childComplexity), true
+	case "AccessEntry.reason":
+		if e.ComplexityRoot.AccessEntry.Reason == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AccessEntry.Reason(childComplexity), true
+	case "AccessEntry.requestedAt":
+		if e.ComplexityRoot.AccessEntry.RequestedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AccessEntry.RequestedAt(childComplexity), true
+	case "AccessEntry.status":
+		if e.ComplexityRoot.AccessEntry.Status == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AccessEntry.Status(childComplexity), true
 
 	case "ActivityEntry.assignment":
 		if e.ComplexityRoot.ActivityEntry.Assignment == nil {
@@ -1129,6 +1203,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.LogLine.Text(childComplexity), true
 
+	case "Mutation.approveUser":
+		if e.ComplexityRoot.Mutation.ApproveUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_approveUser_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.ApproveUser(childComplexity, args["email"].(string)), true
 	case "Mutation.cancelScheduledJob":
 		if e.ComplexityRoot.Mutation.CancelScheduledJob == nil {
 			break
@@ -1217,6 +1302,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.PlanOp(childComplexity, args["op"].(model.Op), args["course"].(string), args["assignment"].(string), args["params"].(*model.OpParams), args["onlyFor"].([]string)), true
+	case "Mutation.rejectUser":
+		if e.ComplexityRoot.Mutation.RejectUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_rejectUser_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.RejectUser(childComplexity, args["email"].(string)), true
 	case "Mutation.removeGitlabToken":
 		if e.ComplexityRoot.Mutation.RemoveGitlabToken == nil {
 			break
@@ -1245,6 +1341,39 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.RenameCourse(childComplexity, args["oldName"].(string), args["newName"].(string)), true
+	case "Mutation.requestAccess":
+		if e.ComplexityRoot.Mutation.RequestAccess == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_requestAccess_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.RequestAccess(childComplexity, args["reason"].(*string)), true
+	case "Mutation.resetUser":
+		if e.ComplexityRoot.Mutation.ResetUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_resetUser_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.ResetUser(childComplexity, args["email"].(string)), true
+	case "Mutation.revokeUser":
+		if e.ComplexityRoot.Mutation.RevokeUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_revokeUser_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.RevokeUser(childComplexity, args["email"].(string)), true
 	case "Mutation.scheduleOp":
 		if e.ComplexityRoot.Mutation.ScheduleOp == nil {
 			break
@@ -1623,6 +1752,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ProjectReport.WebURL(childComplexity), true
 
+	case "Query.accessEntries":
+		if e.ComplexityRoot.Query.AccessEntries == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.AccessEntries(childComplexity), true
 	case "Query.activityLog":
 		if e.ComplexityRoot.Query.ActivityLog == nil {
 			break
@@ -2183,6 +2318,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.SummaryUser.Name(childComplexity), true
 
+	case "User.access":
+		if e.ComplexityRoot.User.Access == nil {
+			break
+		}
+
+		return e.ComplexityRoot.User.Access(childComplexity), true
 	case "User.email":
 		if e.ComplexityRoot.User.Email == nil {
 			break
@@ -2330,6 +2471,66 @@ func newExecutionContext(
 }
 
 var sources = []*ast.Source{
+	{Name: "../access.graphqls", Input: `# Who may use glabs. Being authenticated by the proxy is not enough: until an
+# admin approves them, a user can read only ` + "`" + `me` + "`" + ` and ` + "`" + `serverInfo` + "`" + ` and ask for
+# access with ` + "`" + `requestAccess` + "`" + `. Everything else is refused by the access gate.
+
+"Where a user stands with glabs."
+enum AccessStatus {
+  "Never asked."
+  NONE
+  "Asked; an admin has not decided yet."
+  PENDING
+  "May use glabs. Admins always are."
+  APPROVED
+  "The request was turned down."
+  REJECTED
+  "Access was withdrawn."
+  REVOKED
+}
+
+extend type User {
+  "Whether this user may use glabs."
+  access: AccessStatus!
+}
+
+"One person who asked for access, with an admin's decision."
+type AccessEntry {
+  email: String!
+  name: String!
+  "Faculty number (fhmDepartment), when the proxy forwards it."
+  department: String!
+  status: AccessStatus!
+  "What the requester wrote about why they need glabs."
+  reason: String!
+  requestedAt: Time!
+  decidedAt: Time
+  "The admin who decided; empty while pending."
+  decidedBy: String!
+}
+
+extend type Query {
+  "Every access request and decision, open requests first. Admin-only."
+  accessEntries: [AccessEntry!]!
+}
+
+extend type Mutation {
+  """
+  Ask to be let in; the admins get a mail. Only for someone who never asked:
+  a repeated request while pending does nothing, and a decided one must be
+  reset by an admin. Returns the caller with the new status.
+  """
+  requestAccess(reason: String): User!
+  "Approve a request; the user gets a mail. Admin-only."
+  approveUser(email: String!): AccessEntry!
+  "Turn a request down; the user gets a mail. Admin-only."
+  rejectUser(email: String!): AccessEntry!
+  "Withdraw access, without a mail. Admin-only."
+  revokeUser(email: String!): AccessEntry!
+  "Forget the request and any decision, so the user can ask again. Admin-only."
+  resetUser(email: String!): Boolean!
+}
+`, BuiltIn: false},
 	{Name: "../activity.graphqls", Input: `"""
 One recorded operation performed through the web against an assignment — the
 web's stand-in for the shell history the CLI leaves behind. The course page reads
@@ -3150,6 +3351,28 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // Each function is generated once per unique object type, deduplicating the
 // switch statements that were previously inlined in every fieldContext_* function.
 
+func (ec *executionContext) childFields_AccessEntry(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+	switch field.Name {
+	case "email":
+		return ec.fieldContext_AccessEntry_email(ctx, field)
+	case "name":
+		return ec.fieldContext_AccessEntry_name(ctx, field)
+	case "department":
+		return ec.fieldContext_AccessEntry_department(ctx, field)
+	case "status":
+		return ec.fieldContext_AccessEntry_status(ctx, field)
+	case "reason":
+		return ec.fieldContext_AccessEntry_reason(ctx, field)
+	case "requestedAt":
+		return ec.fieldContext_AccessEntry_requestedAt(ctx, field)
+	case "decidedAt":
+		return ec.fieldContext_AccessEntry_decidedAt(ctx, field)
+	case "decidedBy":
+		return ec.fieldContext_AccessEntry_decidedBy(ctx, field)
+	}
+	return nil, fmt.Errorf("no field named %q was found under type AccessEntry", field.Name)
+}
+
 func (ec *executionContext) childFields_ActivityEntry(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 	switch field.Name {
 	case "course":
@@ -3788,6 +4011,8 @@ func (ec *executionContext) childFields_User(ctx context.Context, field graphql.
 		return ec.fieldContext_User_name(ctx, field)
 	case "isAdmin":
 		return ec.fieldContext_User_isAdmin(ctx, field)
+	case "access":
+		return ec.fieldContext_User_access(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 }
@@ -3921,6 +4146,20 @@ func (ec *executionContext) childFields___Type(ctx context.Context, field graphq
 // endregion ************************** internal!.gotpl ***************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_approveUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "email",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["email"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_cancelScheduledJob_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -4130,6 +4369,20 @@ func (ec *executionContext) field_Mutation_planOp_args(ctx context.Context, rawA
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_rejectUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "email",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["email"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_renameAssignment_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -4179,6 +4432,48 @@ func (ec *executionContext) field_Mutation_renameCourse_args(ctx context.Context
 		return nil, err
 	}
 	args["newName"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_requestAccess_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "reason",
+		func(ctx context.Context, v any) (*string, error) {
+			return ec.unmarshalOString2ᚖstring(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["reason"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_resetUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "email",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["email"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_revokeUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "email",
+		func(ctx context.Context, v any) (string, error) {
+			return ec.unmarshalNString2string(ctx, v)
+		})
+	if err != nil {
+		return nil, err
+	}
+	args["email"] = arg0
 	return args, nil
 }
 
@@ -4765,6 +5060,190 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ***************************** args.gotpl *****************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _AccessEntry_email(ctx context.Context, field graphql.CollectedField, obj *model.AccessEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AccessEntry_email(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Email, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AccessEntry_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AccessEntry", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AccessEntry_name(ctx context.Context, field graphql.CollectedField, obj *model.AccessEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AccessEntry_name(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AccessEntry_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AccessEntry", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AccessEntry_department(ctx context.Context, field graphql.CollectedField, obj *model.AccessEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AccessEntry_department(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Department, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AccessEntry_department(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AccessEntry", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AccessEntry_status(ctx context.Context, field graphql.CollectedField, obj *model.AccessEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AccessEntry_status(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Status, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v model.AccessStatus) graphql.Marshaler {
+			return ec.marshalNAccessStatus2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAccessStatus(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AccessEntry_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AccessEntry", field, false, false, errors.New("field of type AccessStatus does not have child fields"))
+}
+
+func (ec *executionContext) _AccessEntry_reason(ctx context.Context, field graphql.CollectedField, obj *model.AccessEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AccessEntry_reason(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Reason, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AccessEntry_reason(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AccessEntry", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _AccessEntry_requestedAt(ctx context.Context, field graphql.CollectedField, obj *model.AccessEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AccessEntry_requestedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RequestedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalNTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AccessEntry_requestedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AccessEntry", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _AccessEntry_decidedAt(ctx context.Context, field graphql.CollectedField, obj *model.AccessEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AccessEntry_decidedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.DecidedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_AccessEntry_decidedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AccessEntry", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _AccessEntry_decidedBy(ctx context.Context, field graphql.CollectedField, obj *model.AccessEntry) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_AccessEntry_decidedBy(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.DecidedBy, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_AccessEntry_decidedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("AccessEntry", field, false, false, errors.New("field of type String does not have child fields"))
+}
 
 func (ec *executionContext) _ActivityEntry_course(ctx context.Context, field graphql.CollectedField, obj *model.ActivityEntry) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
@@ -7505,6 +7984,226 @@ func (ec *executionContext) fieldContext_Mutation_deleteCourse(ctx context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_requestAccess(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_requestAccess(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().RequestAccess(ctx, fc.Args["reason"].(*string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.User) graphql.Marshaler {
+			return ec.marshalNUser2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐUser(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_requestAccess(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_User(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_requestAccess_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_approveUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_approveUser(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ApproveUser(ctx, fc.Args["email"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.AccessEntry) graphql.Marshaler {
+			return ec.marshalNAccessEntry2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAccessEntry(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_approveUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_AccessEntry(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_approveUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_rejectUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_rejectUser(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().RejectUser(ctx, fc.Args["email"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.AccessEntry) graphql.Marshaler {
+			return ec.marshalNAccessEntry2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAccessEntry(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_rejectUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_AccessEntry(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_rejectUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_revokeUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_revokeUser(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().RevokeUser(ctx, fc.Args["email"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *model.AccessEntry) graphql.Marshaler {
+			return ec.marshalNAccessEntry2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAccessEntry(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_revokeUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_AccessEntry(ctx, field)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_revokeUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_resetUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Mutation_resetUser(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ResetUser(ctx, fc.Args["email"].(string))
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Mutation_resetUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_resetUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_sendSummaryNow(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -9264,6 +9963,38 @@ func (ec *executionContext) fieldContext_Query_serverInfo(_ context.Context, fie
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return ec.childFields_ServerInfo(ctx, field)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_accessEntries(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Query_accessEntries(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().AccessEntries(ctx)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.AccessEntry) graphql.Marshaler {
+			return ec.marshalNAccessEntry2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAccessEntryᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Query_accessEntries(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_AccessEntry(ctx, field)
 		},
 	}
 	return fc, nil
@@ -11600,6 +12331,29 @@ func (ec *executionContext) fieldContext_User_isAdmin(_ context.Context, field g
 	return graphql.NewScalarFieldContext("User", field, true, true, errors.New("field of type Boolean does not have child fields"))
 }
 
+func (ec *executionContext) _User_access(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_User_access(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.User().Access(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v model.AccessStatus) graphql.Marshaler {
+			return ec.marshalNAccessStatus2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAccessStatus(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_User_access(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("User", field, true, true, errors.New("field of type AccessStatus does not have child fields"))
+}
+
 func (ec *executionContext) _ValidationResult_ok(ctx context.Context, field graphql.CollectedField, obj *model.ValidationResult) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -12883,6 +13637,79 @@ func (ec *executionContext) unmarshalInputOpParams(ctx context.Context, obj any)
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var accessEntryImplementors = []string{"AccessEntry"}
+
+func (ec *executionContext) _AccessEntry(ctx context.Context, sel ast.SelectionSet, obj *model.AccessEntry) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, accessEntryImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferredFieldSet := graphql.NewFieldSet(nil)
+	deferLabelToView := make(map[string]*graphql.FieldSetView)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AccessEntry")
+		case "email":
+			out.Values[i] = ec._AccessEntry_email(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._AccessEntry_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "department":
+			out.Values[i] = ec._AccessEntry_department(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "status":
+			out.Values[i] = ec._AccessEntry_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "reason":
+			out.Values[i] = ec._AccessEntry_reason(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "requestedAt":
+			out.Values[i] = ec._AccessEntry_requestedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "decidedAt":
+			out.Values[i] = ec._AccessEntry_decidedAt(ctx, field, obj)
+			if out.Values[i] == graphql.RequiredNull {
+				out.Invalids++
+			}
+		case "decidedBy":
+			out.Values[i] = ec._AccessEntry_decidedBy(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(min(len(deferLabelToView), math.MaxInt32)))
+
+	ec.ProcessDeferredGroup(graphql.DeferredGroup{
+		Defers:   deferLabelToView,
+		Path:     graphql.GetPath(ctx),
+		FieldSet: deferredFieldSet,
+		Context:  ctx,
+	})
+
+	return out
+}
 
 var activityEntryImplementors = []string{"ActivityEntry"}
 
@@ -14184,6 +15011,41 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "requestAccess":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_requestAccess(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "approveUser":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_approveUser(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "rejectUser":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_rejectUser(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "revokeUser":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_revokeUser(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "resetUser":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_resetUser(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "sendSummaryNow":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_sendSummaryNow(ctx, field)
@@ -14749,6 +15611,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_serverInfo(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "accessEntries":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_accessEntries(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -15997,6 +16881,44 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "access":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_access(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -16463,6 +17385,42 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) marshalNAccessEntry2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAccessEntryᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.AccessEntry) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNAccessEntry2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAccessEntry(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAccessEntry2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAccessEntry(ctx context.Context, sel ast.SelectionSet, v *model.AccessEntry) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AccessEntry(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNAccessStatus2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAccessStatus(ctx context.Context, v any) (model.AccessStatus, error) {
+	var res model.AccessStatus
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAccessStatus2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAccessStatus(ctx context.Context, sel ast.SelectionSet, v model.AccessStatus) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalNActivityEntry2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐActivityEntryᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ActivityEntry) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
@@ -16515,10 +17473,6 @@ func (ec *executionContext) marshalNAssignmentRepos2ᚖgithubᚗcomᚋobcodeᚋg
 	return ec._AssignmentRepos(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNAssignmentView2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAssignmentView(ctx context.Context, sel ast.SelectionSet, v model.AssignmentView) graphql.Marshaler {
-	return ec._AssignmentView(ctx, sel, &v)
-}
-
 func (ec *executionContext) marshalNAssignmentView2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐAssignmentView(ctx context.Context, sel ast.SelectionSet, v *model.AssignmentView) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -16545,10 +17499,6 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) marshalNCheckProgress2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCheckProgress(ctx context.Context, sel ast.SelectionSet, v model.CheckProgress) graphql.Marshaler {
-	return ec._CheckProgress(ctx, sel, &v)
-}
-
 func (ec *executionContext) marshalNCheckProgress2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCheckProgress(ctx context.Context, sel ast.SelectionSet, v *model.CheckProgress) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -16557,10 +17507,6 @@ func (ec *executionContext) marshalNCheckProgress2ᚖgithubᚗcomᚋobcodeᚋgla
 		return graphql.Null
 	}
 	return ec._CheckProgress(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNCourse2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCourse(ctx context.Context, sel ast.SelectionSet, v model.Course) graphql.Marshaler {
-	return ec._Course(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNCourse2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐCourseᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Course) graphql.Marshaler {
@@ -16810,10 +17756,6 @@ func (ec *executionContext) marshalNFindingSeverity2githubᚗcomᚋobcodeᚋglab
 	return v
 }
 
-func (ec *executionContext) marshalNGitLabTokenStatus2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐGitLabTokenStatus(ctx context.Context, sel ast.SelectionSet, v model.GitLabTokenStatus) graphql.Marshaler {
-	return ec._GitLabTokenStatus(ctx, sel, &v)
-}
-
 func (ec *executionContext) marshalNGitLabTokenStatus2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐGitLabTokenStatus(ctx context.Context, sel ast.SelectionSet, v *model.GitLabTokenStatus) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -16973,10 +17915,6 @@ func (ec *executionContext) marshalNLogLevel2githubᚗcomᚋobcodeᚋglabsᚋv3�
 	return v
 }
 
-func (ec *executionContext) marshalNLogLine2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐLogLine(ctx context.Context, sel ast.SelectionSet, v model.LogLine) graphql.Marshaler {
-	return ec._LogLine(ctx, sel, &v)
-}
-
 func (ec *executionContext) marshalNLogLine2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐLogLine(ctx context.Context, sel ast.SelectionSet, v *model.LogLine) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -16995,10 +17933,6 @@ func (ec *executionContext) unmarshalNOp2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwe
 
 func (ec *executionContext) marshalNOp2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐOp(ctx context.Context, sel ast.SelectionSet, v model.Op) graphql.Marshaler {
 	return v
-}
-
-func (ec *executionContext) marshalNOpPlan2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐOpPlan(ctx context.Context, sel ast.SelectionSet, v model.OpPlan) graphql.Marshaler {
-	return ec._OpPlan(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNOpPlan2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐOpPlan(ctx context.Context, sel ast.SelectionSet, v *model.OpPlan) graphql.Marshaler {
@@ -17035,10 +17969,6 @@ func (ec *executionContext) marshalNPlannedTarget2ᚖgithubᚗcomᚋobcodeᚋgla
 		return graphql.Null
 	}
 	return ec._PlannedTarget(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNPlatformSummary2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐPlatformSummary(ctx context.Context, sel ast.SelectionSet, v model.PlatformSummary) graphql.Marshaler {
-	return ec._PlatformSummary(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNPlatformSummary2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐPlatformSummary(ctx context.Context, sel ast.SelectionSet, v *model.PlatformSummary) graphql.Marshaler {
@@ -17103,10 +18033,6 @@ func (ec *executionContext) marshalNProjectReport2ᚖgithubᚗcomᚋobcodeᚋgla
 	return ec._ProjectReport(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNRepoOverviewEvent2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐRepoOverviewEvent(ctx context.Context, sel ast.SelectionSet, v model.RepoOverviewEvent) graphql.Marshaler {
-	return ec._RepoOverviewEvent(ctx, sel, &v)
-}
-
 func (ec *executionContext) marshalNRepoOverviewEvent2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐRepoOverviewEvent(ctx context.Context, sel ast.SelectionSet, v *model.RepoOverviewEvent) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -17169,10 +18095,6 @@ func (ec *executionContext) marshalNRepoUrl2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv
 	return ec._RepoUrl(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNReportProgress2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐReportProgress(ctx context.Context, sel ast.SelectionSet, v model.ReportProgress) graphql.Marshaler {
-	return ec._ReportProgress(ctx, sel, &v)
-}
-
 func (ec *executionContext) marshalNReportProgress2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐReportProgress(ctx context.Context, sel ast.SelectionSet, v *model.ReportProgress) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -17181,10 +18103,6 @@ func (ec *executionContext) marshalNReportProgress2ᚖgithubᚗcomᚋobcodeᚋgl
 		return graphql.Null
 	}
 	return ec._ReportProgress(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNScheduledJob2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐScheduledJob(ctx context.Context, sel ast.SelectionSet, v model.ScheduledJob) graphql.Marshaler {
-	return ec._ScheduledJob(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNScheduledJob2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐScheduledJobᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.ScheduledJob) graphql.Marshaler {
@@ -17211,10 +18129,6 @@ func (ec *executionContext) marshalNScheduledJob2ᚖgithubᚗcomᚋobcodeᚋglab
 		return graphql.Null
 	}
 	return ec._ScheduledJob(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNServerInfo2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐServerInfo(ctx context.Context, sel ast.SelectionSet, v model.ServerInfo) graphql.Marshaler {
-	return ec._ServerInfo(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNServerInfo2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐServerInfo(ctx context.Context, sel ast.SelectionSet, v *model.ServerInfo) graphql.Marshaler {
@@ -17402,10 +18316,6 @@ func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel as
 	return res
 }
 
-func (ec *executionContext) marshalNUser2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
-	return ec._User(ctx, sel, &v)
-}
-
 func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -17414,10 +18324,6 @@ func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3�
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNValidationResult2githubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐValidationResult(ctx context.Context, sel ast.SelectionSet, v model.ValidationResult) graphql.Marshaler {
-	return ec._ValidationResult(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNValidationResult2ᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐValidationResult(ctx context.Context, sel ast.SelectionSet, v *model.ValidationResult) graphql.Marshaler {

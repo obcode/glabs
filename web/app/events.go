@@ -96,9 +96,10 @@ func (a *App) NoteLogin(ctx context.Context, email, name, department string) {
 	})
 }
 
-// NoteRejectedLogin records a refused request: no identity at all, or an email not
-// on the allowlist. These are rare and security-relevant, so each is logged (no
-// throttle) as a warning.
+// NoteRejectedLogin records a refused request: one without any identity. These
+// are rare and security-relevant, so each is logged (no throttle) as a warning.
+// An authenticated but unapproved user is not a rejected login; the access gate
+// lets them in far enough to ask for access.
 func (a *App) NoteRejectedLogin(ctx context.Context, email, department, reason string) {
 	a.recordEvent(ctx, &db.Event{
 		Type:       db.EventLoginRejected,

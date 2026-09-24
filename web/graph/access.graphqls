@@ -1,0 +1,59 @@
+# Who may use glabs. Being authenticated by the proxy is not enough: until an
+# admin approves them, a user can read only `me` and `serverInfo` and ask for
+# access with `requestAccess`. Everything else is refused by the access gate.
+
+"Where a user stands with glabs."
+enum AccessStatus {
+  "Never asked."
+  NONE
+  "Asked; an admin has not decided yet."
+  PENDING
+  "May use glabs. Admins always are."
+  APPROVED
+  "The request was turned down."
+  REJECTED
+  "Access was withdrawn."
+  REVOKED
+}
+
+extend type User {
+  "Whether this user may use glabs."
+  access: AccessStatus!
+}
+
+"One person who asked for access, with an admin's decision."
+type AccessEntry {
+  email: String!
+  name: String!
+  "Faculty number (fhmDepartment), when the proxy forwards it."
+  department: String!
+  status: AccessStatus!
+  "What the requester wrote about why they need glabs."
+  reason: String!
+  requestedAt: Time!
+  decidedAt: Time
+  "The admin who decided; empty while pending."
+  decidedBy: String!
+}
+
+extend type Query {
+  "Every access request and decision, open requests first. Admin-only."
+  accessEntries: [AccessEntry!]!
+}
+
+extend type Mutation {
+  """
+  Ask to be let in; the admins get a mail. Only for someone who never asked:
+  a repeated request while pending does nothing, and a decided one must be
+  reset by an admin. Returns the caller with the new status.
+  """
+  requestAccess(reason: String): User!
+  "Approve a request; the user gets a mail. Admin-only."
+  approveUser(email: String!): AccessEntry!
+  "Turn a request down; the user gets a mail. Admin-only."
+  rejectUser(email: String!): AccessEntry!
+  "Withdraw access, without a mail. Admin-only."
+  revokeUser(email: String!): AccessEntry!
+  "Forget the request and any decision, so the user can ask again. Admin-only."
+  resetUser(email: String!): Boolean!
+}

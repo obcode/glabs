@@ -13,14 +13,35 @@ import (
 //go:embed tmpl/*.tmpl
 var templates embed.FS
 
-// Template file names for the four job-notification mails and the admin summary.
+// Template file names for the four job-notification mails, the admin summary and
+// the three access mails.
 const (
-	TmplScheduled    = "jobScheduled.md.tmpl"
-	TmplDone         = "jobDone.md.tmpl"
-	TmplFailed       = "jobFailed.md.tmpl"
-	TmplExpired      = "jobExpired.md.tmpl"
-	TmplAdminSummary = "adminSummary.md.tmpl"
+	TmplScheduled       = "jobScheduled.md.tmpl"
+	TmplDone            = "jobDone.md.tmpl"
+	TmplFailed          = "jobFailed.md.tmpl"
+	TmplExpired         = "jobExpired.md.tmpl"
+	TmplAdminSummary    = "adminSummary.md.tmpl"
+	TmplAccessRequested = "accessRequested.md.tmpl"
+	TmplAccessGranted   = "accessGranted.md.tmpl"
+	TmplAccessRejected  = "accessRejected.md.tmpl"
 )
+
+// AccessMail is the data the three access mails render. Link is the page the
+// recipient should open; empty when no public URL is configured, and the
+// templates then fall back to a description.
+//
+// Reason is free text from the requester and ends up in an HTML mail. The
+// template puts it in a fenced code block, whose content the Markdown renderer
+// escapes; the app removes backticks from it first so it cannot close that
+// block early.
+type AccessMail struct {
+	Email       string
+	Name        string
+	Department  string
+	Reason      string
+	RequestedAt time.Time
+	Link        string
+}
 
 // JobMail is the data a job-notification template renders. It is library-neutral,
 // so the runner does not depend on anything mail-internal.

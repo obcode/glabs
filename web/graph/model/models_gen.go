@@ -10,6 +10,21 @@ import (
 	"time"
 )
 
+// One person who asked for access, with an admin's decision.
+type AccessEntry struct {
+	Email string `json:"email"`
+	Name  string `json:"name"`
+	// Faculty number (fhmDepartment), when the proxy forwards it.
+	Department string       `json:"department"`
+	Status     AccessStatus `json:"status"`
+	// What the requester wrote about why they need glabs.
+	Reason      string     `json:"reason"`
+	RequestedAt time.Time  `json:"requestedAt"`
+	DecidedAt   *time.Time `json:"decidedAt,omitempty"`
+	// The admin who decided; empty while pending.
+	DecidedBy string `json:"decidedBy"`
+}
+
 // One recorded operation performed through the web against an assignment — the
 // web's stand-in for the shell history the CLI leaves behind. The course page reads
 // it to show, per assignment, what has already happened (setaccess, protect,
@@ -513,6 +528,73 @@ type ValidationResult struct {
 	ResolveError *string `json:"resolveError,omitempty"`
 }
 
+// Where a user stands with glabs.
+type AccessStatus string
+
+const (
+	// Never asked.
+	AccessStatusNone AccessStatus = "NONE"
+	// Asked; an admin has not decided yet.
+	AccessStatusPending AccessStatus = "PENDING"
+	// May use glabs. Admins always are.
+	AccessStatusApproved AccessStatus = "APPROVED"
+	// The request was turned down.
+	AccessStatusRejected AccessStatus = "REJECTED"
+	// Access was withdrawn.
+	AccessStatusRevoked AccessStatus = "REVOKED"
+)
+
+var AllAccessStatus = []AccessStatus{
+	AccessStatusNone,
+	AccessStatusPending,
+	AccessStatusApproved,
+	AccessStatusRejected,
+	AccessStatusRevoked,
+}
+
+func (e AccessStatus) IsValid() bool {
+	switch e {
+	case AccessStatusNone, AccessStatusPending, AccessStatusApproved, AccessStatusRejected, AccessStatusRevoked:
+		return true
+	}
+	return false
+}
+
+func (e AccessStatus) String() string {
+	return string(e)
+}
+
+func (e *AccessStatus) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = AccessStatus(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid AccessStatus", str)
+	}
+	return nil
+}
+
+func (e AccessStatus) MarshalGQL(w io.Writer) {
+	_, _ = fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *AccessStatus) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e AccessStatus) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
 // The input shape the GUI should render for a field.
 type FieldKind string
 
@@ -558,7 +640,7 @@ func (e *FieldKind) UnmarshalGQL(v any) error {
 }
 
 func (e FieldKind) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
+	_, _ = fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
 func (e *FieldKind) UnmarshalJSON(b []byte) error {
@@ -615,7 +697,7 @@ func (e *FindingSeverity) UnmarshalGQL(v any) error {
 }
 
 func (e FindingSeverity) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
+	_, _ = fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
 func (e *FindingSeverity) UnmarshalJSON(b []byte) error {
@@ -679,7 +761,7 @@ func (e *JobStatus) UnmarshalGQL(v any) error {
 }
 
 func (e JobStatus) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
+	_, _ = fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
 func (e *JobStatus) UnmarshalJSON(b []byte) error {
@@ -743,7 +825,7 @@ func (e *LogLevel) UnmarshalGQL(v any) error {
 }
 
 func (e LogLevel) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
+	_, _ = fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
 func (e *LogLevel) UnmarshalJSON(b []byte) error {
@@ -807,7 +889,7 @@ func (e *Op) UnmarshalGQL(v any) error {
 }
 
 func (e Op) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
+	_, _ = fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
 func (e *Op) UnmarshalJSON(b []byte) error {
@@ -871,7 +953,7 @@ func (e *StudentCheckStatus) UnmarshalGQL(v any) error {
 }
 
 func (e StudentCheckStatus) MarshalGQL(w io.Writer) {
-	fmt.Fprint(w, strconv.Quote(e.String()))
+	_, _ = fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
 func (e *StudentCheckStatus) UnmarshalJSON(b []byte) error {

@@ -1,0 +1,17 @@
+## Neue Anfrage auf Freischaltung
+
+**{{ if .Name }}{{ .Name }} ({{ .Email }}){{ else }}{{ .Email }}{{ end }}** möchte glabs nutzen.
+
+- **E-Mail:** {{ .Email }}{{ if .Department }}
+- **Fakultät:** {{ .Department }}{{ end }}
+- **Angefragt:** {{ datetime .RequestedAt }}
+{{ if .Reason }}
+Begründung:
+
+```
+{{ .Reason }}
+```
+{{ end }}
+{{ if .Link }}[Anfrage ansehen und freischalten]({{ .Link }})
+
+{{ .Link }}{{ else }}Freischalten kannst du im Admin-Bereich von glabs unter „Freischaltungen“ (/admin/access).{{ end }}

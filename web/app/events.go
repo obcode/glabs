@@ -41,9 +41,10 @@ func (a *App) IsAdminEmail(email string) bool {
 // IsAdmin reports whether the request's user is a platform admin (on the config
 // admins list). Admins see the monitoring page and receive the nightly summary;
 // there is no other privilege — ordinary data access stays strictly owner-scoped.
+// An admin in preview mode is not an admin for the request.
 func (a *App) IsAdmin(ctx context.Context) bool {
 	u := principal.UserFromContext(ctx)
-	if u == nil {
+	if u == nil || u.Preview {
 		return false
 	}
 	return a.IsAdminEmail(u.Email)

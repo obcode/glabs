@@ -28,7 +28,7 @@ func (r *queryResolver) ServerInfo(ctx context.Context) (*model.ServerInfo, erro
 
 // IsAdmin is the resolver for the isAdmin field.
 func (r *userResolver) IsAdmin(ctx context.Context, obj *model.User) (bool, error) {
-	return r.app.IsAdminEmail(obj.Email), nil
+	return r.app.IsAdmin(ctx) && r.app.IsAdminEmail(obj.Email), nil
 }
 
 // Query returns generated.QueryResolver implementation.

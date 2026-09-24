@@ -319,3 +319,56 @@ func (f mailerFunc) Send(_ bool, to, subject string, text, _ []byte) error {
 	f(to, subject, text)
 	return nil
 }
+
+func previewAs(email string) context.Context {
+	return principal.WithUser(context.Background(), &model.User{Email: email, Preview: true})
+}
+
+// Preview mode lets an admin walk the whole flow with their own identity.
+func TestPreview_adminWalksTheRequestFlow(t *testing.T) {
+	a, fs, fm := newAccessApp()
+	preview := previewAs(testAdmin)
+
+	if a.IsAdmin(preview) {
+		t.Error("an admin in preview mode must not be an admin")
+	}
+	if a.IsApproved(preview) {
+		t.Fatal("an admin in preview mode without a row must not be approved")
+	}
+	if err := a.RequestAccess(preview, "Test"); err != nil {
+		t.Fatalf("RequestAccess in preview: %v", err)
+	}
+	if fs.users[testAdmin] == nil || len(fm.sent) != 2 {
+		t.Fatalf("row = %+v, mails = %d; want a row and a mail to each admin", fs.users[testAdmin], len(fm.sent))
+	}
+	if _, err := a.ApproveUser(preview, testAdmin); err == nil {
+		t.Error("no admin rights in preview mode: approving must fail")
+	}
+
+	// Out of preview the admin approves their own request, and the preview sees it.
+	if _, err := a.ApproveUser(as(testAdmin), testAdmin); err != nil {
+		t.Fatalf("ApproveUser: %v", err)
+	}
+	if !a.IsApproved(preview) {
+		t.Error("after approval the preview must be approved")
+	}
+	if _, err := a.RevokeUser(as(testAdmin), testAdmin); err != nil {
+		t.Fatal(err)
+	}
+	if a.IsApproved(preview) {
+		t.Error("after revoking the preview must be locked out")
+	}
+	// Outside preview a revoked row does not matter: admins are always in.
+	if !a.IsApproved(as(testAdmin)) || !a.IsAdmin(as(testAdmin)) {
+		t.Error("outside preview an admin must stay approved and admin")
+	}
+}
+
+// The preview flag of one request never changes how another email is judged.
+func TestPreview_onlyAffectsTheCaller(t *testing.T) {
+	a, _, _ := newAccessApp()
+	status, err := a.AccessStatus(previewAs(testUser), testAdmin)
+	if err != nil || status != db.AccessApproved {
+		t.Errorf("admin status looked up during someone else's preview = %q, %v; want approved", status, err)
+	}
+}

@@ -26,6 +26,10 @@ type authProvider interface {
 	NoteRejectedLogin(ctx context.Context, email, department, reason string)
 }
 
+// previewHeader switches an admin into preview mode for one request; see
+// model.User.Preview. The GUI sets it from a cookie on its server-side calls.
+const previewHeader = "X-Glabs-Preview"
+
 // authMiddleware trusts the identity injected by the auth proxy (oauth2-proxy →
 // Caddy sets X-Remote-User to the verified OIDC email). It is fail-closed on the
 // header: no header is 401. It answers only "who is this"; whether that person
@@ -77,6 +81,10 @@ func authMiddleware(p authProvider) func(http.Handler) http.Handler {
 				// later, per field. The display name comes from its header (empty is
 				// fine).
 				user = &model.User{Email: email, Name: strings.TrimSpace(r.Header.Get(nameHeader)), Department: dept}
+				// Preview mode (an admin looking at glabs as an unapproved user) is
+				// asked for by the caller and can only lower the caller's own rights,
+				// so the header needs no protection by the proxy.
+				user.Preview = r.Header.Get(previewHeader) == "unapproved"
 				p.NoteLogin(r.Context(), user.Email, user.Name, dept)
 			}
 			ctx := principal.WithUser(r.Context(), user)

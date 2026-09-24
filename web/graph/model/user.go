@@ -14,4 +14,8 @@ type User struct {
 	// Department is the faculty the proxy forwards, when it does. It is not part
 	// of the GraphQL type; it travels along so an access request can show it.
 	Department string `json:"-" bson:"-"`
+	// Preview is set when an admin asked to see glabs as someone who is not
+	// approved (header X-Glabs-Preview). It only ever takes rights away, and only
+	// the caller's own: the identity stays the proxy's.
+	Preview bool `json:"-" bson:"-"`
 }

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -76,6 +77,9 @@ func Serve() error {
 	}
 	if viper.IsSet("db.database") {
 		log.Warn().Msg("db.database is set but no longer used — the database name is part of db.uri now; remove the key")
+	}
+	if err := checkGitlabHost(viper.GetString("gitlab.host")); err != nil {
+		return err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -246,6 +250,21 @@ func setupReporting() (zerolog.LevelWriter, func()) {
 // InitConfig loads .glabs-web.yaml. Exported for the mongo2pg subcommand, which
 // needs db.uri and secrets.key from the same file the server reads, without
 // starting a server. It goes back to being unexported when that tool is removed.
+// checkGitlabHost rejects a gitlab.host without scheme. The GitLab client
+// takes it as its base URL, so "gitlab.example.org" only fails at the first API
+// call, in the middle of a generate run, as `unsupported protocol scheme ""`.
+// Empty is allowed: the config editor works without GitLab.
+func checkGitlabHost(host string) error {
+	if host == "" {
+		return nil
+	}
+	u, err := url.Parse(host)
+	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" {
+		return fmt.Errorf("gitlab.host %q must be a URL with scheme, e.g. https://%s", host, strings.TrimPrefix(host, "//"))
+	}
+	return nil
+}
+
 func InitConfig() error { return initConfig() }
 
 func initConfig() error {

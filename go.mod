@@ -4,12 +4,12 @@ go 1.26.0
 
 require (
 	github.com/99designs/gqlgen v0.17.95
-	github.com/ProtonMail/go-crypto v1.4.1
+	github.com/ProtonMail/go-crypto v1.5.2
 	github.com/coder/websocket v1.8.15
 	github.com/getsentry/sentry-go v0.49.0
 	github.com/getsentry/sentry-go/zerolog v0.49.0
 	github.com/go-chi/chi/v5 v5.3.2
-	github.com/go-git/go-billy/v5 v5.9.1
+	github.com/go-git/go-billy/v5 v5.9.2
 	github.com/go-git/go-git/v5 v5.19.2
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/google/go-cmp v0.7.0
@@ -26,7 +26,7 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/testcontainers/testcontainers-go v0.44.0
 	github.com/theckman/yacspin v0.13.12
-	github.com/vektah/gqlparser/v2 v2.5.37
+	github.com/vektah/gqlparser/v2 v2.5.58
 	github.com/wneessen/go-mail v0.8.1
 	gitlab.com/gitlab-org/api/client-go/v2 v2.64.0
 	go.mongodb.org/mongo-driver/v2 v2.9.1

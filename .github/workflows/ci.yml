@@ -159,8 +159,10 @@ jobs:
       - name: Run integration tests
         env:
           GLABS_RUN_GITLAB_TC: "1"
+        # GitLab CE alone can take 8+ minutes to come up on a slow runner, which
+        # used up go test's default 10m timeout before the tests even started.
         run: |
-          go test -tags=integration ./gitlab/... -count=1 -v -run '^TestIntegration_'
+          go test -tags=integration ./gitlab/... -count=1 -v -timeout 30m -run '^TestIntegration_'
 
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

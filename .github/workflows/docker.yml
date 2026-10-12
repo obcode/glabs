@@ -81,10 +81,8 @@ jobs:
   # change here can no longer reach the production host.
   dispatch-deploy:
     needs: build-and-push-image
-    # Feature gate, like AUTO_DEPLOY below: without DISPATCH_TOKEN, `gh api` aborts on an empty
-    # GH_TOKEN and turns the release run red although the image was pushed fine. Arm this
-    # together with AUTO_DEPLOY in glabs.dev — and only after AUTO_DEPLOY here is off, or both
-    # runners would roll the same release at once.
+    # Feature gate: without DISPATCH_TOKEN, `gh api` aborts on an empty GH_TOKEN and turns the
+    # release run red although the image was pushed fine.
     if: ${{ vars.DEPLOY_DISPATCH_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     permissions: {}

@@ -68,7 +68,7 @@ jobs:
           --health-retries 10
       # The same reasoning for PostgreSQL. internal/pgtest creates one database
       # per test from a template, so the user needs CREATEDB -- the superuser the
-      # image sets up has it. 18 matches deploy/ and the dev container.
+      # image sets up has it. 18 matches production and the dev container.
       postgres:
         image: postgres:18
         env:

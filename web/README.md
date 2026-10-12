@@ -82,8 +82,8 @@ ordinary owner-scoped access. They get:
   GUI whether to show the admin page.
 
 The optional `X-Remote-Department` header (the HM `fhmDepartment` claim, forwarded
-by the proxy — see `deploy/`) enriches login events with the faculty number; it is
-authorization-irrelevant and absent-safe.
+by the proxy — which is configured with the deployment, not in this repo) enriches
+login events with the faculty number; it is authorization-irrelevant and absent-safe.
 
 ## Running locally
 

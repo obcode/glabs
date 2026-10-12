@@ -72,8 +72,8 @@ func Serve() error {
 		// The scheme is the whole diagnosis anyway.
 		scheme, _, _ := strings.Cut(uri, "://")
 		return fmt.Errorf("db.uri is a %s:// connection string, but this build stores its data "+
-			"in PostgreSQL. See deploy/README.md, \"Umstellung auf PostgreSQL\" — the backup of "+
-			"the previous config is .glabs-web.yaml.mongo.bak", scheme)
+			"in PostgreSQL. See the deploy runbook, \"Umstellung auf PostgreSQL\" — the backup "+
+			"of the previous config is .glabs-web.yaml.mongo.bak", scheme)
 	}
 	if viper.IsSet("db.database") {
 		log.Warn().Msg("db.database is set but no longer used — the database name is part of db.uri now; remove the key")

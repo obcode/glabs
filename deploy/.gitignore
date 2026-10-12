@@ -1,3 +1,0 @@
-# The real secrets live on the host, never in git.
-.env
-.glabs-web.yaml

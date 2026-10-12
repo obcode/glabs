@@ -27,12 +27,10 @@ updates:
     cooldown:
       default-days: 3
 
-  # Die gepinnten Fremd-Images aus deploy/docker-compose.yml werden hier NICHT mehr
-  # beobachtet. Das Deployment liegt seit dem Split im privaten obcode/glabs.dev, und dort
-  # deckt die dependabot.yml dieselben Images ab. Ein zweiter Eintrag hier hätte eine Datei
-  # gebumpt, die nichts mehr ausrollt — die PRs sähen aber so aus, als kämen sie in
-  # Produktion an. deploy/ selbst bleibt vorerst liegen: der alte, abgeschaltete deploy-Job
-  # checkt es beim Rollback aus einem Release-Tag aus.
+  # No docker-compose entry here. The deployment, including the compose file and the images
+  # it pins, lives with the deploy workflow and is watched there. An entry here would raise
+  # PRs against a file this repo does not deploy from, and they would look like they reached
+  # production -- which is how an oauth2-proxy bump once sat merged but unrolled for weeks.
   - package-ecosystem: github-actions
     directory: '/'
     schedule:

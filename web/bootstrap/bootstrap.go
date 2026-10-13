@@ -247,9 +247,6 @@ func setupReporting() (zerolog.LevelWriter, func()) {
 	return reporter, obs.Flush
 }
 
-// InitConfig loads .glabs-web.yaml. Exported for the mongo2pg subcommand, which
-// needs db.uri and secrets.key from the same file the server reads, without
-// starting a server. It goes back to being unexported when that tool is removed.
 // checkGitlabHost rejects a gitlab.host without scheme. The GitLab client
 // takes it as its base URL, so "gitlab.example.org" only fails at the first API
 // call, in the middle of a generate run, as `unsupported protocol scheme ""`.
@@ -264,8 +261,6 @@ func checkGitlabHost(host string) error {
 	}
 	return nil
 }
-
-func InitConfig() error { return initConfig() }
 
 func initConfig() error {
 	home, err := homedir.Dir()

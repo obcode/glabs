@@ -11,16 +11,17 @@ import (
 )
 
 // TestSourceTagsAreComplete walks CourseSource and everything reachable from it
-// and requires every exported field to carry both a bson and a json tag, with
-// the same name.
+// and requires every exported field to carry a json tag.
 //
-// The failure it exists to prevent is silent in both directions. Without a bson
-// tag the MongoDB driver lowercases the Go field name, so UseEmailDomainAsSuffix
-// is stored as "useemaildomainassuffix" and the value written last week no
-// longer reads back. Without a json tag encoding/json capitalises it instead.
-// Either way nothing errors: the field simply comes back as its zero value, and
-// for a *bool whose absence means true, that flips behaviour rather than losing
-// a string.
+// The failure it exists to prevent is silent. CourseSource is stored as jsonb, so
+// without a json tag encoding/json uses the capitalised Go field name:
+// UseEmailDomainAsSuffix is written as "UseEmailDomainAsSuffix" and the value
+// written last week no longer reads back. Nothing errors — the field simply comes
+// back as its zero value, and for a *bool whose absence means true, that flips
+// behaviour rather than losing a string.
+//
+// It used to require a matching bson tag as well. That half went with the MongoDB
+// store on 2026-10-13; the json half is the one that is load-bearing now.
 //
 // A test over the types rather than over a fixture is the only version of this
 // that keeps working: a field added next year is covered the day it is added,
@@ -46,16 +47,8 @@ func TestSourceTagsAreComplete(t *testing.T) {
 			}
 			where := path + "." + f.Name
 
-			bsonName, bsonOK := tagName(f, "bson")
-			jsonName, jsonOK := tagName(f, "json")
-			switch {
-			case !bsonOK:
-				t.Errorf("%s has no bson tag — MongoDB would store it under a lowercased field name", where)
-			case !jsonOK:
-				t.Errorf("%s has no json tag — PostgreSQL would store it under the Go field name", where)
-			case bsonName != jsonName:
-				t.Errorf("%s is stored as %q in bson but %q in json; the two storage formats must agree",
-					where, bsonName, jsonName)
+			if _, ok := tagName(f, "json"); !ok {
+				t.Errorf("%s has no json tag — it would be stored under the Go field name", where)
 			}
 			walk(t, f.Type, where)
 		}

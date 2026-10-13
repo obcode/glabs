@@ -9,13 +9,13 @@ package model
 // by hand rather than generated so it carries bson tags (it was once persisted);
 // gqlgen binds to it via autobind.
 type User struct {
-	Email string `json:"email" bson:"email"`
-	Name  string `json:"name" bson:"name"`
+	Email string `json:"email"`
+	Name  string `json:"name"`
 	// Department is the faculty the proxy forwards, when it does. It is not part
 	// of the GraphQL type; it travels along so an access request can show it.
-	Department string `json:"-" bson:"-"`
+	Department string `json:"-"`
 	// Preview is set when an admin asked to see glabs as someone who is not
 	// approved (header X-Glabs-Preview). It only ever takes rights away, and only
 	// the caller's own: the identity stays the proxy's.
-	Preview bool `json:"-" bson:"-"`
+	Preview bool `json:"-"`
 }

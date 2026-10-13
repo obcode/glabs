@@ -122,10 +122,11 @@ func runUserSecrets(t *testing.T, newStore NewStore) {
 	})
 
 	t.Run("deleting a token nobody stored is a no-op", func(t *testing.T) {
-		// Pinned as it is, not as it ought to be: the Mongo update matches no
-		// document and reports success. The token-deletion path in web/app is
-		// idempotent by design ("make sure there is none"), so this is the
-		// behaviour above it relies on.
+		// Not an accident of the implementation: the token-deletion path in
+		// web/app is idempotent by design ("make sure there is none"), so a
+		// delete for an owner with no row must succeed rather than report
+		// "not found". It was first pinned here because that is what the MongoDB
+		// update did; the reason it stays is the caller above.
 		s := newStore(t)
 		if err := s.DeleteUserGitLabToken(t.Context(), "niemand@hm.edu"); err != nil {
 			t.Errorf("DeleteUserGitLabToken for an unknown owner: err = %v, want nil", err)

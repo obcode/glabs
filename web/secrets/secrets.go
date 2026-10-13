@@ -19,13 +19,13 @@ import (
 // today; the selection logic would come with an actual rotation.
 const currentKeyVersion = 1
 
-// SealedValue is an encrypted secret as stored in MongoDB. It carries everything
+// SealedValue is an encrypted secret as stored in the database. It carries everything
 // needed to decrypt except the key: the key version, the per-value random nonce and
 // the GCM ciphertext (which already includes the authentication tag).
 type SealedValue struct {
-	KeyVersion int    `bson:"keyVersion" json:"keyVersion"`
-	Nonce      []byte `bson:"nonce" json:"nonce"`
-	Ciphertext []byte `bson:"ciphertext" json:"ciphertext"`
+	KeyVersion int    `json:"keyVersion"`
+	Nonce      []byte `json:"nonce"`
+	Ciphertext []byte `json:"ciphertext"`
 }
 
 // Sealer seals and opens secrets with a fixed KEK. A nil *Sealer means "no key

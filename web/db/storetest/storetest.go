@@ -1,5 +1,5 @@
-// Package storetest is the contract every glabs-web store implementation has to
-// satisfy, written once and run against each of them.
+// Package storetest is the contract a glabs-web store implementation has to
+// satisfy, written once and run against it.
 //
 // It exists because web/db had no tests at all when the move from MongoDB to
 // PostgreSQL began. Porting a database layer without one means testing the new
@@ -9,19 +9,23 @@
 // succeed? does an absent secret come back as an error or as nil?) are exactly
 // the parts the app above relies on.
 //
-// So the suite is written against the MongoDB implementation FIRST, while it is
+// So it was written against the MongoDB implementation FIRST, while that was
 // still the one in production, and only then pointed at PostgreSQL. Every
-// assertion here is derived from reading web/db/*.go, not from taste. Where the
-// old behaviour is arguably wrong it is still pinned, and the comment says so;
-// changing it is a separate decision from moving the data.
+// assertion is derived from reading the old implementation, not from taste.
+// **Only PostgreSQL remains** since 2026-10-13, which is worth being honest
+// about: the suite no longer proves that two implementations agree, which was
+// the point of it. What it still does is hold PostgreSQL to the behaviour the
+// app was written against — so an assertion here that looks arbitrary is
+// probably load-bearing, and the comment usually says why.
 //
-// Two things it deliberately does NOT assert:
+// Two things it deliberately does NOT assert, both inherited from needing to be
+// green against both implementations and both still sensible:
 //
-//   - the order of records sharing a timestamp. MongoDB leaves those in an
+//   - the order of records sharing a timestamp. MongoDB left those in an
 //     arbitrary order; PostgreSQL breaks the tie on the identity column. The
-//     suite has to be green against both, so it only ever compares sets there.
+//     suite only ever compares sets there.
 //   - whether an empty result is a nil slice or an empty one. The callers in
-//     web/app all use len(), the two drivers differ, and pinning it would
+//     web/app all use len(), the two drivers differed, and pinning it would
 //     freeze a detail nobody depends on.
 package storetest
 
@@ -40,9 +44,9 @@ import (
 // one is the storage layer's statement of what it promises. They happen to
 // coincide today.
 //
-// ReapExpired is NOT part of it: MongoDB does that with a TTL index rather than
-// a method, so only the PostgreSQL implementation has one. It is tested
-// separately, by the tests of that implementation.
+// ReapExpired is NOT part of it: MongoDB did that with a TTL index rather than a
+// method, so the interface never carried one. It is tested separately, by the
+// tests of the PostgreSQL implementation.
 type Store interface {
 	CoursesOf(ctx context.Context, owner string) ([]*db.StoredCourse, error)
 	CourseOf(ctx context.Context, owner, name string) (*db.StoredCourse, error)

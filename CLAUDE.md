@@ -17,8 +17,7 @@ gofmt -w <file> && go vet ./... && golangci-lint run   # what pre-commit / CI en
 go vet -tags=integration ./...   # compile-check integration tests — plain go vet/test skip them
 
 # Store contract tests (web/db). They skip without a database; in the dev container
-# both are already running, so pointing the variables at them is all it takes:
-GLABS_TEST_MONGO_URI=mongodb://localhost:27017 \
+# PostgreSQL is already running, so pointing the variable at it is all it takes:
 GLABS_TEST_PG_URI=postgres://glabs@localhost:5432/glabs?sslmode=disable \
   go test ./web/db/... -count=1
 
@@ -59,7 +58,7 @@ Three layers, separated by package:
 - `web/bootstrap` — flags, config, the database, then starts the server
 - `web/graph` — gqlgen schema, resolvers, HTTP server, auth middleware
 - `web/app` — the core the resolvers delegate to; holds the database
-- `web/db` — persistence. **`db.PG` (pgx/v5 + sqlc + goose) is what production runs**, since 2026-09-23. `db.DB` (MongoDB, mongo-driver v2) is still here and still satisfies the same `store` interface in `web/app`, because `web/db/storetest` runs one suite against both and that equivalence is what made the switch a config change rather than a leap of faith. It comes out in the migration's cleanup step, and with it the second half of that suite. Schema lives in `web/db/migrations/` (goose, embedded in the binary and applied at startup), queries in `web/db/queries/`, generated code in `web/db/sqlc/` (committed; `sqlc diff` in CI). `sqlc.yaml` is at the repo root. Same stack and conventions as plexams.go and tallox.go.
+- `web/db` — persistence. **`db.PG` (pgx/v5 + sqlc + goose) is the only implementation**; production has run it since 2026-09-23 and the MongoDB one was removed on 2026-10-13. The shared types and constants live in the unsuffixed files (`courses.go`, `jobs.go`, …) next to their `*_pg.go` implementations. Schema lives in `web/db/migrations/` (goose, embedded in the binary and applied at startup), queries in `web/db/queries/`, generated code in `web/db/sqlc/` (committed; `sqlc diff` in CI). `sqlc.yaml` is at the repo root. Same stack and conventions as plexams.go and tallox.go.
 - `web/principal` — the authenticated user in the request context
 
 Import rule: `web/` may import the core packages, never the reverse, and `web/` never imports `cmd/`. Resolvers stay thin (auth gate + delegate to `web/app`). Regenerate GraphQL code with `go generate ./cmd/glabs-web` after editing `web/graph/*.graphqls`; `gqlgen.yml` is at the repo root. Auth is fail-closed on a proxy-injected `X-Remote-User` header; `auth.enabled: false` uses a local dev user. Authenticated is not approved: `web/graph/access_gate.go` refuses every root field except `me`, `serverInfo` and `requestAccess` to users who are neither in `admins` nor approved in the `users` table (PostgreSQL only) — a new root field is closed by default; open it there only if an unapproved user must reach it.
@@ -76,7 +75,7 @@ A `generate` (and most mutating commands) flow: command builds `AssignmentConfig
 ### Testing patterns
 
 - **Contract tests** (`*_contract_test.go` in `gitlab/`) run against an `httptest` mock server via `newContractClient` (in `contract_test_helpers_test.go`), which disables the retryable HTTP wrapper so 5xx mocks don't hang. These run in the default `go test ./...`.
-- **Store contract tests** (`web/db/storetest`) are one suite run against every store implementation, so "PostgreSQL behaves like MongoDB" is a test rather than a hope. They are **not** behind the `integration` tag: they skip unless `GLABS_TEST_MONGO_URI` and `GLABS_TEST_PG_URI` are set, and CI additionally sets `..._REQUIRED=1` so a database that fails to come up breaks the build instead of silently skipping. `internal/mongotest` gives each test its own database and drops it afterwards. Deliberately no Testcontainers: the dev container mounts no Docker socket, and one mechanism has to work in both places.
+- **Store contract tests** (`web/db/storetest`) are one suite written against the behaviour the app relies on. It was written against MongoDB first, while that was still in production, and then pointed at PostgreSQL — that equivalence is what made the switch a config change rather than a leap of faith. With MongoDB gone it no longer proves two implementations agree; it holds PostgreSQL to what the app was written against, so an assertion that looks arbitrary is probably load-bearing. They are **not** behind the `integration` tag: they skip unless `GLABS_TEST_PG_URI` is set, and CI additionally sets `GLABS_TEST_PG_REQUIRED=1` so a database that fails to come up breaks the build instead of silently skipping. `internal/pgtest` gives each test its own database from a template. Deliberately no Testcontainers: the dev container mounts no Docker socket, and one mechanism has to work in both places.
 - **Integration tests** (`integration` build tag) exercise real GitLab CE in containers.
 
 ## Documentation

@@ -4,13 +4,13 @@ go 1.26.0
 
 require (
 	github.com/99designs/gqlgen v0.17.95
-	github.com/ProtonMail/go-crypto v1.4.1
+	github.com/ProtonMail/go-crypto v1.5.2
 	github.com/coder/websocket v1.8.15
-	github.com/getsentry/sentry-go v0.49.0
-	github.com/getsentry/sentry-go/zerolog v0.49.0
+	github.com/getsentry/sentry-go v0.50.0
+	github.com/getsentry/sentry-go/zerolog v0.50.0
 	github.com/go-chi/chi/v5 v5.3.2
-	github.com/go-git/go-billy/v5 v5.9.1
-	github.com/go-git/go-git/v5 v5.19.2
+	github.com/go-git/go-billy/v5 v5.9.2
+	github.com/go-git/go-git/v5 v5.19.3
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/google/go-cmp v0.7.0
 	github.com/gookit/color v1.6.1
@@ -26,11 +26,11 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/testcontainers/testcontainers-go v0.44.0
 	github.com/theckman/yacspin v0.13.12
-	github.com/vektah/gqlparser/v2 v2.5.37
+	github.com/vektah/gqlparser/v2 v2.5.62
 	github.com/wneessen/go-mail v0.8.1
 	gitlab.com/gitlab-org/api/client-go/v2 v2.64.0
-	golang.org/x/term v0.46.0
-	golang.org/x/text v0.42.0
+	golang.org/x/term v0.47.0
+	golang.org/x/text v0.43.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -75,7 +75,6 @@ require (
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.19.2 // indirect
-	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20260330125221-c963978e514e // indirect
 	github.com/magiconair/properties v1.8.10 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
@@ -94,7 +93,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
-	github.com/pjbgf/sha1cd v0.6.0 // indirect
+	github.com/pjbgf/sha1cd v0.7.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/sagikazarmark/locafero v0.11.0 // indirect
@@ -123,14 +122,14 @@ require (
 	go.opentelemetry.io/otel/trace v1.46.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
-	golang.org/x/crypto v0.55.0 // indirect
+	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/mod v0.41.0 // indirect
-	golang.org/x/net v0.58.0 // indirect
+	golang.org/x/net v0.59.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	golang.org/x/tools v0.49.0 // indirect
+	golang.org/x/tools v0.51.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 

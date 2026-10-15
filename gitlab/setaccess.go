@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/logrusorgru/aurora"
 	"github.com/obcode/glabs/v3/config"
@@ -78,9 +79,21 @@ func (c *Client) inviteByEmail(cfg *config.AssignmentConfig, projectID int64, em
 		return "", err
 	}
 	if resp.Status != "success" {
+		if isInheritedHigherMembership(resp.Message[email]) {
+			return fmt.Sprintf("%s already has a higher role inherited from a parent group", email), nil
+		}
 		return "", fmt.Errorf("inviting user %s failed with %s", email, resp.Message[email])
 	}
 	return fmt.Sprintf("successfully invited user %s", email), nil
+}
+
+// isInheritedHigherMembership recognises GitLab refusing a direct membership
+// below the role a user already inherits from a parent group ("Access level
+// should be greater than or equal to Owner inherited membership from group
+// ..."). The user then has at least the requested access, so it is no failure.
+func isInheritedHigherMembership(message string) bool {
+	msg := strings.ToLower(message)
+	return strings.Contains(msg, "greater than or equal to") && strings.Contains(msg, "inherited membership")
 }
 
 func (c *Client) setaccessPerStudent(assignmentCfg *config.AssignmentConfig) {

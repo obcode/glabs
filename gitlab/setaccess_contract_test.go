@@ -271,3 +271,26 @@ func TestSetaccessPerStudent_UserNotFound_InviteByEmail(t *testing.T) {
 	}
 	client.setaccessPerStudent(cfg)
 }
+
+// GitLab refuses a direct membership below a role inherited from a parent
+// group; the user already has more access, so this is not a failure.
+func TestInviteByEmail_InheritedHigherRole_IsNoError(t *testing.T) {
+	email := "lecturer@example.com"
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost && r.URL.Path == "/api/v4/projects/10/invitations" {
+			resp := fmt.Sprintf(`{"status":"error","message":{%q:"Access level should be greater than or equal to Owner inherited membership from group Development"}}`, email)
+			_, _ = w.Write([]byte(resp))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	})
+
+	cfg := &config.AssignmentConfig{AccessLevel: config.Maintainer}
+	info, err := client.inviteByEmail(cfg, 10, email)
+	if err != nil {
+		t.Fatalf("inviteByEmail() error = %v, want none", err)
+	}
+	if !strings.Contains(info, "inherited") {
+		t.Errorf("info = %q, want it to mention the inherited role", info)
+	}
+}

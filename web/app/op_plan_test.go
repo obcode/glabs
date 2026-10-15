@@ -157,3 +157,63 @@ func TestPlanOp_missingAssignmentRejected(t *testing.T) {
 		t.Fatal("expected an error for a missing assignment")
 	}
 }
+
+// A key glabs ignores is surfaced in the plan, where the user decides whether to
+// run — otherwise the web is even quieter about it than the CLI.
+func TestPlanOp_warnsAboutUnknownKeys(t *testing.T) {
+	const owner = "prof@hm.edu"
+	const course = `uc:
+  coursepath: uc/sem
+  blatt1:
+    per: student
+    students:
+      - a@hm.edu
+    branches:
+      - name: main
+        protectToBranch: true
+`
+	fs := newFakeStore()
+	fs.courses[owner+"/uc"] = storedCourse(t, owner, course)
+	a := &App{db: fs, gitlabHost: "https://gl", sealer: testSealer(t)}
+
+	plan, err := a.PlanOp(ctxAs(owner), "protect", "uc", "blatt1", nil, nil)
+	if err != nil {
+		t.Fatalf("PlanOp: %v", err)
+	}
+	var found bool
+	for _, w := range plan.Warnings {
+		if strings.HasPrefix(w, "uc.blatt1.branches[0].protectToBranch: ") && strings.Contains(w, "`mergeOnly: true`") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("warnings = %q, want one for branches[0].protectToBranch", plan.Warnings)
+	}
+}
+
+// The config hash guards plans and scheduled jobs against config changes. An
+// ignored key changes nothing, so it must not change the hash either — or every
+// job scheduled before the field existed would be rejected as "changed".
+func TestConfigHash_ignoresUnknownKeys(t *testing.T) {
+	const owner = "prof@hm.edu"
+	fs := newFakeStore()
+	fs.courses[owner+"/uc"] = storedCourse(t, owner, urlsCourse)
+	a := &App{db: fs, gitlabHost: "https://gl"}
+
+	cfg, err := a.resolveAssignmentConfig(ctxAs(owner), "uc", "blatt1")
+	if err != nil || cfg == nil {
+		t.Fatalf("resolve: cfg=%v err=%v", cfg, err)
+	}
+	before, err := configHash(cfg)
+	if err != nil {
+		t.Fatalf("configHash: %v", err)
+	}
+	cfg.UnknownKeys = []string{"uc.blatt1.clone.clone"}
+	after, err := configHash(cfg)
+	if err != nil {
+		t.Fatalf("configHash: %v", err)
+	}
+	if before != after {
+		t.Error("UnknownKeys changed the config hash")
+	}
+}

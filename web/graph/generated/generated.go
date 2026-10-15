@@ -29,6 +29,7 @@ func NewExecutableSchema(cfg Config) graphql.ExecutableSchema {
 type Config = graphql.Config[ResolverRoot, DirectiveRoot, ComplexityRoot]
 
 type ResolverRoot interface {
+	Course() CourseResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
 	Subscription() SubscriptionResolver
@@ -125,6 +126,7 @@ type ComplexityRoot struct {
 		GroupCount             func(childComplexity int) int
 		Groups                 func(childComplexity int) int
 		ImportedAt             func(childComplexity int) int
+		Lint                   func(childComplexity int) int
 		Name                   func(childComplexity int) int
 		SemesterPath           func(childComplexity int) int
 		StudentCount           func(childComplexity int) int
@@ -445,6 +447,9 @@ type ComplexityRoot struct {
 
 // region    ************************** generated!.gotpl **************************
 
+type CourseResolver interface {
+	Lint(ctx context.Context, obj *model.Course) ([]*model.Finding, error)
+}
 type MutationResolver interface {
 	ImportCourseYaml(ctx context.Context, yaml string) (*model.Course, error)
 	CreateCourse(ctx context.Context, name string, coursePath string, semesterPath string, useCoursenameAsPrefix bool, useEmailDomainAsSuffix bool) (*model.Course, error)
@@ -883,6 +888,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Course.ImportedAt(childComplexity), true
+	case "Course.lint":
+		if e.ComplexityRoot.Course.Lint == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Course.Lint(childComplexity), true
 	case "Course.name":
 		if e.ComplexityRoot.Course.Name == nil {
 			break
@@ -2902,6 +2913,11 @@ type Course {
   groupCount: Int!
   importedAt: Time!
   updatedAt: Time!
+  """
+  Lint findings for this course, the same as courseLint. Lets importCourseYAML
+  report silently ignored settings in the same round trip as the upload.
+  """
+  lint: [Finding!]!
 }
 
 "A named group of members (emails)."
@@ -3537,6 +3553,8 @@ func (ec *executionContext) childFields_Course(ctx context.Context, field graphq
 		return ec.fieldContext_Course_importedAt(ctx, field)
 	case "updatedAt":
 		return ec.fieldContext_Course_updatedAt(ctx, field)
+	case "lint":
+		return ec.fieldContext_Course_lint(ctx, field)
 	}
 	return nil, fmt.Errorf("no field named %q was found under type Course", field.Name)
 }
@@ -6635,6 +6653,38 @@ func (ec *executionContext) _Course_updatedAt(ctx context.Context, field graphql
 }
 func (ec *executionContext) fieldContext_Course_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("Course", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _Course_lint(ctx context.Context, field graphql.CollectedField, obj *model.Course) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Course_lint(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Course().Lint(ctx, obj)
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []*model.Finding) graphql.Marshaler {
+			return ec.marshalNFinding2ᚕᚖgithubᚗcomᚋobcodeᚋglabsᚋv3ᚋwebᚋgraphᚋmodelᚐFindingᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Course_lint(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Course",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.childFields_Finding(ctx, field)
+		},
+	}
+	return fc, nil
 }
 
 func (ec *executionContext) _DockerImageReport_wanted(ctx context.Context, field graphql.CollectedField, obj *model.DockerImageReport) (ret graphql.Marshaler) {
@@ -14215,63 +14265,101 @@ func (ec *executionContext) _Course(ctx context.Context, sel ast.SelectionSet, o
 		case "name":
 			out.Values[i] = ec._Course_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "coursePath":
 			out.Values[i] = ec._Course_coursePath(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "semesterPath":
 			out.Values[i] = ec._Course_semesterPath(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "useCoursenameAsPrefix":
 			out.Values[i] = ec._Course_useCoursenameAsPrefix(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "useEmailDomainAsSuffix":
 			out.Values[i] = ec._Course_useEmailDomainAsSuffix(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "assignmentNames":
 			out.Values[i] = ec._Course_assignmentNames(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "students":
 			out.Values[i] = ec._Course_students(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "groups":
 			out.Values[i] = ec._Course_groups(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "studentCount":
 			out.Values[i] = ec._Course_studentCount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "groupCount":
 			out.Values[i] = ec._Course_groupCount(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "importedAt":
 			out.Values[i] = ec._Course_importedAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "updatedAt":
 			out.Values[i] = ec._Course_updatedAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "lint":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Course_lint(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.IsDeferred() {
+				deferredFieldSet.AddField(field)
+				fieldIndex := len(deferredFieldSet.Values) - 1
+				deferredFieldSet.Concurrently(fieldIndex, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, deferredFieldSet)
+				})
+
+				for _, deferrable := range field.Deferrables {
+					view, ok := deferLabelToView[deferrable.Label]
+					if !ok {
+						view = deferredFieldSet.NewView()
+						deferLabelToView[deferrable.Label] = view
+					}
+					view.AddIndices(fieldIndex)
+				}
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

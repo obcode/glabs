@@ -61,6 +61,18 @@ func toGraphCourse(s *db.StoredCourse) *model.Course {
 	return c
 }
 
+func toGraphFindings(findings []config.Finding) []*model.Finding {
+	out := make([]*model.Finding, 0, len(findings))
+	for _, f := range findings {
+		out = append(out, &model.Finding{
+			Path:     f.Path,
+			Message:  f.Message,
+			Severity: toGraphSeverity(f.Severity),
+		})
+	}
+	return out
+}
+
 func toGraphSeverity(s config.Severity) model.FindingSeverity {
 	if s == config.SeverityProblem {
 		return model.FindingSeverityProblem

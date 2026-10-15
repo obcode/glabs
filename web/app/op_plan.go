@@ -108,6 +108,9 @@ func (a *App) PlanOp(ctx context.Context, op, course, assignment string, params 
 	if len(targets) == 0 {
 		warnings = append(warnings, "No students or groups — this operation would touch no repositories.")
 	}
+	for _, key := range cfg.UnknownKeys {
+		warnings = append(warnings, key+": "+config.UnknownKeyMessage(key))
+	}
 
 	now := time.Now()
 	token, err := a.sealOpToken(opToken{

@@ -32,3 +32,8 @@ models:
   Time:
     model:
       - github.com/99designs/gqlgen/graphql.Time
+  # Linting re-decodes the stored YAML; only do it when a client asks.
+  Course:
+    fields:
+      lint:
+        resolver: true

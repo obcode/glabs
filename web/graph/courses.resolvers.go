@@ -14,6 +14,15 @@ import (
 	"github.com/obcode/glabs/v3/web/graph/model"
 )
 
+// Lint is the resolver for the lint field.
+func (r *courseResolver) Lint(ctx context.Context, obj *model.Course) ([]*model.Finding, error) {
+	findings, err := r.app.CourseLint(ctx, obj.Name)
+	if err != nil {
+		return nil, err
+	}
+	return toGraphFindings(findings), nil
+}
+
 // ImportCourseYaml is the resolver for the importCourseYAML field.
 func (r *mutationResolver) ImportCourseYaml(ctx context.Context, yaml string) (*model.Course, error) {
 	stored, err := r.app.ImportCourseYAML(ctx, yaml)
@@ -125,18 +134,16 @@ func (r *queryResolver) CourseLint(ctx context.Context, name string) ([]*model.F
 	if err != nil {
 		return nil, err
 	}
-	out := make([]*model.Finding, 0, len(findings))
-	for _, f := range findings {
-		out = append(out, &model.Finding{
-			Path:     f.Path,
-			Message:  f.Message,
-			Severity: toGraphSeverity(f.Severity),
-		})
-	}
-	return out, nil
+	return toGraphFindings(findings), nil
 }
+
+// Course returns generated.CourseResolver implementation.
+func (r *Resolver) Course() generated.CourseResolver { return &courseResolver{r} }
 
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
-type mutationResolver struct{ *Resolver }
+type (
+	courseResolver   struct{ *Resolver }
+	mutationResolver struct{ *Resolver }
+)

@@ -163,6 +163,9 @@ type Course struct {
 	GroupCount   int       `json:"groupCount"`
 	ImportedAt   time.Time `json:"importedAt"`
 	UpdatedAt    time.Time `json:"updatedAt"`
+	// Lint findings for this course, the same as courseLint. Lets importCourseYAML
+	// report silently ignored settings in the same round trip as the upload.
+	Lint []*Finding `json:"lint"`
 }
 
 type DockerImageReport struct {

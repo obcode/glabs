@@ -105,8 +105,7 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 	// Without this the only place an ignored key shows up is `glabs config
 	// lint`, which nobody runs before `generate` or `protect`.
 	for _, key := range cfg.UnknownKeys {
-		log.Warn().Str("key", key).
-			Msg("no such configuration key; it is silently ignored" + unknownKeyHint(key))
+		log.Warn().Str("key", key).Msg(UnknownKeyMessage(key))
 	}
 	return cfg, nil
 }

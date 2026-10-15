@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/obcode/glabs/v3/config"
 	"github.com/obcode/glabs/v3/web/db"
 	"github.com/obcode/glabs/v3/web/graph/model"
 	"github.com/obcode/glabs/v3/web/principal"
@@ -431,4 +432,27 @@ func TestImportRejectsInvalidYAML(t *testing.T) {
 	if _, err := a.ImportCourseYAML(ctxAs("prof@hm.edu"), "a:\nb:\n"); err == nil {
 		t.Error("import of a two-top-level-key document succeeded, want an error")
 	}
+}
+
+// An ignored key does not block the import — deprecated and stray keys are
+// common in real course files — but lint reports it straight afterwards, which
+// is what Course.lint on the importCourseYAML result relies on.
+func TestImportAcceptsUnknownKeyAndLintReportsIt(t *testing.T) {
+	a := &App{db: newFakeStore()}
+	ctx := ctxAs("prof@hm.edu")
+	yaml := "uc:\n  coursepath: uc/s\n  blatt1:\n    branches:\n      - name: main\n        protectToBranch: true\n"
+
+	if _, err := a.ImportCourseYAML(ctx, yaml); err != nil {
+		t.Fatalf("import: %v", err)
+	}
+	findings, err := a.CourseLint(ctx, "uc")
+	if err != nil {
+		t.Fatalf("lint: %v", err)
+	}
+	for _, f := range findings {
+		if f.Path == "uc.blatt1.branches[0].protectToBranch" && f.Severity == config.SeverityProblem {
+			return
+		}
+	}
+	t.Errorf("findings = %v, want a problem for branches[0].protectToBranch", findings)
 }

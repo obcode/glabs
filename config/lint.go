@@ -43,7 +43,7 @@ func Lint(course *CourseSource, decoded *DecodeResult) []Finding {
 	for _, key := range decoded.UnknownKeys {
 		findings = append(findings, Finding{
 			Path:     key,
-			Message:  "no such configuration key; it is silently ignored" + unknownKeyHint(key),
+			Message:  UnknownKeyMessage(key),
 			Severity: SeverityProblem,
 		})
 	}
@@ -62,6 +62,13 @@ func Lint(course *CourseSource, decoded *DecodeResult) []Finding {
 
 	sort.SliceStable(findings, func(i, j int) bool { return findings[i].Path < findings[j].Path })
 	return findings
+}
+
+// UnknownKeyMessage explains an unknown key, with a hint at the likely intent
+// where there is one. `glabs config lint`, the CLI's load-time warning and the
+// web's operation plan all say the same thing.
+func UnknownKeyMessage(key string) string {
+	return "no such configuration key; it is silently ignored" + unknownKeyHint(key)
 }
 
 // unknownKeyHint points at the likely intent for the unknown keys that actually

@@ -48,7 +48,10 @@ type AssignmentConfig struct {
 
 	// UnknownKeys are dotted paths in the (merged) assignment that no setting
 	// matches. They are ignored; callers decide whether to warn about them.
-	UnknownKeys []string
+	// Excluded from JSON: the web's config hash (web/app/op_plan.go) is a JSON
+	// digest, and a field that changes nothing must not invalidate plans or
+	// scheduled jobs.
+	UnknownKeys []string `json:"-"`
 }
 
 type DeferredBranch struct {

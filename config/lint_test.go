@@ -236,3 +236,36 @@ func TestLintIsOrdered(t *testing.T) {
 		t.Errorf("findings are not sorted by path: %v", got)
 	}
 }
+
+// `protectToBranch` inside a `branches:` entry was reported from a real course:
+// the branch came out unprotected, GitLab's group default applied, and the
+// result looked like glabs had set the wrong access levels.
+func TestLintHintsAtProtectForLegacyKeyInBranchRule(t *testing.T) {
+	t.Parallel()
+
+	course, decoded := decodeYAML(t, `
+demo:
+  coursepath: demo/semester
+  blatt1:
+    assignmentpath: blatt-1
+    branches:
+      - name: main
+        protectToBranch: true
+      - name: develop
+        protectdevbranchmergeonly: true
+`)
+	findings := Lint(course, decoded)
+
+	for _, path := range []string{
+		"demo.blatt1.branches[0].protectToBranch",
+		"demo.blatt1.branches[1].protectdevbranchmergeonly",
+	} {
+		f := findingFor(findings, path)
+		if f == nil {
+			t.Fatalf("%s not reported; got %v", path, paths(findings))
+		}
+		if !strings.Contains(f.Message, "`protect: true`") || !strings.Contains(f.Message, "`mergeOnly: true`") {
+			t.Errorf("%s: message %q does not point at protect/mergeOnly", path, f.Message)
+		}
+	}
+}

@@ -331,6 +331,7 @@ branches:
 - Branch creation base is `startercode.toBranch` (or `seeder.toBranch` when seeder is used)
 - If a branch name is also listed in `startercode.additionalBranches`, the mirrored starter branch content is used for that branch
 - `glabs protect` applies these branch rules to existing repositories
+- Keys other than the ones above are ignored. `protectToBranch` in particular only exists under `startercode:`; inside a `branches:` entry it leaves the branch unprotected, so GitLab's group default applies. glabs warns about every unknown key when it loads the assignment, and `glabs config lint` lists them
 
 ## Issue replication options
 

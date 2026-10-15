@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 )
@@ -71,10 +72,19 @@ func unknownKeyHint(key string) string {
 		return " (the clone command has no such option; configuring `clone:` at all is what enables it)"
 	case strings.HasSuffix(key, ".release.mergeRequest.dockerImages"):
 		return " (dockerImages belongs under `release:`, not under `release.mergeRequest:`)"
+	case legacyProtectKeyInBranchRule.MatchString(key):
+		return " (a branch rule is protected with `protect: true` — push and merge for maintainers only — " +
+			"or `mergeOnly: true` — push for no one, merge for developers)"
 	default:
 		return ""
 	}
 }
+
+// legacyProtectKeyInBranchRule matches the startercode-era protection keys put
+// into a `branches:` entry, where they look plausible and do nothing: the
+// branch is created unprotected and GitLab's group default applies instead.
+// Keys keep the case they were written in, hence the (?i).
+var legacyProtectKeyInBranchRule = regexp.MustCompile(`(?i)\.branches\[\d+\]\.(protectToBranch|protectDevBranchMergeOnly)$`)
 
 func lintAssignment(course *CourseSource, name string, a *AssignmentSource) []Finding {
 	path := course.Name + "." + name

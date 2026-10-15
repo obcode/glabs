@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 )
@@ -97,7 +98,17 @@ func GetAssignmentConfig(course, assignment string, onlyForStudentsOrGroups ...s
 	if !ok {
 		return nil, fmt.Errorf("configuration for course %s not found", course)
 	}
-	return ResolveAssignment(course, body, globals(), assignment, onlyForStudentsOrGroups...)
+	cfg, err := ResolveAssignment(course, body, globals(), assignment, onlyForStudentsOrGroups...)
+	if err != nil {
+		return nil, err
+	}
+	// Without this the only place an ignored key shows up is `glabs config
+	// lint`, which nobody runs before `generate` or `protect`.
+	for _, key := range cfg.UnknownKeys {
+		log.Warn().Str("key", key).
+			Msg("no such configuration key; it is silently ignored" + unknownKeyHint(key))
+	}
+	return cfg, nil
 }
 
 // GetCourseConfig resolves the course-level students and groups.

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/go-viper/mapstructure/v2"
 )
 
 // Resolution turns the source form into the effective one: `extends` applied,
@@ -67,7 +69,8 @@ func ResolveAssignment(courseName string, body any, g Globals, assignment string
 	}
 
 	var src AssignmentSource
-	if err := decodeInto(&src, normalized, nil); err != nil {
+	var md mapstructure.Metadata
+	if err := decodeInto(&src, normalized, &md); err != nil {
 		return nil, fmt.Errorf("course %s, assignment %s: cannot decode configuration: %w", courseName, assignment, err)
 	}
 
@@ -76,7 +79,13 @@ func ResolveAssignment(courseName string, body any, g Globals, assignment string
 		return nil, err
 	}
 
-	return buildAssignmentConfig(courseName, assignment, course, &src, g, onlyForStudentsOrGroups...)
+	cfg, err := buildAssignmentConfig(courseName, assignment, course, &src, g, onlyForStudentsOrGroups...)
+	if err != nil {
+		return nil, err
+	}
+	cfg.UnknownKeys = prefixPaths(courseName+"."+assignment, md.Unused)
+	sort.Strings(cfg.UnknownKeys)
+	return cfg, nil
 }
 
 // lookupAssignment finds an assignment by name, folding case the way the rest of

@@ -45,6 +45,10 @@ type AssignmentConfig struct {
 	Release                *Release
 	Seeder                 *Seeder
 	DeferredBranches       map[string]*DeferredBranch
+
+	// UnknownKeys are dotted paths in the (merged) assignment that no setting
+	// matches. They are ignored; callers decide whether to warn about them.
+	UnknownKeys []string
 }
 
 type DeferredBranch struct {

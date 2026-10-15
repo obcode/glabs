@@ -196,7 +196,10 @@ func buildAssignmentConfig(courseName, assignment string, course *courseSourceRa
 	if err != nil {
 		return nil, err
 	}
-	branchRules := resolveBranches(src, starter)
+	branchRules, err := resolveBranches(src, starter)
+	if err != nil {
+		return nil, fmt.Errorf("course %s, assignment %s: %w", courseName, assignment, err)
+	}
 	release := resolveRelease(src.Release)
 
 	containerRegistry := src.ContainerRegistry
@@ -353,7 +356,7 @@ func resolveStartercode(courseName, assignment string, src *StartercodeSource) (
 	}, nil
 }
 
-func resolveBranches(src *AssignmentSource, starter *Startercode) []BranchRule {
+func resolveBranches(src *AssignmentSource, starter *Startercode) ([]BranchRule, error) {
 	rules := make([]BranchRule, 0, len(src.Branches))
 	seen := make(map[string]int)
 	appendOrMerge := func(rule BranchRule) {
@@ -364,6 +367,12 @@ func resolveBranches(src *AssignmentSource, starter *Startercode) []BranchRule {
 		if idx, ok := seen[rule.Name]; ok {
 			rules[idx].Protect = rules[idx].Protect || rule.Protect
 			rules[idx].MergeOnly = rules[idx].MergeOnly || rule.MergeOnly
+			if rule.Push != "" {
+				rules[idx].Push = rule.Push
+			}
+			if rule.Merge != "" {
+				rules[idx].Merge = rule.Merge
+			}
 			rules[idx].Default = rules[idx].Default || rule.Default
 			rules[idx].AllowForcePush = rules[idx].AllowForcePush || rule.AllowForcePush
 			rules[idx].CodeOwnerApprovalRequired = rules[idx].CodeOwnerApprovalRequired || rule.CodeOwnerApprovalRequired
@@ -373,7 +382,16 @@ func resolveBranches(src *AssignmentSource, starter *Startercode) []BranchRule {
 		rules = append(rules, rule)
 	}
 
-	for _, rule := range src.Branches {
+	for i, rule := range src.Branches {
+		push, err := parseBranchAccess(rule.Push)
+		if err != nil {
+			return nil, fmt.Errorf("branches[%d].push: %w", i, err)
+		}
+		merge, err := parseBranchAccess(rule.Merge)
+		if err != nil {
+			return nil, fmt.Errorf("branches[%d].merge: %w", i, err)
+		}
+		rule.Push, rule.Merge = string(push), string(merge)
 		appendOrMerge(BranchRule(rule))
 	}
 
@@ -413,7 +431,7 @@ func resolveBranches(src *AssignmentSource, starter *Startercode) []BranchRule {
 		rules[0].Default = true
 	}
 
-	return rules
+	return rules, nil
 }
 
 func resolveIssues(src *AssignmentSource) *IssueReplication {

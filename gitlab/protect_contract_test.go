@@ -894,3 +894,131 @@ func TestProtectSingleBranch_ProtectFails_ReturnsError(t *testing.T) {
 		t.Fatal("protectSingleBranch() expected error on 403, got nil")
 	}
 }
+
+// Explicit push/merge levels reach GitLab as access levels: a fully locked
+// branch is push=0 and merge=0, which neither shorthand can express.
+func TestProtectBranch_SendsExplicitAccessLevels(t *testing.T) {
+	tests := []struct {
+		name      string
+		rule      config.BranchRule
+		wantPush  float64
+		wantMerge float64
+	}{
+		{"locked", config.BranchRule{Name: "main", Push: "noOne", Merge: "noOne"}, 0, 0},
+		{"push overrides mergeOnly", config.BranchRule{Name: "main", MergeOnly: true, Push: "maintainer"}, 40, 30},
+		{"merge overrides protect", config.BranchRule{Name: "main", Protect: true, Merge: "developer"}, 40, 30},
+		{"merge alone keeps push at maintainer", config.BranchRule{Name: "main", Merge: "noOne"}, 40, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var postBody map[string]any
+			client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+				switch {
+				case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "protected_branches"):
+					w.WriteHeader(http.StatusNotFound)
+				case r.Method == http.MethodDelete && strings.Contains(r.URL.Path, "protected_branches"):
+					w.WriteHeader(http.StatusNotFound)
+				case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "protected_branches"):
+					if err := json.NewDecoder(r.Body).Decode(&postBody); err != nil {
+						t.Fatalf("json.Decode() error = %v", err)
+					}
+					_, _ = w.Write([]byte(`{"id":1,"name":"main"}`))
+				default:
+					w.WriteHeader(http.StatusNotFound)
+				}
+			})
+
+			cfg := &config.AssignmentConfig{Branches: []config.BranchRule{tt.rule}}
+			project := &gitlabapi.Project{ID: 1, Name: "myrepo"}
+			if err := client.protectBranch(cfg, project, false); err != nil {
+				t.Fatalf("protectBranch() error = %v", err)
+			}
+			if postBody["push_access_level"] != tt.wantPush {
+				t.Errorf("push_access_level = %#v, want %v", postBody["push_access_level"], tt.wantPush)
+			}
+			if postBody["merge_access_level"] != tt.wantMerge {
+				t.Errorf("merge_access_level = %#v, want %v", postBody["merge_access_level"], tt.wantMerge)
+			}
+		})
+	}
+}
+
+// An existing rule changed to merge=noOne is recreated, not patched: GitLab
+// keeps stale levels when a PATCH sets "No one", as it does for push.
+func TestProtectBranch_RecreatesExistingRuleForMergeNoOne(t *testing.T) {
+	var patched, recreated bool
+	existingRule := `{"id":1,"name":"main","push_access_levels":[{"id":10,"access_level":40}],"merge_access_levels":[{"id":11,"access_level":40}],"unprotect_access_levels":[{"id":12,"access_level":40}]}`
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "protected_branches"):
+			_, _ = w.Write([]byte(existingRule))
+		case r.Method == http.MethodPatch && strings.Contains(r.URL.Path, "protected_branches"):
+			patched = true
+			_, _ = w.Write([]byte(`{"id":1,"name":"main"}`))
+		case r.Method == http.MethodDelete && strings.Contains(r.URL.Path, "protected_branches"):
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "protected_branches"):
+			recreated = true
+			_, _ = w.Write([]byte(`{"id":2,"name":"main"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	cfg := &config.AssignmentConfig{Branches: []config.BranchRule{{Name: "main", Protect: true, Merge: "noOne"}}}
+	project := &gitlabapi.Project{ID: 1, Name: "myrepo"}
+	if err := client.protectBranch(cfg, project, false); err != nil {
+		t.Fatalf("protectBranch() error = %v", err)
+	}
+	if patched || !recreated {
+		t.Errorf("patched = %v, recreated = %v; want the rule recreated", patched, recreated)
+	}
+}
+
+// TestProtectBranch_UpdateKeepsMatchingAccessLevel reproduces a freshly created
+// project whose main GitLab already protects (push: developer, merge:
+// maintainer). Destroying the maintainer merge entry and re-adding it in the
+// same PATCH makes GitLab answer 422 "access level has already been taken", so
+// a matching entry must be kept and only the others destroyed.
+func TestProtectBranch_UpdateKeepsMatchingAccessLevel(t *testing.T) {
+	type permission struct {
+		ID          *int64 `json:"id"`
+		AccessLevel *int   `json:"access_level"`
+		Destroy     *bool  `json:"_destroy"`
+	}
+	var patchBody struct {
+		Push  []permission `json:"allowed_to_push"`
+		Merge []permission `json:"allowed_to_merge"`
+	}
+	existingRule := `{"id":1,"name":"main","push_access_levels":[{"id":10,"access_level":30}],"merge_access_levels":[{"id":11,"access_level":40}],"unprotect_access_levels":[{"id":12,"access_level":40}]}`
+	client := newContractClient(t, func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && strings.Contains(r.URL.Path, "protected_branches"):
+			_, _ = w.Write([]byte(existingRule))
+		case r.Method == http.MethodPatch && strings.Contains(r.URL.Path, "protected_branches"):
+			if err := json.NewDecoder(r.Body).Decode(&patchBody); err != nil {
+				t.Fatalf("json.Decode() error = %v", err)
+			}
+			_, _ = w.Write([]byte(`{"id":1,"name":"main"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+
+	cfg := &config.AssignmentConfig{Branches: []config.BranchRule{{Name: "main", Protect: true}}}
+	project := &gitlabapi.Project{ID: 1, Name: "myrepo"}
+	if err := client.protectBranch(cfg, project, false); err != nil {
+		t.Fatalf("protectBranch() error = %v", err)
+	}
+
+	// push: developer entry destroyed, maintainer added
+	if len(patchBody.Push) != 2 ||
+		patchBody.Push[0].ID == nil || *patchBody.Push[0].ID != 10 || patchBody.Push[0].Destroy == nil || !*patchBody.Push[0].Destroy ||
+		patchBody.Push[1].AccessLevel == nil || *patchBody.Push[1].AccessLevel != 40 {
+		t.Errorf("allowed_to_push = %+v, want destroy id 10 and add level 40", patchBody.Push)
+	}
+	// merge: maintainer entry already there, nothing to send for it
+	if len(patchBody.Merge) != 0 {
+		t.Errorf("allowed_to_merge = %+v, want no changes", patchBody.Merge)
+	}
+}

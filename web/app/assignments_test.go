@@ -667,6 +667,42 @@ func TestSetAssignment_branchesRepeatGroup(t *testing.T) {
 	}
 }
 
+// The push/merge levels ride in the draft like the other branch fields; an
+// invalid level is refused, because resolution would reject the saved course.
+func TestSetAssignment_branchAccessLevels(t *testing.T) {
+	const owner = "prof@hm.edu"
+	fs := newFakeStore()
+	fs.courses[owner+"/tc"] = storedCourse(t, owner, tcCourse)
+	a := &App{db: fs, gitlabHost: "https://gl"}
+	ctx := ctxAs(owner)
+
+	view, err := a.SetAssignment(ctx, "tc", "blatt1", map[string]string{
+		"branches.count":   "1",
+		"branches.0.name":  "main",
+		"branches.0.push":  "noOne",
+		"branches.0.merge": "noOne",
+	})
+	if err != nil {
+		t.Fatalf("set: %v", err)
+	}
+	br := fs.saved.Source.Assignments["blatt1"].Branches
+	if len(br) != 1 || br[0].Push != "noOne" || br[0].Merge != "noOne" {
+		t.Errorf("branches = %+v, want main with push/merge noOne", br)
+	}
+	own := ownMap(view.Own)
+	if own["branches.0.push"] != "noOne" || own["branches.0.merge"] != "noOne" {
+		t.Errorf("own push/merge = %q/%q, want noOne/noOne", own["branches.0.push"], own["branches.0.merge"])
+	}
+
+	if _, err := a.SetAssignment(ctx, "tc", "blatt1", map[string]string{
+		"branches.count":  "1",
+		"branches.0.name": "main",
+		"branches.0.push": "nobody",
+	}); err == nil {
+		t.Error("set with push: nobody succeeded, want it refused")
+	}
+}
+
 func TestSetAssignment_approvals(t *testing.T) {
 	const owner = "prof@hm.edu"
 	fs := newFakeStore()

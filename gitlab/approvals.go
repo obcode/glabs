@@ -107,7 +107,7 @@ func (c *Client) applyMergeRequestApprovalRulesForMemberCount(assignmentCfg *con
 		for _, branchName := range configuredRule.Branches {
 			protectedBranchID, ok := protectedBranchIDByName[branchName]
 			if !ok {
-				msg := fmt.Sprintf("skipping approval rule %q for branch %q in project %s: branch is not protected (configure it in branches with protect or mergeOnly)", configuredRule.Name, branchName, project.Name)
+				msg := fmt.Sprintf("skipping approval rule %q for branch %q in project %s: branch is not protected (configure it in branches with protect, mergeOnly, push or merge)", configuredRule.Name, branchName, project.Name)
 				fmt.Printf("warning: %s\n", msg)
 				log.Warn().Str("project", project.Name).Str("rule", configuredRule.Name).Str("branch", branchName).Msg("skipping merge request approval rule for unprotected branch")
 				continue

@@ -201,7 +201,7 @@ func (cfg *AssignmentConfig) Show() string {
 		writeSectionNotDefined()
 	} else {
 		for _, branch := range cfg.Branches {
-			flags := make([]string, 0, 5)
+			flags := make([]string, 0, 7)
 			if branch.Protect {
 				flags = append(flags, "protect")
 			}
@@ -216,6 +216,12 @@ func (cfg *AssignmentConfig) Show() string {
 			}
 			if branch.CodeOwnerApprovalRequired {
 				flags = append(flags, "codeOwnerApprovalRequired")
+			}
+			// The effective levels, so a reader need not know what the shorthands
+			// expand to or which half an explicit push/merge overrides.
+			if branch.Protected() {
+				push, merge := branch.AccessLevels()
+				flags = append(flags, "push="+string(push), "merge="+string(merge))
 			}
 
 			if len(flags) == 0 {

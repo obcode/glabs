@@ -95,6 +95,7 @@ one commit using the `templateMessage`.
 | Branches | first `branches[].default` | `true` on first branch |
 | Branches | `branches[].protect` | `false` |
 | Branches | `branches[].mergeOnly` | `false` |
+| Branches | `branches[].push` / `branches[].merge` | unset (derived from `protect`/`mergeOnly`) |
 | Issues | `issues.replicateFromStartercode` | `false` |
 | Issues | `issues.issueNumbers` | `[1]` when replication is enabled |
 | Seeder | `toBranch` | `main` |

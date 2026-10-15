@@ -116,6 +116,8 @@ type BranchRuleSource struct {
 	Name                      string `yaml:"name,omitempty" json:"name,omitempty" mapstructure:"name"`
 	Protect                   bool   `yaml:"protect,omitempty" json:"protect,omitempty" mapstructure:"protect"`
 	MergeOnly                 bool   `yaml:"mergeOnly,omitempty" json:"mergeOnly,omitempty" mapstructure:"mergeOnly"`
+	Push                      string `yaml:"push,omitempty" json:"push,omitempty" mapstructure:"push"`
+	Merge                     string `yaml:"merge,omitempty" json:"merge,omitempty" mapstructure:"merge"`
 	Default                   bool   `yaml:"default,omitempty" json:"default,omitempty" mapstructure:"default"`
 	AllowForcePush            bool   `yaml:"allowForcePush,omitempty" json:"allowForcePush,omitempty" mapstructure:"allowForcePush"`
 	CodeOwnerApprovalRequired bool   `yaml:"codeOwnerApprovalRequired,omitempty" json:"codeOwnerApprovalRequired,omitempty" mapstructure:"codeOwnerApprovalRequired"`

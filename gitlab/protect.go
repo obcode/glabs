@@ -52,16 +52,12 @@ func (c *Client) protectBranchForMemberCount(assignmentCfg *config.AssignmentCon
 		Msg("protecting branch")
 
 	for _, branch := range assignmentCfg.Branches {
-		if !branch.Protect && !branch.MergeOnly {
+		if !branch.Protected() {
 			continue
 		}
 
-		pushLevel := gitlab.MaintainerPermissions
-		mergeLevel := gitlab.MaintainerPermissions
-		if branch.MergeOnly {
-			pushLevel = gitlab.NoPermissions
-			mergeLevel = gitlab.DeveloperPermissions
-		}
+		push, merge := branch.AccessLevels()
+		pushLevel, mergeLevel := gitlabBranchAccess(push), gitlabBranchAccess(merge)
 
 		if err := c.protectSingleBranch(project, branch, pushLevel, mergeLevel); err != nil {
 			task.Fail("")
@@ -80,12 +76,23 @@ func (c *Client) protectBranchForMemberCount(assignmentCfg *config.AssignmentCon
 
 func hasProtectedBranches(branches []config.BranchRule) bool {
 	for _, branch := range branches {
-		if branch.Protect || branch.MergeOnly {
+		if branch.Protected() {
 			return true
 		}
 	}
 
 	return false
+}
+
+func gitlabBranchAccess(access config.BranchAccess) gitlab.AccessLevelValue {
+	switch access {
+	case config.BranchAccessNoOne:
+		return gitlab.NoPermissions
+	case config.BranchAccessDeveloper:
+		return gitlab.DeveloperPermissions
+	default:
+		return gitlab.MaintainerPermissions
+	}
 }
 
 func hasMergeRequestApprovalConfig(mergeRequest *config.MergeRequest) bool {
@@ -104,9 +111,9 @@ func (c *Client) protectSingleBranch(
 ) error {
 	existing, _, err := c.ProtectedBranches.GetProtectedBranch(project.ID, branch.Name)
 	if err == nil {
-		// GitLab can keep stale push permissions when updating existing rules to
-		// "No one" (merge-only). Recreate the rule to enforce the access levels.
-		if pushAccessLevel == gitlab.NoPermissions {
+		// GitLab can keep stale permissions when updating existing rules to
+		// "No one". Recreate the rule to enforce the access levels.
+		if pushAccessLevel == gitlab.NoPermissions || mergeAccessLevel == gitlab.NoPermissions {
 			if err := c.recreateProtectedBranch(project, branch, pushAccessLevel, mergeAccessLevel); err != nil {
 				return err
 			}
@@ -188,11 +195,23 @@ func (c *Client) recreateProtectedBranch(
 	return nil
 }
 
+// replaceBranchPermissions leaves exactly one role-based entry for accessLevel.
+// An existing entry with that level is kept rather than destroyed and re-added:
+// GitLab checks uniqueness before it applies the destroys and answers 422
+// "access level has already been taken" — which is what a freshly created
+// project's default protection of main (merge: maintainer) runs into.
 func replaceBranchPermissions(existing []*gitlab.BranchAccessDescription, accessLevel gitlab.AccessLevelValue) *[]*gitlab.BranchPermissionOptions {
 	destroy := true
+	kept := false
 	permissions := make([]*gitlab.BranchPermissionOptions, 0, len(existing)+1)
 	for _, level := range existing {
 		if level == nil || level.ID <= 0 {
+			continue
+		}
+
+		isRole := level.UserID == 0 && level.GroupID == 0 && level.DeployKeyID == 0
+		if !kept && isRole && level.AccessLevel == accessLevel {
+			kept = true
 			continue
 		}
 
@@ -200,7 +219,9 @@ func replaceBranchPermissions(existing []*gitlab.BranchAccessDescription, access
 		permissions = append(permissions, &gitlab.BranchPermissionOptions{ID: &id, Destroy: &destroy})
 	}
 
-	permissions = append(permissions, &gitlab.BranchPermissionOptions{AccessLevel: gitlab.Ptr(accessLevel)})
+	if !kept {
+		permissions = append(permissions, &gitlab.BranchPermissionOptions{AccessLevel: gitlab.Ptr(accessLevel)})
+	}
 	return &permissions
 }
 

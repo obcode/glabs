@@ -311,6 +311,10 @@ branches:
     mergeOnly: true
     codeOwnerApprovalRequired: true
     default: true
+
+  - name: reference
+    push: noOne    # nobody pushes, not even maintainers
+    merge: noOne   # nobody merges either: the branch is read-only
 ```
 
 ### Branch keys
@@ -320,6 +324,8 @@ branches:
 | `name` | Branch name | — | Required |
 | `protect` | Maintainer-only push/merge | `false` | Same semantics as classic protected branch |
 | `mergeOnly` | Developers may merge but cannot push | `false` | Sets push=`No one`, merge=`Developers` |
+| `push` | Who may push: `noOne`, `developer`, `maintainer` | — | Protects the branch; overrides the push half of `protect`/`mergeOnly` |
+| `merge` | Who may merge: `noOne`, `developer`, `maintainer` | — | Protects the branch; overrides the merge half of `protect`/`mergeOnly` |
 | `default` | Set as project default branch | `false` | If none is set, first branch becomes default |
 | `allowForcePush` | Allow force-push on protected branch | `false` | Passed through to GitLab protected branch settings |
 | `codeOwnerApprovalRequired` | Require Code Owner approval | `false` | Passed through to GitLab protected branch settings |
@@ -327,6 +333,11 @@ branches:
 ### Branch protection notes
 
 - `mergeOnly: true` takes precedence over `protect: true` for that branch
+- `push` and `merge` take precedence over both shorthands, each for its own half. A half that neither sets stays at `maintainer`, GitLab's default. Examples:
+  - only via merge request, nobody pushes, maintainers merge: `push: noOne`, `merge: maintainer`
+  - fully locked: `push: noOne`, `merge: noOne`
+- `developer` means "Developers + Maintainers", as in GitLab. Values are case-insensitive; anything else is a configuration error
+- Maintainers can always unprotect a branch in GitLab. If students are maintainers of their repositories, branch protection guides them but does not lock them out
 - Branches are created for generated projects based on this list
 - Branch creation base is `startercode.toBranch` (or `seeder.toBranch` when seeder is used)
 - If a branch name is also listed in `startercode.additionalBranches`, the mirrored starter branch content is used for that branch

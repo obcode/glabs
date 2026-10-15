@@ -157,6 +157,13 @@ var approvalRuleFields = []FieldMeta{
 	},
 }
 
+// branchAccessOptions mirror GitLab's choices for a protected branch.
+var branchAccessOptions = []FieldOption{
+	{Value: "noOne", Label: "Niemand", Description: "Auch Maintainer nicht."},
+	{Value: "developer", Label: "Developer + Maintainer", Description: "Alle mit mindestens Developer-Rechten."},
+	{Value: "maintainer", Label: "Maintainer", Description: "Nur Maintainer."},
+}
+
 var branchFields = []FieldMeta{
 	{
 		Key:         "name",
@@ -177,6 +184,20 @@ var branchFields = []FieldMeta{
 		Label:       "Nur via Merge",
 		Description: "Änderungen nur über Merge-Requests, kein direkter Push.",
 		Kind:        KindBool,
+	},
+	{
+		Key:         "push",
+		Label:       "Push erlaubt für",
+		Description: "Wer direkt auf den Branch pushen darf. Überschreibt „Geschützt“ bzw. „Nur via Merge“ (leer = daraus abgeleitet).",
+		Kind:        KindEnum,
+		Options:     branchAccessOptions,
+	},
+	{
+		Key:         "merge",
+		Label:       "Merge erlaubt für",
+		Description: "Wer Merge-Requests in den Branch mergen darf. Überschreibt „Geschützt“ bzw. „Nur via Merge“ (leer = daraus abgeleitet).",
+		Kind:        KindEnum,
+		Options:     branchAccessOptions,
 	},
 	{
 		Key:         "default",

@@ -91,9 +91,15 @@ type Startercode struct {
 }
 
 type BranchRule struct {
-	Name                      string `mapstructure:"name"`
-	Protect                   bool   `mapstructure:"protect"`
-	MergeOnly                 bool   `mapstructure:"mergeOnly"`
+	Name      string `mapstructure:"name"`
+	Protect   bool   `mapstructure:"protect"`
+	MergeOnly bool   `mapstructure:"mergeOnly"`
+	// Push and Merge are canonical BranchAccess values, or empty when unset;
+	// AccessLevels combines them with Protect/MergeOnly.
+	// omitempty keeps configs that do not use them byte-identical in JSON,
+	// so the web's config hash (and every scheduled job) survives the field.
+	Push                      string `mapstructure:"push" json:",omitempty"`
+	Merge                     string `mapstructure:"merge" json:",omitempty"`
 	Default                   bool   `mapstructure:"default"`
 	AllowForcePush            bool   `mapstructure:"allowForcePush"`
 	CodeOwnerApprovalRequired bool   `mapstructure:"codeOwnerApprovalRequired"`

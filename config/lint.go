@@ -81,7 +81,8 @@ func unknownKeyHint(key string) string {
 		return " (dockerImages belongs under `release:`, not under `release.mergeRequest:`)"
 	case legacyProtectKeyInBranchRule.MatchString(key):
 		return " (a branch rule is protected with `protect: true` — push and merge for maintainers only — " +
-			"or `mergeOnly: true` — push for no one, merge for developers)"
+			"or `mergeOnly: true` — push for no one, merge for developers — or with explicit `push:`/`merge:` " +
+			"levels: noOne, developer, maintainer)"
 	default:
 		return ""
 	}

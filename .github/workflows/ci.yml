@@ -37,7 +37,10 @@ jobs:
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.13.1
+          #
+          # v2.14.0 since go.mod moved to Go 1.27.4: v2.13.1 cannot read the export data of
+          # that toolchain's standard library and fails every package with a typecheck error.
+          version: v2.14.0
           args: --timeout=10m
 
   test-fast:
@@ -99,7 +102,7 @@ jobs:
     #   GLABS_VET_DB_URL=postgres://glabs@localhost:5432/glabs?sslmode=disable sqlc vet
     steps:
       - uses: actions/checkout@v7
-      - uses: sqlc-dev/setup-sqlc@v4
+      - uses: sqlc-dev/setup-sqlc@v5
         with:
           sqlc-version: "1.31.1"
       - name: Check the generated query code is up to date
